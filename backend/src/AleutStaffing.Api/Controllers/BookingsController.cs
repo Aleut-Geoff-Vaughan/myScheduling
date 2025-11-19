@@ -31,10 +31,7 @@ public class BookingsController : ControllerBase
         try
         {
             var query = _context.Bookings
-                .Include(b => b.Person)
-                .Include(b => b.Space)
-                    .ThenInclude(s => s.Office)
-                .Include(b => b.CheckInEvents)
+                .AsNoTracking()
                 .AsQueryable();
 
             if (personId.HasValue)
@@ -239,7 +236,7 @@ public class BookingsController : ControllerBase
         try
         {
             var query = _context.Offices
-                .Include(o => o.Spaces)
+                .AsNoTracking()
                 .AsQueryable();
 
             if (tenantId.HasValue)
@@ -269,7 +266,7 @@ public class BookingsController : ControllerBase
         try
         {
             var query = _context.Spaces
-                .Include(s => s.Office)
+                .AsNoTracking()
                 .AsQueryable();
 
             if (officeId.HasValue)

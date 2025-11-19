@@ -29,10 +29,7 @@ public class AssignmentsController : ControllerBase
         try
         {
             var query = _context.Assignments
-                .Include(a => a.Person)
-                .Include(a => a.WbsElement)
-                    .ThenInclude(w => w.Project)
-                .Include(a => a.ProjectRole)
+                .AsNoTracking()
                 .AsQueryable();
 
             if (tenantId.HasValue)

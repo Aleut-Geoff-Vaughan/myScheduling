@@ -30,17 +30,21 @@ npm run dev -- --host 0.0.0.0
 
 ## Priority Tasks
 
-### 1. Verify Database Seeding ✓
-- [ ] Confirm 100 people in database (50 per tenant)
-- [ ] Verify all related records created successfully
-- [ ] Test API endpoints return seeded data
+### 1. Verify Database Seeding ✅
+- [x] Confirm 100 people in database (50 per tenant)
+- [x] Verify all related records created successfully
+- [x] Test API endpoints return seeded data
 
-### 2. Frontend API Integration (HIGH PRIORITY)
-- [ ] **People Page** - Connect to `/api/people` endpoint (currently using hook)
-- [ ] **Projects Page** - Connect to `/api/projects` endpoint
-- [ ] **Staffing Page** - Connect to `/api/assignments` and `/api/project-roles` endpoints
-- [ ] **Hoteling Page** - Connect to `/api/bookings` and `/api/spaces` endpoints
-- [ ] **Admin Page** - Connect to `/api/tenants` and `/api/users` endpoints
+### 2. Frontend API Integration ✅ **COMPLETED 2025-11-19**
+- [x] **People Page** - Connected to `/api/people` endpoint ✅
+- [x] **Projects Page** - Connected to `/api/projects` endpoint ✅
+- [x] **Staffing Page** - Connected to `/api/assignments` endpoint ✅
+- [x] **Hoteling Page** - Connected to `/api/bookings` and `/api/spaces` endpoints ✅
+- [x] **Admin Page** - Connected to `/api/tenants` and `/api/users` endpoints ✅
+- [x] Fixed JSON serialization circular reference errors in API
+- [x] Created service layer for all entities (projectsService, assignmentsService, bookingsService, tenantsService)
+- [x] Created React Query hooks for all entities (useProjects, useAssignments, useBookings, useTenants, useUsers)
+- [x] Updated TypeScript types for Space, Office, and SpaceType enum
 
 ### 3. Authentication (HIGH PRIORITY)
 - [ ] Implement real authentication API endpoint (replace mock auth)

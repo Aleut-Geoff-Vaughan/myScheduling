@@ -1,95 +1,75 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input, Select } from '../components/ui';
-
-interface Booking {
-  id: string;
-  personName: string;
-  spaceName: string;
-  spaceType: 'Desk' | 'Conference Room' | 'Office';
-  office: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  status: 'Confirmed' | 'Pending' | 'Checked In' | 'Completed';
-}
+import { useBookings } from '../hooks/useBookings';
+import { Booking, BookingStatus } from '../types/api';
 
 export function HotelingPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedOffice, setSelectedOffice] = useState('all');
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Mock data
-  const mockBookings: Booking[] = [
-    {
-      id: '1',
-      personName: 'John Smith',
-      spaceName: 'Desk 42',
-      spaceType: 'Desk',
-      office: 'Seattle Office',
-      date: new Date().toISOString().split('T')[0],
-      startTime: '09:00',
-      endTime: '17:00',
-      status: 'Checked In'
-    },
-    {
-      id: '2',
-      personName: 'Sarah Johnson',
-      spaceName: 'Conference Room A',
-      spaceType: 'Conference Room',
-      office: 'Seattle Office',
-      date: new Date().toISOString().split('T')[0],
-      startTime: '10:00',
-      endTime: '12:00',
-      status: 'Confirmed'
-    },
-    {
-      id: '3',
-      personName: 'Michael Chen',
-      spaceName: 'Desk 15',
-      spaceType: 'Desk',
-      office: 'Portland Office',
-      date: new Date(Date.now() + 86400000).toISOString().split('T')[0],
-      startTime: '08:00',
-      endTime: '16:00',
-      status: 'Confirmed'
+  const startDate = selectedDate + 'T00:00:00';
+  const endDate = selectedDate + 'T23:59:59';
+
+  const { data: bookings = [], isLoading, error } = useBookings({
+    startDate,
+    endDate,
+  });
+
+  const getStatusLabel = (status: BookingStatus): string => {
+    switch (status) {
+      case BookingStatus.Reserved:
+        return 'Confirmed';
+      case BookingStatus.CheckedIn:
+        return 'Checked In';
+      case BookingStatus.Completed:
+        return 'Completed';
+      case BookingStatus.Cancelled:
+        return 'Cancelled';
+      case BookingStatus.NoShow:
+        return 'No Show';
+      default:
+        return 'Unknown';
     }
-  ];
+  };
+
+  const getStatusVariant = (status: BookingStatus): 'success' | 'warning' | 'default' | 'info' | 'danger' => {
+    switch (status) {
+      case BookingStatus.CheckedIn:
+        return 'success';
+      case BookingStatus.Reserved:
+        return 'info';
+      case BookingStatus.Completed:
+        return 'default';
+      case BookingStatus.Cancelled:
+      case BookingStatus.NoShow:
+        return 'danger';
+      default:
+        return 'warning';
+    }
+  };
 
   const columns = [
     {
-      key: 'personName',
-      header: 'Person',
+      key: 'personId',
+      header: 'Person ID',
       render: (booking: Booking) => (
-        <div className="font-medium text-gray-900">{booking.personName}</div>
+        <div className="font-medium text-gray-900 text-sm">{booking.personId.substring(0, 8)}...</div>
       )
     },
     {
-      key: 'space',
-      header: 'Space',
+      key: 'spaceId',
+      header: 'Space ID',
       render: (booking: Booking) => (
-        <div>
-          <div className="font-medium">{booking.spaceName}</div>
-          <div className="text-sm text-gray-500">{booking.spaceType}</div>
-        </div>
+        <div className="text-sm">{booking.spaceId.substring(0, 8)}...</div>
       )
     },
     {
-      key: 'office',
-      header: 'Office'
-    },
-    {
-      key: 'date',
-      header: 'Date',
-      render: (booking: Booking) => (
-        <div className="text-sm">{new Date(booking.date).toLocaleDateString()}</div>
-      )
-    },
-    {
-      key: 'time',
+      key: 'datetime',
       header: 'Time',
       render: (booking: Booking) => (
         <div className="text-sm">
-          {booking.startTime} - {booking.endTime}
+          <div>{new Date(booking.startDatetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+          <div className="text-gray-500">to {new Date(booking.endDatetime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
         </div>
       )
     },
@@ -98,27 +78,42 @@ export function HotelingPage() {
       header: 'Status',
       render: (booking: Booking) => (
         <StatusBadge
-          status={booking.status}
-          variant={
-            booking.status === 'Checked In' ? 'success' :
-            booking.status === 'Confirmed' ? 'info' :
-            booking.status === 'Completed' ? 'default' :
-            'warning'
-          }
+          status={getStatusLabel(booking.status)}
+          variant={getStatusVariant(booking.status)}
         />
       )
     }
   ];
 
-  const filteredBookings = mockBookings.filter(booking => {
-    const matchesSearch = booking.personName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         booking.spaceName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesOffice = selectedOffice === 'all' || booking.office === selectedOffice;
-    const matchesDate = booking.date === selectedDate;
-    return matchesSearch && matchesOffice && matchesDate;
-  });
+  const filteredBookings = bookings.filter(booking =>
+    booking.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.personId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    booking.spaceId.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-  const offices = ['all', ...Array.from(new Set(mockBookings.map(b => b.office)))];
+  const stats = useMemo(() => {
+    const total = bookings.length;
+    const active = bookings.filter(b => b.status === BookingStatus.Reserved || b.status === BookingStatus.CheckedIn).length;
+    const checkedIn = bookings.filter(b => b.status === BookingStatus.CheckedIn).length;
+    const completed = bookings.filter(b => b.status === BookingStatus.Completed).length;
+
+    return { total, active, checkedIn, completed };
+  }, [bookings]);
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardBody>
+            <div className="text-center py-12">
+              <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Bookings</div>
+              <div className="text-gray-600">{error.message}</div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -133,32 +128,26 @@ export function HotelingPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{mockBookings.length}</div>
+            <div className="text-3xl font-bold text-blue-600">{stats.total}</div>
             <div className="text-sm text-gray-600 mt-1">Total Bookings</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">
-              {mockBookings.filter(b => b.status === 'Confirmed' || b.status === 'Checked In').length}
-            </div>
+            <div className="text-3xl font-bold text-green-600">{stats.active}</div>
             <div className="text-sm text-gray-600 mt-1">Active Today</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">
-              {mockBookings.filter(b => b.spaceType === 'Desk').length}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">Desk Bookings</div>
+            <div className="text-3xl font-bold text-purple-600">{stats.checkedIn}</div>
+            <div className="text-sm text-gray-600 mt-1">Checked In</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600">
-              {mockBookings.filter(b => b.spaceType === 'Conference Room').length}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">Room Bookings</div>
+            <div className="text-3xl font-bold text-gray-600">{stats.completed}</div>
+            <div className="text-sm text-gray-600 mt-1">Completed</div>
           </div>
         </Card>
       </div>
@@ -166,7 +155,7 @@ export function HotelingPage() {
       {/* Filters */}
       <Card className="mb-6">
         <CardBody>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
               <Input
                 placeholder="Search bookings..."
@@ -174,14 +163,6 @@ export function HotelingPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Select
-              value={selectedOffice}
-              onChange={(e) => setSelectedOffice(e.target.value)}
-              options={offices.map(office => ({
-                value: office,
-                label: office === 'all' ? 'All Offices' : office
-              }))}
-            />
             <Input
               type="date"
               value={selectedDate}
@@ -212,7 +193,7 @@ export function HotelingPage() {
           data={filteredBookings}
           columns={columns}
           onRowClick={(booking) => console.log('View booking:', booking.id)}
-          emptyMessage="No bookings found for this date"
+          emptyMessage={isLoading ? "Loading bookings..." : "No bookings found for this date"}
         />
       </Card>
 

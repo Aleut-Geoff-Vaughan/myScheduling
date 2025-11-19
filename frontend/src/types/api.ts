@@ -40,6 +40,14 @@ export enum TenantStatus {
   Suspended = 2,
 }
 
+export enum SpaceType {
+  Desk = 0,
+  Office = 1,
+  ConferenceRoom = 2,
+  Huddle = 3,
+  PhoneBooth = 4,
+}
+
 // Entities
 export interface Person {
   id: string;
@@ -114,6 +122,34 @@ export interface User {
   email: string;
   displayName: string;
   entraObjectId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Office {
+  id: string;
+  tenantId: string;
+  name: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+  totalCapacity: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Space {
+  id: string;
+  officeId: string;
+  name: string;
+  type: SpaceType;
+  floor?: string;
+  building?: string;
+  capacity?: number;
+  amenities?: string;
+  isAvailable: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -1,25 +1,7 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input, Modal } from '../components/ui';
-
-interface Tenant {
-  id: string;
-  name: string;
-  code: string;
-  contactEmail: string;
-  status: 'Active' | 'Inactive' | 'Trial';
-  userCount: number;
-  createdDate: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  tenantName: string;
-  status: 'Active' | 'Inactive' | 'Pending';
-  lastLogin?: string;
-}
+import { useTenants, useUsers } from '../hooks/useTenants';
+import { Tenant as ApiTenant, User as ApiUser, TenantStatus } from '../types/api';
 
 type AdminView = 'tenants' | 'users' | 'settings';
 
@@ -28,81 +10,27 @@ export function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Mock data
-  const mockTenants: Tenant[] = [
-    {
-      id: '1',
-      name: 'Aleut Federal',
-      code: 'ALEUT',
-      contactEmail: 'admin@aleutfederal.com',
-      status: 'Active',
-      userCount: 145,
-      createdDate: '2023-01-15'
-    },
-    {
-      id: '2',
-      name: 'Partner Organization',
-      code: 'PARTNER',
-      contactEmail: 'contact@partner.com',
-      status: 'Active',
-      userCount: 52,
-      createdDate: '2023-06-20'
-    },
-    {
-      id: '3',
-      name: 'Trial Company',
-      code: 'TRIAL',
-      contactEmail: 'trial@company.com',
-      status: 'Trial',
-      userCount: 8,
-      createdDate: '2024-11-01'
-    }
-  ];
+  const { data: tenants = [], isLoading: tenantsLoading, error: tenantsError } = useTenants();
+  const { data: users = [], isLoading: usersLoading, error: usersError } = useUsers();
 
-  const mockUsers: User[] = [
-    {
-      id: '1',
-      name: 'Admin User',
-      email: 'admin@aleutfederal.com',
-      role: 'System Administrator',
-      tenantName: 'Aleut Federal',
-      status: 'Active',
-      lastLogin: '2024-11-19'
-    },
-    {
-      id: '2',
-      name: 'John Smith',
-      email: 'john.smith@aleutfederal.com',
-      role: 'Manager',
-      tenantName: 'Aleut Federal',
-      status: 'Active',
-      lastLogin: '2024-11-18'
-    },
-    {
-      id: '3',
-      name: 'Sarah Johnson',
-      email: 'sarah@partner.com',
-      role: 'User',
-      tenantName: 'Partner Organization',
-      status: 'Active',
-      lastLogin: '2024-11-15'
-    },
-    {
-      id: '4',
-      name: 'Pending User',
-      email: 'new@trial.com',
-      role: 'User',
-      tenantName: 'Trial Company',
-      status: 'Pending',
-      lastLogin: undefined
+  const getStatusLabel = (status: TenantStatus): string => {
+    switch (status) {
+      case TenantStatus.Active:
+        return 'Active';
+      case TenantStatus.Inactive:
+        return 'Inactive';
+      case TenantStatus.Suspended:
+        return 'Suspended';
+      default:
+        return 'Unknown';
     }
-  ];
+  };
 
   const tenantColumns = [
     {
       key: 'name',
       header: 'Tenant Name',
-      render: (tenant: Tenant) => (
+      render: (tenant: ApiTenant) => (
         <div>
           <div className="font-medium text-gray-900">{tenant.name}</div>
           <div className="text-sm text-gray-500">{tenant.code}</div>
@@ -110,33 +38,21 @@ export function AdminPage() {
       )
     },
     {
-      key: 'contactEmail',
-      header: 'Contact Email'
-    },
-    {
-      key: 'userCount',
-      header: 'Users',
-      align: 'center' as const,
-      render: (tenant: Tenant) => (
-        <span className="font-medium">{tenant.userCount}</span>
-      )
-    },
-    {
-      key: 'createdDate',
+      key: 'createdAt',
       header: 'Created',
-      render: (tenant: Tenant) => (
-        <span className="text-sm">{new Date(tenant.createdDate).toLocaleDateString()}</span>
+      render: (tenant: ApiTenant) => (
+        <span className="text-sm">{new Date(tenant.createdAt).toLocaleDateString()}</span>
       )
     },
     {
       key: 'status',
       header: 'Status',
-      render: (tenant: Tenant) => (
+      render: (tenant: ApiTenant) => (
         <StatusBadge
-          status={tenant.status}
+          status={getStatusLabel(tenant.status)}
           variant={
-            tenant.status === 'Active' ? 'success' :
-            tenant.status === 'Trial' ? 'warning' :
+            tenant.status === TenantStatus.Active ? 'success' :
+            tenant.status === TenantStatus.Suspended ? 'warning' :
             'default'
           }
         />
@@ -146,58 +62,39 @@ export function AdminPage() {
 
   const userColumns = [
     {
-      key: 'name',
+      key: 'displayName',
       header: 'User',
-      render: (user: User) => (
+      render: (user: ApiUser) => (
         <div>
-          <div className="font-medium text-gray-900">{user.name}</div>
+          <div className="font-medium text-gray-900">{user.displayName}</div>
           <div className="text-sm text-gray-500">{user.email}</div>
         </div>
       )
     },
     {
-      key: 'role',
-      header: 'Role'
-    },
-    {
-      key: 'tenantName',
-      header: 'Tenant'
-    },
-    {
-      key: 'lastLogin',
-      header: 'Last Login',
-      render: (user: User) => (
-        <span className="text-sm">
-          {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
-        </span>
+      key: 'tenantId',
+      header: 'Tenant ID',
+      render: (user: ApiUser) => (
+        <span className="text-sm">{user.tenantId.substring(0, 8)}...</span>
       )
     },
     {
-      key: 'status',
-      header: 'Status',
-      render: (user: User) => (
-        <StatusBadge
-          status={user.status}
-          variant={
-            user.status === 'Active' ? 'success' :
-            user.status === 'Pending' ? 'warning' :
-            'default'
-          }
-        />
+      key: 'createdAt',
+      header: 'Created',
+      render: (user: ApiUser) => (
+        <span className="text-sm">{new Date(user.createdAt).toLocaleDateString()}</span>
       )
     }
   ];
 
-  const filteredTenants = mockTenants.filter(tenant =>
+  const filteredTenants = tenants.filter(tenant =>
     tenant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tenant.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tenant.contactEmail.toLowerCase().includes(searchTerm.toLowerCase())
+    tenant.code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredUsers = mockUsers.filter(user =>
-    user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.tenantName.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(user =>
+    user.displayName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

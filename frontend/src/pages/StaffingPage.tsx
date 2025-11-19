@@ -1,70 +1,59 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input } from '../components/ui';
-
-interface Assignment {
-  id: string;
-  personName: string;
-  projectName: string;
-  roleName: string;
-  allocation: number;
-  startDate: string;
-  endDate: string;
-  status: 'Active' | 'Pending' | 'Completed' | 'Cancelled';
-}
+import { useAssignments } from '../hooks/useAssignments';
+import { Assignment, AssignmentStatus } from '../types/api';
 
 export function StaffingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedView, setSelectedView] = useState<'assignments' | 'capacity' | 'requests'>('assignments');
 
-  // Mock data
-  const mockAssignments: Assignment[] = [
-    {
-      id: '1',
-      personName: 'John Smith',
-      projectName: 'ERP Implementation',
-      roleName: 'Senior Developer',
-      allocation: 100,
-      startDate: '2024-01-15',
-      endDate: '2024-06-30',
-      status: 'Active'
-    },
-    {
-      id: '2',
-      personName: 'Sarah Johnson',
-      projectName: 'Cloud Migration',
-      roleName: 'Project Manager',
-      allocation: 75,
-      startDate: '2024-03-01',
-      endDate: '2024-12-31',
-      status: 'Active'
-    },
-    {
-      id: '3',
-      personName: 'Michael Chen',
-      projectName: 'Data Analytics Platform',
-      roleName: 'Data Analyst',
-      allocation: 50,
-      startDate: '2024-06-01',
-      endDate: '2024-11-30',
-      status: 'Pending'
+  const { data: assignments = [], isLoading, error } = useAssignments();
+
+  const getStatusLabel = (status: AssignmentStatus): string => {
+    switch (status) {
+      case AssignmentStatus.Draft:
+        return 'Draft';
+      case AssignmentStatus.PendingApproval:
+        return 'Pending Approval';
+      case AssignmentStatus.Active:
+        return 'Active';
+      case AssignmentStatus.Completed:
+        return 'Completed';
+      case AssignmentStatus.Cancelled:
+        return 'Cancelled';
+      default:
+        return 'Unknown';
     }
-  ];
+  };
+
+  const getStatusVariant = (status: AssignmentStatus): 'success' | 'warning' | 'default' | 'danger' => {
+    switch (status) {
+      case AssignmentStatus.Active:
+        return 'success';
+      case AssignmentStatus.PendingApproval:
+      case AssignmentStatus.Draft:
+        return 'warning';
+      case AssignmentStatus.Cancelled:
+        return 'danger';
+      default:
+        return 'default';
+    }
+  };
 
   const columns = [
     {
-      key: 'personName',
-      header: 'Person',
+      key: 'personId',
+      header: 'Person ID',
       render: (assignment: Assignment) => (
-        <div className="font-medium text-gray-900">{assignment.personName}</div>
+        <div className="font-medium text-gray-900 text-sm">{assignment.personId.substring(0, 8)}...</div>
       )
     },
     {
-      key: 'projectName',
-      header: 'Project'
-    },
-    {
-      key: 'roleName',
-      header: 'Role'
+      key: 'projectRoleId',
+      header: 'Role ID',
+      render: (assignment: Assignment) => (
+        <div className="text-sm">{assignment.projectRoleId.substring(0, 8)}...</div>
+      )
     },
     {
       key: 'allocation',
@@ -97,23 +86,43 @@ export function StaffingPage() {
       header: 'Status',
       render: (assignment: Assignment) => (
         <StatusBadge
-          status={assignment.status}
-          variant={
-            assignment.status === 'Active' ? 'success' :
-            assignment.status === 'Pending' ? 'warning' :
-            assignment.status === 'Completed' ? 'default' :
-            'danger'
-          }
+          status={getStatusLabel(assignment.status)}
+          variant={getStatusVariant(assignment.status)}
         />
       )
     }
   ];
 
-  const filteredAssignments = mockAssignments.filter(assignment =>
-    assignment.personName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    assignment.projectName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    assignment.roleName.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredAssignments = assignments.filter(assignment =>
+    assignment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    assignment.personId.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const stats = useMemo(() => {
+    const total = assignments.length;
+    const active = assignments.filter(a => a.status === AssignmentStatus.Active).length;
+    const pending = assignments.filter(a => a.status === AssignmentStatus.PendingApproval).length;
+    const avgAllocation = assignments.length > 0
+      ? Math.round(assignments.reduce((sum, a) => sum + a.allocation, 0) / assignments.length)
+      : 0;
+
+    return { total, active, pending, avgAllocation };
+  }, [assignments]);
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardBody>
+            <div className="text-center py-12">
+              <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Assignments</div>
+              <div className="text-gray-600">{error.message}</div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -128,31 +137,25 @@ export function StaffingPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{mockAssignments.length}</div>
+            <div className="text-3xl font-bold text-blue-600">{stats.total}</div>
             <div className="text-sm text-gray-600 mt-1">Total Assignments</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">
-              {mockAssignments.filter(a => a.status === 'Active').length}
-            </div>
+            <div className="text-3xl font-bold text-green-600">{stats.active}</div>
             <div className="text-sm text-gray-600 mt-1">Active</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600">
-              {mockAssignments.filter(a => a.status === 'Pending').length}
-            </div>
+            <div className="text-3xl font-bold text-orange-600">{stats.pending}</div>
             <div className="text-sm text-gray-600 mt-1">Pending Approval</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">
-              {Math.round(mockAssignments.reduce((sum, a) => sum + a.allocation, 0) / mockAssignments.length)}%
-            </div>
+            <div className="text-3xl font-bold text-purple-600">{stats.avgAllocation}%</div>
             <div className="text-sm text-gray-600 mt-1">Avg Utilization</div>
           </div>
         </Card>
@@ -201,13 +204,13 @@ export function StaffingPage() {
         <Card>
           <CardHeader
             title="All Assignments"
-            subtitle={`${filteredAssignments.length} active ${filteredAssignments.length === 1 ? 'assignment' : 'assignments'}`}
+            subtitle={`${filteredAssignments.length} ${filteredAssignments.length === 1 ? 'assignment' : 'assignments'}`}
           />
           <Table
             data={filteredAssignments}
             columns={columns}
             onRowClick={(assignment) => console.log('View assignment:', assignment.id)}
-            emptyMessage="No assignments found"
+            emptyMessage={isLoading ? "Loading assignments..." : "No assignments found"}
           />
         </Card>
       )}
@@ -234,8 +237,8 @@ export function StaffingPage() {
             <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            <p className="text-lg font-medium">No Pending Requests</p>
-            <p className="text-sm mt-2">Staffing requests awaiting approval will appear here</p>
+            <p className="text-lg font-medium">Staffing Requests</p>
+            <p className="text-sm mt-2">Showing {assignments.filter(a => a.status === AssignmentStatus.PendingApproval).length} pending requests</p>
           </CardBody>
         </Card>
       )}

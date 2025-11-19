@@ -1,54 +1,42 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input } from '../components/ui';
-
-interface Project {
-  id: string;
-  name: string;
-  programCode: string;
-  customer: string;
-  startDate: string;
-  endDate: string;
-  status: 'Active' | 'Planned' | 'Completed' | 'On Hold';
-  assignedStaff: number;
-}
+import { useProjects } from '../hooks/useProjects';
+import { Project, ProjectStatus } from '../types/api';
 
 export function ProjectsPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all');
+  const [selectedFilter, setSelectedFilter] = useState<'all' | ProjectStatus>('all');
 
-  // Mock data
-  const mockProjects: Project[] = [
-    {
-      id: '1',
-      name: 'Enterprise Resource Planning Implementation',
-      programCode: 'ERP-2024-001',
-      customer: 'Department of Defense',
-      startDate: '2024-01-15',
-      endDate: '2024-12-31',
-      status: 'Active',
-      assignedStaff: 12
-    },
-    {
-      id: '2',
-      name: 'Cloud Migration Initiative',
-      programCode: 'CLOUD-2024-002',
-      customer: 'Department of Energy',
-      startDate: '2024-03-01',
-      endDate: '2025-02-28',
-      status: 'Active',
-      assignedStaff: 8
-    },
-    {
-      id: '3',
-      name: 'Data Analytics Platform',
-      programCode: 'DATA-2024-003',
-      customer: 'Department of Commerce',
-      startDate: '2024-06-01',
-      endDate: '2024-11-30',
-      status: 'Planned',
-      assignedStaff: 0
+  const { data: projects = [], isLoading, error } = useProjects({
+    search: searchTerm || undefined,
+    status: selectedFilter !== 'all' ? selectedFilter : undefined,
+  });
+
+  const getStatusLabel = (status: ProjectStatus): string => {
+    switch (status) {
+      case ProjectStatus.Draft:
+        return 'Draft';
+      case ProjectStatus.Active:
+        return 'Active';
+      case ProjectStatus.Closed:
+        return 'Closed';
+      default:
+        return 'Unknown';
     }
-  ];
+  };
+
+  const getStatusVariant = (status: ProjectStatus): 'success' | 'warning' | 'default' | 'info' => {
+    switch (status) {
+      case ProjectStatus.Active:
+        return 'success';
+      case ProjectStatus.Draft:
+        return 'info';
+      case ProjectStatus.Closed:
+        return 'default';
+      default:
+        return 'warning';
+    }
+  };
 
   const columns = [
     {
@@ -57,13 +45,14 @@ export function ProjectsPage() {
       render: (project: Project) => (
         <div>
           <div className="font-medium text-gray-900">{project.name}</div>
-          <div className="text-sm text-gray-500">{project.programCode}</div>
+          <div className="text-sm text-gray-500">{project.programCode || '—'}</div>
         </div>
       )
     },
     {
       key: 'customer',
-      header: 'Customer'
+      header: 'Customer',
+      render: (project: Project) => project.customer || '—',
     },
     {
       key: 'dates',
@@ -71,16 +60,10 @@ export function ProjectsPage() {
       render: (project: Project) => (
         <div className="text-sm">
           <div>{new Date(project.startDate).toLocaleDateString()}</div>
-          <div className="text-gray-500">to {new Date(project.endDate).toLocaleDateString()}</div>
+          {project.endDate && (
+            <div className="text-gray-500">to {new Date(project.endDate).toLocaleDateString()}</div>
+          )}
         </div>
-      )
-    },
-    {
-      key: 'assignedStaff',
-      header: 'Staff',
-      align: 'center' as const,
-      render: (project: Project) => (
-        <span className="font-medium">{project.assignedStaff}</span>
       )
     },
     {
@@ -88,25 +71,36 @@ export function ProjectsPage() {
       header: 'Status',
       render: (project: Project) => (
         <StatusBadge
-          status={project.status}
-          variant={
-            project.status === 'Active' ? 'success' :
-            project.status === 'Planned' ? 'info' :
-            project.status === 'Completed' ? 'default' :
-            'warning'
-          }
+          status={getStatusLabel(project.status)}
+          variant={getStatusVariant(project.status)}
         />
       )
     }
   ];
 
-  const filteredProjects = mockProjects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.programCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.customer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = selectedFilter === 'all' || project.status.toLowerCase() === selectedFilter;
-    return matchesSearch && matchesFilter;
-  });
+  const stats = useMemo(() => {
+    const total = projects.length;
+    const active = projects.filter(p => p.status === ProjectStatus.Active).length;
+    const draft = projects.filter(p => p.status === ProjectStatus.Draft).length;
+    const closed = projects.filter(p => p.status === ProjectStatus.Closed).length;
+
+    return { total, active, draft, closed };
+  }, [projects]);
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <Card>
+          <CardBody>
+            <div className="text-center py-12">
+              <div className="text-red-600 text-lg font-semibold mb-2">Error Loading Projects</div>
+              <div className="text-gray-600">{error.message}</div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -121,32 +115,26 @@ export function ProjectsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{mockProjects.length}</div>
+            <div className="text-3xl font-bold text-blue-600">{stats.total}</div>
             <div className="text-sm text-gray-600 mt-1">Total Projects</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">
-              {mockProjects.filter(p => p.status === 'Active').length}
-            </div>
+            <div className="text-3xl font-bold text-green-600">{stats.active}</div>
             <div className="text-sm text-gray-600 mt-1">Active</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">
-              {mockProjects.reduce((sum, p) => sum + p.assignedStaff, 0)}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">Total Staff</div>
+            <div className="text-3xl font-bold text-purple-600">{stats.draft}</div>
+            <div className="text-sm text-gray-600 mt-1">Draft</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600">
-              {mockProjects.filter(p => p.status === 'Planned').length}
-            </div>
-            <div className="text-sm text-gray-600 mt-1">Planned</div>
+            <div className="text-3xl font-bold text-gray-600">{stats.closed}</div>
+            <div className="text-sm text-gray-600 mt-1">Closed</div>
           </div>
         </Card>
       </div>
@@ -170,16 +158,22 @@ export function ProjectsPage() {
                 All
               </Button>
               <Button
-                variant={selectedFilter === 'active' ? 'primary' : 'ghost'}
-                onClick={() => setSelectedFilter('active')}
+                variant={selectedFilter === ProjectStatus.Active ? 'primary' : 'ghost'}
+                onClick={() => setSelectedFilter(ProjectStatus.Active)}
               >
                 Active
               </Button>
               <Button
-                variant={selectedFilter === 'planned' ? 'primary' : 'ghost'}
-                onClick={() => setSelectedFilter('planned')}
+                variant={selectedFilter === ProjectStatus.Draft ? 'primary' : 'ghost'}
+                onClick={() => setSelectedFilter(ProjectStatus.Draft)}
               >
-                Planned
+                Draft
+              </Button>
+              <Button
+                variant={selectedFilter === ProjectStatus.Closed ? 'primary' : 'ghost'}
+                onClick={() => setSelectedFilter(ProjectStatus.Closed)}
+              >
+                Closed
               </Button>
             </div>
             <Button variant="primary">
@@ -193,13 +187,13 @@ export function ProjectsPage() {
       <Card>
         <CardHeader
           title="All Projects"
-          subtitle={`${filteredProjects.length} ${filteredProjects.length === 1 ? 'project' : 'projects'}`}
+          subtitle={`${projects.length} ${projects.length === 1 ? 'project' : 'projects'}`}
         />
         <Table
-          data={filteredProjects}
+          data={projects}
           columns={columns}
           onRowClick={(project) => console.log('Navigate to project:', project.id)}
-          emptyMessage="No projects found"
+          emptyMessage={isLoading ? "Loading projects..." : "No projects found"}
         />
       </Card>
     </div>
