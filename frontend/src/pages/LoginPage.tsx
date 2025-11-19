@@ -12,9 +12,8 @@ interface HealthStatus {
 }
 
 export function LoginPage() {
-  const [email, setEmail] = useState('admin@aleutfederal.com');
-  const [password, setPassword] = useState('admin123');
-  const [selectedTenant, setSelectedTenant] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
@@ -22,13 +21,6 @@ export function LoginPage() {
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
-
-  // Mock tenants - will be replaced with API call
-  const availableTenants = [
-    { id: 'system', name: 'System Administration', code: 'SYSTEM' },
-    { id: '1', name: 'Aleut Federal', code: 'ALEUT' },
-    { id: '2', name: 'Partner Organization', code: 'PARTNER' }
-  ];
 
   // Health check on component mount
   useEffect(() => {
@@ -56,17 +48,12 @@ export function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!selectedTenant) {
-      setError('Please select a tenant');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
       await login(email, password);
-      navigate('/');
+      // After login, redirect to workspace selector
+      navigate('/select-workspace');
     } catch (err) {
       setError('Invalid credentials. Please try again.');
     } finally {
@@ -125,27 +112,6 @@ export function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="tenant" className="block text-sm font-medium text-gray-700 mb-2">
-                Tenant
-              </label>
-              <select
-                id="tenant"
-                required
-                value={selectedTenant}
-                onChange={(e) => setSelectedTenant(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                disabled={isLoading}
-              >
-                <option value="">Select a tenant...</option>
-                {availableTenants.map(tenant => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.name} ({tenant.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
@@ -196,20 +162,14 @@ export function LoginPage() {
             </button>
           </form>
 
-          {/* Default Credentials Helper */}
+          {/* Login Helper */}
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="text-xs font-medium text-blue-900 mb-2">Default Admin Credentials:</div>
+            <div className="text-xs font-medium text-blue-900 mb-2">Test Accounts:</div>
             <div className="text-xs text-blue-700 space-y-1">
-              <div><strong>Email:</strong> admin@aleutfederal.com</div>
-              <div><strong>Password:</strong> admin123</div>
-              <div className="mt-2 pt-2 border-t border-blue-300">
-                <div className="font-medium text-blue-800 mb-1">Tenant Selection:</div>
-                <div className="text-blue-600">
-                  • <strong>System Administration:</strong> Manage all tenants, users, and system settings
-                </div>
-                <div className="text-blue-600">
-                  • <strong>Aleut Federal:</strong> Access tenant-specific resources and projects
-                </div>
+              <div><strong>Regular User:</strong> test@test.com (any password)</div>
+              <div><strong>System Admin:</strong> admin@test.com (any password)</div>
+              <div className="mt-2 pt-2 border-t border-blue-300 text-blue-600">
+                After login, you'll select your workspace from available tenants.
               </div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { api } from '../lib/api-client';
-import { Assignment, AssignmentStatus } from '../types/api';
+import type { Assignment } from '../types/api';
+import { AssignmentStatus } from '../types/api';
 
 export interface GetAssignmentsParams {
   tenantId?: string;

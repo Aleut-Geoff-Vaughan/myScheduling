@@ -1,11 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input } from '../components/ui';
 import { usePeople } from '../hooks/usePeople';
-import { Person, PersonStatus } from '../types/api';
+import type { Person } from '../types/api';
+import { PersonStatus } from '../types/api';
+import { PersonModal } from '../components/PersonModal';
 
 export function PeoplePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | PersonStatus>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPerson, setSelectedPerson] = useState<Person | undefined>();
 
   const { data: people = [], isLoading, error } = usePeople({
     search: searchTerm || undefined,
@@ -175,7 +179,7 @@ export function PeoplePage() {
                 On Leave
               </Button>
             </div>
-            <Button variant="primary">
+            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
               + Add Person
             </Button>
           </div>
@@ -195,7 +199,10 @@ export function PeoplePage() {
         <Table
           data={people}
           columns={columns}
-          onRowClick={(person) => console.log('Navigate to person:', person.id)}
+          onRowClick={(person) => {
+            setSelectedPerson(person);
+            setIsModalOpen(true);
+          }}
           emptyMessage={
             isLoading
               ? 'Loading people...'
@@ -203,6 +210,17 @@ export function PeoplePage() {
           }
         />
       </Card>
+
+      {/* Person Modal */}
+      <PersonModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedPerson(undefined);
+        }}
+        person={selectedPerson}
+        mode={selectedPerson ? 'edit' : 'create'}
+      />
     </div>
   );
 }

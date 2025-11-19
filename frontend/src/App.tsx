@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LoginPage } from './pages/LoginPage';
+import { WorkspaceSelectorPage } from './pages/WorkspaceSelectorPage';
 import { DashboardLayout } from './components/layout/DashboardLayout';
 import { DashboardPage } from './pages/DashboardPage';
 import { PeoplePage } from './pages/PeoplePage';
@@ -20,21 +21,29 @@ const queryClient = new QueryClient({
 });
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, currentWorkspace } = useAuthStore();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+
+  // User is authenticated but hasn't selected a workspace yet
+  if (!currentWorkspace) {
+    return <Navigate to="/select-workspace" replace />;
   }
 
   return <>{children}</>;
 }
 
 function App() {
+  const { isAuthenticated } = useAuthStore();
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/select-workspace" element={<WorkspaceSelectorPage />} />
           <Route
             path="/"
             element={
@@ -51,6 +60,7 @@ function App() {
             <Route path="reports" element={<div className="p-6">Reports Module (Coming Soon)</div>} />
             <Route path="admin" element={<AdminPage />} />
           </Route>
+          <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>

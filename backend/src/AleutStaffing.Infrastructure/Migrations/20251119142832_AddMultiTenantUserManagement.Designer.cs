@@ -3,6 +3,7 @@ using System;
 using AleutStaffing.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace AleutStaffing.Infrastructure.Migrations
 {
     [DbContext(typeof(AleutStaffingDbContext))]
-    partial class AleutStaffingDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251119142832_AddMultiTenantUserManagement")]
+    partial class AddMultiTenantUserManagement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

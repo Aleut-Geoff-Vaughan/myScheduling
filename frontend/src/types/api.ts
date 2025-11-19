@@ -110,7 +110,7 @@ export interface Booking {
 export interface Tenant {
   id: string;
   name: string;
-  code: string;
+  code?: string;
   status: TenantStatus;
   createdAt: string;
   updatedAt: string;

@@ -1,5 +1,6 @@
 import { api } from '../lib/api-client';
-import { Booking, BookingStatus, Space, Office, SpaceType } from '../types/api';
+import type { Booking, Space, Office } from '../types/api';
+import { BookingStatus, SpaceType } from '../types/api';
 
 export interface GetBookingsParams {
   personId?: string;

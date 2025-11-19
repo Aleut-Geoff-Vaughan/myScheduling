@@ -1,8 +1,17 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import { Card, CardHeader, CardBody, Button } from '../components/ui';
+import { Card, CardHeader, CardBody, Button, Modal, Input, TextArea } from '../components/ui';
+import { AssignmentModal } from '../components/AssignmentModal';
+import { BookingModal } from '../components/BookingModal';
 
 export function DashboardPage() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
+  const [showAssignmentModal, setShowAssignmentModal] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const stats = [
     {
@@ -88,6 +97,7 @@ export function DashboardPage() {
               <Button
                 variant="ghost"
                 className="w-full justify-start"
+                onClick={() => setShowAssignmentModal(true)}
                 icon={
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -99,6 +109,7 @@ export function DashboardPage() {
               <Button
                 variant="ghost"
                 className="w-full justify-start"
+                onClick={() => setShowBookingModal(true)}
                 icon={
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -110,6 +121,7 @@ export function DashboardPage() {
               <Button
                 variant="ghost"
                 className="w-full justify-start"
+                onClick={() => setShowResumeModal(true)}
                 icon={
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -165,6 +177,100 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Assignment Modal */}
+      <AssignmentModal
+        isOpen={showAssignmentModal}
+        onClose={() => setShowAssignmentModal(false)}
+        mode="create"
+      />
+
+      {/* Booking Modal */}
+      <BookingModal
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+        mode="create"
+      />
+
+      {/* Resume Upload Modal */}
+      <Modal
+        isOpen={showResumeModal}
+        onClose={() => {
+          setShowResumeModal(false);
+          setResumeFile(null);
+        }}
+        title="Update My Resume"
+        size="lg"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Upload Resume Document
+            </label>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  setResumeFile(e.target.files[0]);
+                }
+              }}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Accepted formats: PDF, DOC, DOCX (Max size: 10MB)
+            </p>
+          </div>
+
+          {resumeFile && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="flex items-center gap-3">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <div>
+                  <div className="font-medium text-gray-900">{resumeFile.name}</div>
+                  <div className="text-sm text-gray-500">{(resumeFile.size / 1024).toFixed(2)} KB</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Notes (Optional)
+            </label>
+            <TextArea
+              placeholder="Add any notes about this resume update..."
+              rows={3}
+            />
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-6">
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setShowResumeModal(false);
+              setResumeFile(null);
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!resumeFile}
+            onClick={() => {
+              // TODO: Implement resume upload to API or blob storage
+              console.log('Upload resume:', resumeFile);
+              setShowResumeModal(false);
+              setResumeFile(null);
+            }}
+          >
+            Upload Resume
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

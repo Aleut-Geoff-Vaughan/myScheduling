@@ -1,11 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input } from '../components/ui';
 import { useAssignments } from '../hooks/useAssignments';
-import { Assignment, AssignmentStatus } from '../types/api';
+import type { Assignment } from '../types/api';
+import { AssignmentStatus } from '../types/api';
+import { AssignmentModal } from '../components/AssignmentModal';
 
 export function StaffingPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedView, setSelectedView] = useState<'assignments' | 'capacity' | 'requests'>('assignments');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | undefined>();
 
   const { data: assignments = [], isLoading, error } = useAssignments();
 
@@ -192,7 +196,7 @@ export function StaffingPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="primary">
+            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
               + New Assignment
             </Button>
           </div>
@@ -209,7 +213,10 @@ export function StaffingPage() {
           <Table
             data={filteredAssignments}
             columns={columns}
-            onRowClick={(assignment) => console.log('View assignment:', assignment.id)}
+            onRowClick={(assignment) => {
+              setSelectedAssignment(assignment);
+              setIsModalOpen(true);
+            }}
             emptyMessage={isLoading ? "Loading assignments..." : "No assignments found"}
           />
         </Card>
@@ -217,31 +224,219 @@ export function StaffingPage() {
 
       {/* Capacity View */}
       {selectedView === 'capacity' && (
-        <Card>
-          <CardHeader title="Capacity Overview" subtitle="Team capacity and utilization" />
-          <CardBody className="text-center py-12 text-gray-500">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            <p className="text-lg font-medium">Capacity View</p>
-            <p className="text-sm mt-2">Visual capacity timeline and allocation charts will appear here</p>
-          </CardBody>
-        </Card>
+        <div className="space-y-6">
+          {/* Capacity Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card padding="sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  {assignments.filter(a => a.status === AssignmentStatus.Active && a.allocation < 80).length}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">Under Allocated</div>
+                <div className="text-xs text-gray-500 mt-1">&lt;80% capacity</div>
+              </div>
+            </Card>
+            <Card padding="sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  {assignments.filter(a => a.status === AssignmentStatus.Active && a.allocation >= 80 && a.allocation <= 100).length}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">Optimally Allocated</div>
+                <div className="text-xs text-gray-500 mt-1">80-100% capacity</div>
+              </div>
+            </Card>
+            <Card padding="sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {assignments.filter(a => a.status === AssignmentStatus.Active && a.allocation > 100).length}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">Over Allocated</div>
+                <div className="text-xs text-gray-500 mt-1">&gt;100% capacity</div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Capacity Timeline */}
+          <Card>
+            <CardHeader
+              title="Capacity Timeline"
+              subtitle="Person utilization over time"
+            />
+            <CardBody>
+              {/* Group assignments by person */}
+              {(() => {
+                // Group active assignments by personId
+                const personMap = new Map<string, Assignment[]>();
+                assignments
+                  .filter(a => a.status === AssignmentStatus.Active)
+                  .forEach(assignment => {
+                    const existing = personMap.get(assignment.personId) || [];
+                    personMap.set(assignment.personId, [...existing, assignment]);
+                  });
+
+                // Convert to array and display
+                const personEntries = Array.from(personMap.entries());
+
+                if (personEntries.length === 0) {
+                  return (
+                    <div className="text-center py-8 text-gray-500">
+                      <p>No active assignments to display</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-6">
+                    {personEntries.slice(0, 10).map(([personId, personAssignments]) => {
+                      const totalAllocation = personAssignments.reduce((sum, a) => sum + a.allocation, 0);
+                      const isOverAllocated = totalAllocation > 100;
+                      const isUnderAllocated = totalAllocation < 80;
+
+                      return (
+                        <div key={personId} className="border-b pb-4 last:border-b-0">
+                          {/* Person Header */}
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <div className="font-medium text-gray-900">
+                                Person {personId.substring(0, 8)}...
+                              </div>
+                              <div className={`text-sm font-semibold ${
+                                isOverAllocated ? 'text-red-600' :
+                                isUnderAllocated ? 'text-green-600' :
+                                'text-blue-600'
+                              }`}>
+                                {totalAllocation}% Total
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {personAssignments.length} active {personAssignments.length === 1 ? 'assignment' : 'assignments'}
+                            </div>
+                          </div>
+
+                          {/* Capacity Bar */}
+                          <div className="mb-3">
+                            <div className="w-full bg-gray-200 rounded-full h-6 relative overflow-hidden">
+                              <div
+                                className={`h-6 rounded-full transition-all ${
+                                  isOverAllocated ? 'bg-red-500' :
+                                  isUnderAllocated ? 'bg-green-500' :
+                                  'bg-blue-500'
+                                }`}
+                                style={{ width: `${Math.min(totalAllocation, 100)}%` }}
+                              >
+                                <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium">
+                                  {totalAllocation}%
+                                </div>
+                              </div>
+                              {totalAllocation > 100 && (
+                                <div
+                                  className="absolute top-0 left-0 h-6 bg-red-600 opacity-50"
+                                  style={{ width: `${totalAllocation - 100}%`, marginLeft: '100%' }}
+                                />
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Assignment Details */}
+                          <div className="space-y-2">
+                            {personAssignments.map((assignment) => (
+                              <div
+                                key={assignment.id}
+                                className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded hover:bg-gray-100 cursor-pointer"
+                                onClick={() => {
+                                  setSelectedAssignment(assignment);
+                                  setIsModalOpen(true);
+                                }}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="font-medium">
+                                    {assignment.allocation}%
+                                  </div>
+                                  <div className="text-gray-600">
+                                    Role: {assignment.projectRoleId.substring(0, 8)}...
+                                  </div>
+                                </div>
+                                <div className="text-gray-500">
+                                  {new Date(assignment.startDate).toLocaleDateString()} - {new Date(assignment.endDate).toLocaleDateString()}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {personEntries.length > 10 && (
+                      <div className="text-center text-sm text-gray-500 py-4">
+                        Showing 10 of {personEntries.length} people with active assignments
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </CardBody>
+          </Card>
+        </div>
       )}
 
       {/* Requests */}
       {selectedView === 'requests' && (
         <Card>
-          <CardHeader title="Staffing Requests" subtitle="Pending approval and assignments" />
-          <CardBody className="text-center py-12 text-gray-500">
-            <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <p className="text-lg font-medium">Staffing Requests</p>
-            <p className="text-sm mt-2">Showing {assignments.filter(a => a.status === AssignmentStatus.PendingApproval).length} pending requests</p>
-          </CardBody>
+          <CardHeader
+            title="Staffing Requests"
+            subtitle={`${assignments.filter(a => a.status === AssignmentStatus.PendingApproval || a.status === AssignmentStatus.Draft).length} pending requests`}
+          />
+          <Table
+            data={assignments.filter(a => a.status === AssignmentStatus.PendingApproval || a.status === AssignmentStatus.Draft)}
+            columns={[
+              ...columns,
+              {
+                key: 'actions',
+                header: 'Actions',
+                render: (assignment: Assignment) => (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Approve assignment:', assignment.id);
+                      }}
+                      disabled={assignment.status !== AssignmentStatus.PendingApproval}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Reject assignment:', assignment.id);
+                      }}
+                      disabled={assignment.status !== AssignmentStatus.PendingApproval}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                )
+              }
+            ]}
+            onRowClick={(assignment) => {
+              setSelectedAssignment(assignment);
+              setIsModalOpen(true);
+            }}
+            emptyMessage={isLoading ? "Loading requests..." : "No pending requests"}
+          />
         </Card>
       )}
+
+      {/* Assignment Modal */}
+      <AssignmentModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedAssignment(undefined);
+        }}
+        assignment={selectedAssignment}
+        mode={selectedAssignment ? 'edit' : 'create'}
+      />
     </div>
   );
 }

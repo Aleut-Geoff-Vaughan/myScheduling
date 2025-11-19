@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { bookingsService, GetBookingsParams, GetSpacesParams } from '../services/bookingsService';
-import { Booking, Space, Office } from '../types/api';
+import { bookingsService } from '../services/bookingsService';
+import type { GetBookingsParams, GetSpacesParams } from '../services/bookingsService';
+import type { Booking, Space, Office } from '../types/api';
 
 export function useBookings(params?: GetBookingsParams) {
   return useQuery<Booking[], Error>({

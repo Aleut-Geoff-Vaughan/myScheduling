@@ -166,8 +166,8 @@ public class TenantsController : ControllerBase
         try
         {
             var users = await _context.Users
-                .Where(u => u.TenantId == id)
-                .Include(u => u.RoleAssignments)
+                .Where(u => u.TenantMemberships.Any(tm => tm.TenantId == id && tm.IsActive))
+                .Include(u => u.TenantMemberships.Where(tm => tm.TenantId == id))
                 .OrderBy(u => u.DisplayName)
                 .ToListAsync();
 

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { assignmentsService, GetAssignmentsParams } from '../services/assignmentsService';
-import { Assignment } from '../types/api';
+import { assignmentsService } from '../services/assignmentsService';
+import type { GetAssignmentsParams } from '../services/assignmentsService';
+import type { Assignment } from '../types/api';
 
 export function useAssignments(params?: GetAssignmentsParams) {
   return useQuery<Assignment[], Error>({

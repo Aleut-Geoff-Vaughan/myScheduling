@@ -12,7 +12,7 @@ interface NavItem {
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
-  const { user, logout, hasRole } = useAuthStore();
+  const { user, currentWorkspace, logout, hasRole } = useAuthStore();
 
   const navigation: NavItem[] = [
     {
@@ -171,16 +171,24 @@ export function DashboardLayout() {
 
           {/* Sidebar Footer - Role Badges */}
           <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200 bg-gray-50">
-            <p className="text-xs font-medium text-gray-500 mb-2">Your Roles</p>
+            <p className="text-xs font-medium text-gray-500 mb-2">
+              {currentWorkspace?.type === 'admin' ? 'Admin Access' : 'Your Roles'}
+            </p>
             <div className="flex flex-wrap gap-1">
-              {user?.roles.map((role) => (
-                <span
-                  key={role}
-                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-primary-100 text-primary-800"
-                >
-                  {role}
+              {currentWorkspace?.type === 'admin' ? (
+                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                  System Admin
                 </span>
-              ))}
+              ) : (
+                currentWorkspace?.roles?.map((role) => (
+                  <span
+                    key={role}
+                    className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-primary-100 text-primary-800"
+                  >
+                    {role}
+                  </span>
+                ))
+              )}
             </div>
           </div>
         </aside>

@@ -1,5 +1,6 @@
 import { api } from '../lib/api-client';
-import { Person, PersonStatus } from '../types/api';
+import type { Person } from '../types/api';
+import { PersonStatus } from '../types/api';
 
 export interface GetPeopleParams {
   tenantId?: string;

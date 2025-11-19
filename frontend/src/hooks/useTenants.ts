@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { tenantsService, usersService } from '../services/tenantsService';
-import { Tenant, User } from '../types/api';
+import type { Tenant, User } from '../types/api';
 
 export function useTenants() {
   return useQuery<Tenant[], Error>({

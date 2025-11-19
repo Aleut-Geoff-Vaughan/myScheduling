@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { projectsService, GetProjectsParams } from '../services/projectsService';
-import { Project } from '../types/api';
+import { projectsService } from '../services/projectsService';
+import type { GetProjectsParams } from '../services/projectsService';
+import type { Project } from '../types/api';
 
 export function useProjects(params?: GetProjectsParams) {
   return useQuery<Project[], Error>({

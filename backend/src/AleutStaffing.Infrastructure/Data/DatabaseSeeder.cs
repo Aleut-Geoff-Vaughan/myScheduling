@@ -82,6 +82,21 @@ public class DatabaseSeeder
                 await _context.SaveChangesAsync();
             }
 
+            // Create test admin user
+            var adminUser = new User
+            {
+                Id = Guid.NewGuid(),
+                Email = "admin@test.com",
+                DisplayName = "Test Admin",
+                EntraObjectId = Guid.NewGuid().ToString(),
+                IsSystemAdmin = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _context.Users.Add(adminUser);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Created test admin user: {Email}", adminUser.Email);
+
             // Create tenants
             var tenants = await CreateTenantsAsync();
             _logger.LogInformation("Created {Count} tenants", tenants.Count);
@@ -90,6 +105,38 @@ public class DatabaseSeeder
             foreach (var tenant in tenants)
             {
                 _logger.LogInformation("Seeding data for tenant: {TenantName}", tenant.Name);
+
+                // Create test user with tenant membership for first tenant
+                if (tenant == tenants.First())
+                {
+                    var testUser = new User
+                    {
+                        Id = Guid.NewGuid(),
+                        Email = "test@test.com",
+                        DisplayName = "Test User",
+                        EntraObjectId = Guid.NewGuid().ToString(),
+                        IsSystemAdmin = false,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Users.Add(testUser);
+                    await _context.SaveChangesAsync();
+
+                    var testMembership = new TenantMembership
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = testUser.Id,
+                        TenantId = tenant.Id,
+                        Roles = new List<AppRole> { AppRole.Employee, AppRole.ProjectManager },
+                        JoinedAt = DateTime.UtcNow,
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.TenantMemberships.Add(testMembership);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Created test user with tenant access: {Email}", testUser.Email);
+                }
 
                 // Create users and people (50 employees per tenant)
                 var people = await CreatePeopleAsync(tenant.Id, 50);
@@ -174,18 +221,32 @@ public class DatabaseSeeder
                 var lastName = _lastNames[_random.Next(_lastNames.Length)];
                 var email = $"{firstName.ToLower()}.{lastName.ToLower()}{batch + i}@example.com";
 
-                // Create user first
+                // Create user first (no longer has TenantId)
                 var user = new User
                 {
                     Id = Guid.NewGuid(),
-                    TenantId = tenantId,
                     Email = email,
                     DisplayName = $"{firstName} {lastName}",
                     EntraObjectId = Guid.NewGuid().ToString(), // Use unique GUID for test data
+                    IsSystemAdmin = false,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
                 users.Add(user);
+
+                // Create tenant membership for this user
+                var membership = new TenantMembership
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    TenantId = tenantId,
+                    Roles = new List<AppRole> { AppRole.Employee },
+                    JoinedAt = DateTime.UtcNow,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.TenantMemberships.Add(membership);
 
                 // Create person
                 var person = new Person

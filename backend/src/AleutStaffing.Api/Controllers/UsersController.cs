@@ -32,7 +32,7 @@ public class UsersController : ControllerBase
 
             if (tenantId.HasValue)
             {
-                query = query.Where(u => u.TenantId == tenantId.Value);
+                query = query.Where(u => u.TenantMemberships.Any(tm => tm.TenantId == tenantId.Value && tm.IsActive));
             }
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -85,9 +85,9 @@ public class UsersController : ControllerBase
     {
         try
         {
-            // Check for duplicate email within tenant
+            // Check for duplicate email (globally unique now)
             var existingUser = await _context.Users
-                .FirstOrDefaultAsync(u => u.TenantId == user.TenantId && u.Email == user.Email);
+                .FirstOrDefaultAsync(u => u.Email == user.Email);
 
             if (existingUser != null)
             {

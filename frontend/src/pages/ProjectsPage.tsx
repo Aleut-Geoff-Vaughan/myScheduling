@@ -1,11 +1,15 @@
 import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input } from '../components/ui';
 import { useProjects } from '../hooks/useProjects';
-import { Project, ProjectStatus } from '../types/api';
+import type { Project } from '../types/api';
+import { ProjectStatus } from '../types/api';
+import { ProjectModal } from '../components/ProjectModal';
 
 export function ProjectsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | ProjectStatus>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | undefined>();
 
   const { data: projects = [], isLoading, error } = useProjects({
     search: searchTerm || undefined,
@@ -176,7 +180,7 @@ export function ProjectsPage() {
                 Closed
               </Button>
             </div>
-            <Button variant="primary">
+            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
               + New Project
             </Button>
           </div>
@@ -192,10 +196,24 @@ export function ProjectsPage() {
         <Table
           data={projects}
           columns={columns}
-          onRowClick={(project) => console.log('Navigate to project:', project.id)}
+          onRowClick={(project) => {
+            setSelectedProject(project);
+            setIsModalOpen(true);
+          }}
           emptyMessage={isLoading ? "Loading projects..." : "No projects found"}
         />
       </Card>
+
+      {/* Project Modal */}
+      <ProjectModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedProject(undefined);
+        }}
+        project={selectedProject}
+        mode={selectedProject ? 'edit' : 'create'}
+      />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { peopleService, GetPeopleParams } from '../services/peopleService';
-import { Person } from '../types/api';
+import { peopleService } from '../services/peopleService';
+import type { GetPeopleParams } from '../services/peopleService';
+import type { Person } from '../types/api';
 
 export function usePeople(params?: GetPeopleParams) {
   return useQuery<Person[], Error>({

@@ -1,5 +1,5 @@
 import { api } from '../lib/api-client';
-import { Tenant, User } from '../types/api';
+import type { Tenant, User } from '../types/api';
 
 export const tenantsService = {
   async getAll(): Promise<Tenant[]> {

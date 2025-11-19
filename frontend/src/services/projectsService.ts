@@ -1,5 +1,6 @@
 import { api } from '../lib/api-client';
-import { Project, ProjectStatus } from '../types/api';
+import type { Project } from '../types/api';
+import { ProjectStatus } from '../types/api';
 
 export interface GetProjectsParams {
   tenantId?: string;

@@ -7,7 +7,8 @@ public class Tenant : BaseEntity
     public string? Configuration { get; set; } // JSON for branding, features, etc.
 
     // Navigation properties
-    public virtual ICollection<User> Users { get; set; } = new List<User>();
+    public virtual ICollection<TenantMembership> TenantMemberships { get; set; } = new List<TenantMembership>();
+    public virtual ICollection<User> Users { get; set; } = new List<User>(); // Deprecated
     public virtual ICollection<Person> People { get; set; } = new List<Person>();
 }
 

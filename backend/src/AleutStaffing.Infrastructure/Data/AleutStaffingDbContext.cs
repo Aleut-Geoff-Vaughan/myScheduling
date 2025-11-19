@@ -13,7 +13,8 @@ public class AleutStaffingDbContext : DbContext
     // Identity & Tenancy
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
-    public DbSet<RoleAssignment> RoleAssignments => Set<RoleAssignment>();
+    public DbSet<TenantMembership> TenantMemberships => Set<TenantMembership>();
+    public DbSet<RoleAssignment> RoleAssignments => Set<RoleAssignment>(); // Deprecated
 
     // People & Resume
     public DbSet<Person> People => Set<Person>();
@@ -70,16 +71,42 @@ public class AleutStaffingDbContext : DbContext
             entity.Property(e => e.EntraObjectId).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
             entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.IsSystemAdmin).IsRequired().HasDefaultValue(false);
 
-            entity.HasIndex(e => new { e.TenantId, e.EntraObjectId }).IsUnique();
-            entity.HasIndex(e => e.Email);
+            entity.HasIndex(e => e.EntraObjectId).IsUnique();
+            entity.HasIndex(e => e.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<TenantMembership>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            // Store roles as JSON array
+            entity.Property(e => e.Roles)
+                .HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions)null!),
+                    v => System.Text.Json.JsonSerializer.Deserialize<List<AppRole>>(v, (System.Text.Json.JsonSerializerOptions)null!) ?? new List<AppRole>())
+                .HasColumnType("jsonb");
+
+            entity.Property(e => e.JoinedAt).IsRequired();
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+
+            // Unique constraint: user can only have one membership per tenant
+            entity.HasIndex(e => new { e.UserId, e.TenantId }).IsUnique();
+            entity.HasIndex(e => new { e.TenantId, e.IsActive });
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.TenantMemberships)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasOne(e => e.Tenant)
-                .WithMany(t => t.Users)
+                .WithMany(t => t.TenantMemberships)
                 .HasForeignKey(e => e.TenantId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // Deprecated - keeping for backward compatibility during migration
         modelBuilder.Entity<RoleAssignment>(entity =>
         {
             entity.HasKey(e => e.Id);
