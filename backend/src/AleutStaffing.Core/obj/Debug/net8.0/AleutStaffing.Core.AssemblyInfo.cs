@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("AleutStaffing.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+58708530f5ec687147aac18e78f9af874c344d9f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2b24b3a94bb22868a625b76cc0aa4dc888408a30")]
 [assembly: System.Reflection.AssemblyProductAttribute("AleutStaffing.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("AleutStaffing.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

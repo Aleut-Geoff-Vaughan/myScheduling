@@ -10,6 +10,7 @@ public class Person : TenantEntity
     public string? LaborCategory { get; set; }
     public string? CostCenter { get; set; }
     public string? JobTitle { get; set; }
+    public PersonType Type { get; set; } = PersonType.Employee;
     public PersonStatus Status { get; set; }
 
     // Navigation properties
@@ -19,6 +20,14 @@ public class Person : TenantEntity
     public virtual ICollection<PersonCertification> PersonCertifications { get; set; } = new List<PersonCertification>();
     public virtual ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+}
+
+public enum PersonType
+{
+    Employee,      // Requires User account
+    Contractor,    // Optional User account
+    Vendor,        // Optional User account
+    External       // Optional User account
 }
 
 public enum PersonStatus
