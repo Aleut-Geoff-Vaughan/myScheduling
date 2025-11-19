@@ -1,0 +1,232 @@
+{
+  "format": 1,
+  "restore": {
+    "/workspaces/myScheduling/backend/src/AleutStaffing.Api/AleutStaffing.Api.csproj": {}
+  },
+  "projects": {
+    "/workspaces/myScheduling/backend/src/AleutStaffing.Api/AleutStaffing.Api.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/workspaces/myScheduling/backend/src/AleutStaffing.Api/AleutStaffing.Api.csproj",
+        "projectName": "AleutStaffing.Api",
+        "projectPath": "/workspaces/myScheduling/backend/src/AleutStaffing.Api/AleutStaffing.Api.csproj",
+        "packagesPath": "/home/codespace/.nuget/packages/",
+        "outputPath": "/workspaces/myScheduling/backend/src/AleutStaffing.Api/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/codespace/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/workspaces/myScheduling/backend/src/AleutStaffing.Core/AleutStaffing.Core.csproj": {
+                "projectPath": "/workspaces/myScheduling/backend/src/AleutStaffing.Core/AleutStaffing.Core.csproj"
+              },
+              "/workspaces/myScheduling/backend/src/AleutStaffing.Infrastructure/AleutStaffing.Infrastructure.csproj": {
+                "projectPath": "/workspaces/myScheduling/backend/src/AleutStaffing.Infrastructure/AleutStaffing.Infrastructure.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Azure.Extensions.AspNetCore.Configuration.Secrets": {
+              "target": "Package",
+              "version": "[1.4.0, )"
+            },
+            "Azure.Identity": {
+              "target": "Package",
+              "version": "[1.17.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.11, )"
+            },
+            "Microsoft.EntityFrameworkCore.Sqlite": {
+              "target": "Package",
+              "version": "[8.0.11, )"
+            },
+            "Swashbuckle.AspNetCore": {
+              "target": "Package",
+              "version": "[6.6.2, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.AspNetCore.App": {
+              "privateAssets": "none"
+            },
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.415/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/workspaces/myScheduling/backend/src/AleutStaffing.Core/AleutStaffing.Core.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/workspaces/myScheduling/backend/src/AleutStaffing.Core/AleutStaffing.Core.csproj",
+        "projectName": "AleutStaffing.Core",
+        "projectPath": "/workspaces/myScheduling/backend/src/AleutStaffing.Core/AleutStaffing.Core.csproj",
+        "packagesPath": "/home/codespace/.nuget/packages/",
+        "outputPath": "/workspaces/myScheduling/backend/src/AleutStaffing.Core/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/codespace/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.415/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "/workspaces/myScheduling/backend/src/AleutStaffing.Infrastructure/AleutStaffing.Infrastructure.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "/workspaces/myScheduling/backend/src/AleutStaffing.Infrastructure/AleutStaffing.Infrastructure.csproj",
+        "projectName": "AleutStaffing.Infrastructure",
+        "projectPath": "/workspaces/myScheduling/backend/src/AleutStaffing.Infrastructure/AleutStaffing.Infrastructure.csproj",
+        "packagesPath": "/home/codespace/.nuget/packages/",
+        "outputPath": "/workspaces/myScheduling/backend/src/AleutStaffing.Infrastructure/obj/",
+        "projectStyle": "PackageReference",
+        "configFilePaths": [
+          "/home/codespace/.nuget/NuGet/NuGet.Config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {
+              "/workspaces/myScheduling/backend/src/AleutStaffing.Core/AleutStaffing.Core.csproj": {
+                "projectPath": "/workspaces/myScheduling/backend/src/AleutStaffing.Core/AleutStaffing.Core.csproj"
+              }
+            }
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        }
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "dependencies": {
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.11, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[8.0.11, )"
+            }
+          },
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/8.0.415/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    }
+  }
+}

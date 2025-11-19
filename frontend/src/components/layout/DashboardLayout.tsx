@@ -1,0 +1,184 @@
+import { useState } from 'react';
+import { Outlet, Link, useLocation } from 'react-router-dom';
+import { useAuthStore, AppRole } from '../../stores/authStore';
+
+interface NavItem {
+  name: string;
+  path: string;
+  icon: React.ReactNode;
+  roles?: AppRole[];
+}
+
+export function DashboardLayout() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const location = useLocation();
+  const { user, logout, hasRole } = useAuthStore();
+
+  const navigation: NavItem[] = [
+    {
+      name: 'Dashboard',
+      path: '/',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      ),
+    },
+    {
+      name: 'People',
+      path: '/people',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Projects',
+      path: '/projects',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      ),
+      roles: [AppRole.ProjectManager, AppRole.ResourceManager, AppRole.SysAdmin],
+    },
+    {
+      name: 'Staffing',
+      path: '/staffing',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Hoteling',
+      path: '/hoteling',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Reports',
+      path: '/reports',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        </svg>
+      ),
+      roles: [AppRole.ProjectManager, AppRole.ResourceManager, AppRole.Executive, AppRole.SysAdmin],
+    },
+  ];
+
+  const filteredNavigation = navigation.filter(
+    (item) => !item.roles || item.roles.some((role) => hasRole(role))
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <nav className="bg-white shadow-sm border-b border-gray-200">
+        <div className="px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex items-center">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg p-2"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              <div className="ml-4 flex items-center">
+                <div className="flex items-center justify-center w-10 h-10 bg-primary-600 rounded-lg">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                </div>
+                <span className="ml-3 text-xl font-semibold text-gray-900">Aleut Staffing</span>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-4">
+              {/* User Menu */}
+              <div className="flex items-center space-x-3">
+                <div className="text-right">
+                  <p className="text-sm font-medium text-gray-900">{user?.displayName}</p>
+                  <p className="text-xs text-gray-500">{user?.email}</p>
+                </div>
+                <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+                  <span className="text-primary-700 font-semibold">
+                    {user?.displayName.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <button
+                  onClick={logout}
+                  className="text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-lg p-2"
+                  title="Logout"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="flex">
+        {/* Sidebar */}
+        <aside
+          className={`${
+            sidebarOpen ? 'w-64' : 'w-0'
+          } bg-white shadow-sm transition-all duration-300 overflow-hidden`}
+        >
+          <nav className="mt-5 px-3 space-y-1">
+            {filteredNavigation.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`${
+                    isActive
+                      ? 'bg-primary-50 text-primary-700'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  } group flex items-center px-3 py-3 text-sm font-medium rounded-lg transition`}
+                >
+                  <span className={isActive ? 'text-primary-600' : 'text-gray-400 group-hover:text-gray-600'}>
+                    {item.icon}
+                  </span>
+                  <span className="ml-3">{item.name}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Sidebar Footer - Role Badges */}
+          <div className="absolute bottom-0 w-64 p-4 border-t border-gray-200 bg-gray-50">
+            <p className="text-xs font-medium text-gray-500 mb-2">Your Roles</p>
+            <div className="flex flex-wrap gap-1">
+              {user?.roles.map((role) => (
+                <span
+                  key={role}
+                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-primary-100 text-primary-800"
+                >
+                  {role}
+                </span>
+              ))}
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 min-h-screen">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
