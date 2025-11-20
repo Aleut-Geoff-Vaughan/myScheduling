@@ -1,3 +1,5 @@
+using MyScheduling.Core.Enums;
+
 namespace MyScheduling.Core.Entities;
 
 public class ResumeProfile : BaseEntity
@@ -5,9 +7,23 @@ public class ResumeProfile : BaseEntity
     public Guid PersonId { get; set; }
     public string? TemplateConfig { get; set; } // JSON for template metadata
 
+    // NEW FIELDS - Enhanced functionality
+    public ResumeStatus Status { get; set; } = ResumeStatus.Draft;
+    public Guid? CurrentVersionId { get; set; }
+    public DateTime? LastReviewedAt { get; set; }
+    public Guid? LastReviewedByUserId { get; set; }
+    public bool IsPublic { get; set; } = false;
+    public string? LinkedInProfileUrl { get; set; }
+    public DateTime? LinkedInLastSyncedAt { get; set; }
+
     // Navigation properties
     public virtual Person Person { get; set; } = null!;
     public virtual ICollection<ResumeSection> Sections { get; set; } = new List<ResumeSection>();
+    public virtual ICollection<ResumeVersion> Versions { get; set; } = new List<ResumeVersion>();
+    public virtual ICollection<ResumeDocument> Documents { get; set; } = new List<ResumeDocument>();
+    public virtual ICollection<ResumeApproval> Approvals { get; set; } = new List<ResumeApproval>();
+    public virtual ResumeVersion? CurrentVersion { get; set; }
+    public virtual User? LastReviewedBy { get; set; }
 }
 
 public class ResumeSection : BaseEntity

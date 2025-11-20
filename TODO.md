@@ -56,30 +56,57 @@ npm run dev -- --host 0.0.0.0
   - Show WBS elements under each project
   - Quick add WBS button from project view
 
-### 2. Master Data Management - Facilities (NEXT PRIORITY) 🔵
-**Next Phase**: Phase 2 - Enhanced Facilities Management
+### 2. Master Data Management - Facilities ✅ **COMPLETED 2025-11-20**
+**Phase 2 Complete**: Enhanced Facilities Management
 
 See [MASTER-DATA-DESIGN.md](MASTER-DATA-DESIGN.md) for full architecture details.
 
-This will add role-based facilities management, space ownership, approval workflows, and maintenance tracking to the existing hoteling system.
+This phase adds role-based facilities management, space ownership, approval workflows, and maintenance tracking to the existing hoteling system.
 
-#### Planned Tasks
-- [ ] Update Space and Office entities
-  - Add manager/owner fields
-  - Add approval requirements
-  - Enhanced space types
-  - Equipment and features
-- [ ] Create FacilityPermission entity
-  - Role-based access control
+#### Backend Complete ✅
+- [x] Enhanced Space entity with 8 new fields ✅
+  - ManagerUserId (space manager/owner)
+  - RequiresApproval (booking approval flag)
+  - IsActive (active/inactive status)
+  - Equipment (JSON array)
+  - Features (JSON array)
+  - DailyCost (financial tracking)
+  - MaxBookingDays (booking duration limit)
+  - BookingRules (JSON rules)
+- [x] Enhanced SpaceType enum with 11 types ✅
+  - Desk, HotDesk, Office, Cubicle, Room, ConferenceRoom, HuddleRoom, PhoneBooth, TrainingRoom, BreakRoom, ParkingSpot
+- [x] Created FacilityPermission entity ✅
+  - Role-based and user-specific access control
   - Office/space level permissions
-  - Access levels (View, Book, Manage, Configure, FullAdmin)
-- [ ] Create SpaceMaintenanceLog entity
-  - Maintenance tracking
-  - Issue reporting
-  - Cost tracking
-- [ ] Database migration for facilities
-- [ ] Create FacilitiesController
-- [ ] Build facilities management UI
+  - 5 access levels (View, Book, Manage, Configure, FullAdmin)
+- [x] Created SpaceMaintenanceLog entity ✅
+  - Maintenance tracking with 6 types (Routine, Repair, Inspection, Cleaning, EquipmentIssue, SafetyConcern)
+  - Issue reporting with 5 statuses (Reported, Scheduled, InProgress, Completed, Cancelled)
+  - Cost tracking and assignment management
+- [x] Database migration applied successfully ✅
+- [x] Created FacilitiesController with 15 comprehensive endpoints ✅
+  - GET/POST/PUT/DELETE for spaces
+  - GET/POST/DELETE for permissions
+  - GET user permissions with effective access level calculation
+  - GET/POST/PUT for maintenance logs
+- [x] Created TypeScript interfaces and enums ✅
+- [x] Created facilitiesService.ts with all API client methods ✅
+
+#### Frontend Complete ✅
+- [x] Built FacilitiesPage component with 3 tabs ✅
+  - Spaces tab with filtering and statistics
+  - Permissions tab with access level management
+  - Maintenance tab with status tracking
+- [x] Added Facilities route to App.tsx ✅
+- [x] Added Facilities navigation link to DashboardLayout ✅
+- [x] Role-based access (OfficeManager, ResourceManager, TenantAdmin, SystemAdmin) ✅
+
+#### Optional Enhancements (Future)
+- [ ] Build SpaceDetailModal for CRUD operations
+- [ ] Build PermissionModal for granting/revoking permissions
+- [ ] Build MaintenanceModal for reporting maintenance
+- [ ] Add space equipment and features editor
+- [ ] Add booking rules configuration UI
 
 ### 3. Dynamic Validation Framework (FUTURE) 🔵
 **Future Phase**: Phase 3 - Flexible, Non-Hardcoded Validation System
@@ -203,6 +230,142 @@ This will allow administrators to define validation rules dynamically using JSON
 ---
 
 ## Completed Tasks
+
+### Home Page Rework - Work Location Calendar ✅ **COMPLETED 2025-11-20**
+
+**Full end-to-end implementation of work location planning with 2-week calendar view**
+
+#### Architecture & Design
+- [x] Designed 5 work location types with conditional fields
+  - Remote: Simple work from home
+  - Remote Plus: Work from home with location details (city, state, country)
+  - Client Site: Working at a client location (categorized separately from offices)
+  - Office (No Reservation): In office without booking a specific desk/room
+  - Office (With Reservation): In office with a desk/room booking
+- [x] Designed 2-week M-F calendar interface
+  - Current week + next week (10 weekdays total)
+  - Color-coded visual calendar with icons
+  - Click-to-edit functionality
+  - Statistics showing location type distribution
+
+#### Backend Implementation
+- [x] Created WorkLocationPreference entity
+  - PersonId and WorkDate (DateOnly)
+  - WorkLocationType enum (5 types)
+  - Optional OfficeId (for client sites and office selection)
+  - Optional BookingId (for office with reservation)
+  - Remote Plus fields (RemoteLocation, City, State, Country)
+  - Notes field for additional context
+  - Unique constraint: one preference per person per day
+- [x] Enhanced Office entity
+  - Added IsClientSite boolean flag to differentiate client sites from company offices
+- [x] Created WorkLocationType enum
+  - Remote, RemotePlus, ClientSite, OfficeNoReservation, OfficeWithReservation
+- [x] Database migration applied successfully
+  - Created work_location_preferences table
+  - Added indexes for efficient querying
+  - Added is_client_site column to offices table
+- [x] Built WorkLocationPreferencesController with comprehensive API
+  - GET /api/worklocationpreferences - List with filtering (person, date range, type)
+  - GET /api/worklocationpreferences/{id} - Get single preference
+  - POST /api/worklocationpreferences - Create preference
+  - PUT /api/worklocationpreferences/{id} - Update preference
+  - DELETE /api/worklocationpreferences/{id} - Delete preference
+  - POST /api/worklocationpreferences/bulk - Bulk create/update preferences
+  - Type-specific validation (e.g., OfficeId required for ClientSite)
+
+#### Frontend Implementation
+- [x] Created WorkLocationPreference types in api.ts
+  - WorkLocationType enum
+  - WorkLocationPreference interface
+  - Updated Office interface with isClientSite field
+- [x] Created workLocationService.ts with full API client
+  - All CRUD operations
+  - Bulk operations support
+  - Query parameter handling
+- [x] Created useWorkLocation.ts hooks
+  - useWorkLocationPreferences - Fetch preferences with filtering
+  - useWorkLocationPreference - Fetch single preference
+  - useCreateWorkLocationPreference - Create mutation
+  - useUpdateWorkLocationPreference - Update mutation
+  - useDeleteWorkLocationPreference - Delete mutation
+  - useCreateBulkWorkLocationPreferences - Bulk mutation
+- [x] Built WeekCalendarView component
+  - Beautiful 2-week M-F calendar grid
+  - Color-coded days by location type (blue, purple, orange, green, emerald)
+  - Icons for each location type (🏠 🏢 🏛️)
+  - Current day highlighting with ring indicator
+  - Past day dimming for visual clarity
+  - Location details display (office name, remote location)
+  - "Not set" indicator for unplanned days
+  - Interactive legend explaining colors and icons
+  - Split view: Current Week and Next Week sections
+- [x] Built WorkLocationSelector modal component
+  - Comprehensive location type selection dropdown
+  - Conditional form fields based on selected type:
+    - Remote Plus: Location description, city, state, country inputs
+    - Client Site: Dropdown of client site offices
+    - Office No Reservation: Dropdown of company offices
+    - Office With Reservation: Integration point for booking modal
+  - Notes field for additional context
+  - Form validation with type-specific required fields
+  - Create/Update mode support
+  - Date display in modal title
+  - Save/Cancel actions with loading states
+- [x] Completely reworked DashboardPage
+  - Removed old stats and quick actions
+  - Added new statistics cards:
+    - Remote Days count
+    - Office Days count
+    - Client Sites count
+    - Not Set days count
+  - Prominent 2-week calendar as main feature
+  - Click any day to open WorkLocationSelector
+  - Quick action cards for navigation (Desk Reservations, Assignments, Projects)
+  - Clean, focused layout prioritizing work location planning
+  - Integrated with current user's person record
+  - Real-time data loading and updates
+
+#### Files Created/Modified
+**Created:**
+- `/workspaces/myScheduling/backend/src/MyScheduling.Api/Controllers/WorkLocationPreferencesController.cs`
+- `/workspaces/myScheduling/backend/src/MyScheduling.Infrastructure/Migrations/*_AddWorkLocationPreferences.cs`
+- `/workspaces/myScheduling/frontend/src/services/workLocationService.ts`
+- `/workspaces/myScheduling/frontend/src/hooks/useWorkLocation.ts`
+- `/workspaces/myScheduling/frontend/src/components/WeekCalendarView.tsx`
+- `/workspaces/myScheduling/frontend/src/components/WorkLocationSelector.tsx`
+
+**Modified:**
+- `/workspaces/myScheduling/backend/src/MyScheduling.Core/Entities/Hoteling.cs` (added WorkLocationPreference entity, WorkLocationType enum, enhanced Office)
+- `/workspaces/myScheduling/backend/src/MyScheduling.Core/Entities/Person.cs` (added WorkLocationPreferences navigation property)
+- `/workspaces/myScheduling/backend/src/MyScheduling.Infrastructure/Data/MySchedulingDbContext.cs` (added WorkLocationPreferences DbSet and configuration)
+- `/workspaces/myScheduling/frontend/src/types/api.ts` (added work location types and updated Office interface)
+- `/workspaces/myScheduling/frontend/src/pages/DashboardPage.tsx` (complete rewrite with calendar view)
+
+#### Key Features Implemented
+- ✅ Two-week Monday-Friday calendar view (10 workdays)
+- ✅ Five distinct location types with proper categorization
+- ✅ Visual, color-coded calendar interface
+- ✅ Easy day selection and location setting
+- ✅ Conditional form fields based on location type
+- ✅ Client site support (separate from company offices)
+- ✅ Office selection without desk reservation
+- ✅ Integration point for desk/room reservations
+- ✅ Real-time data synchronization
+- ✅ Statistics showing location distribution
+- ✅ Past day handling with visual dimming
+- ✅ Current day highlighting
+- ✅ Full CRUD operations via API
+- ✅ Bulk operations support for efficiency
+- ✅ Type-specific validation
+
+#### Integration Points for Future
+- Office with Reservation flow needs connection to BookingModal
+- Email notifications for location changes
+- Calendar export functionality
+- Team location visibility
+
+---
 
 ### Master Data Management - WBS Complete ✅ **COMPLETED 2025-11-20**
 
@@ -480,7 +643,91 @@ This will allow administrators to define validation rules dynamically using JSON
 - All core CRUD operations functional for People, Projects, WBS, Assignments, and Bookings
 - Capacity view, floor plan, dashboard actions, and admin forms all implemented
 
-### Recent Work Session (2025-11-20) - WBS Phase 1 Complete ✅
+### Recent Work Session (2025-11-20) - Facilities Phase 2 COMPLETE ✅
+**Achievement**: Complete backend implementation for Enhanced Facilities Management
+
+#### Backend Implementation
+- Enhanced Space entity with 8 new management fields
+  - Manager/owner assignment (ManagerUserId)
+  - Approval workflows (RequiresApproval)
+  - Active status management (IsActive)
+  - Equipment and features tracking (JSON arrays)
+  - Financial tracking (DailyCost)
+  - Booking constraints (MaxBookingDays, BookingRules)
+- Enhanced SpaceType enum with 11 comprehensive types
+  - Added: HotDesk, Office, Cubicle, Room, HuddleRoom, PhoneBooth, TrainingRoom, BreakRoom, ParkingSpot
+- Created FacilityPermission entity for granular access control
+  - User-specific and role-based permissions
+  - Office and space-level access control
+  - 5 access levels (View, Book, Manage, Configure, FullAdmin)
+- Created SpaceMaintenanceLog entity for facility operations
+  - 6 maintenance types (Routine, Repair, Inspection, Cleaning, EquipmentIssue, SafetyConcern)
+  - 5 statuses (Reported, Scheduled, InProgress, Completed, Cancelled)
+  - User assignment and cost tracking
+- Database migration successfully applied
+- Created FacilitiesController with 15 RESTful endpoints
+  - Full CRUD for spaces (5 endpoints)
+  - Permission management (4 endpoints)
+  - Maintenance tracking (4 endpoints)
+  - User permission lookup with effective access calculation (2 endpoints)
+
+#### Frontend Implementation
+- Updated TypeScript interfaces in api.ts
+  - Enhanced Space interface with all new fields
+  - Enhanced SpaceType enum with all types
+  - Added FacilityAccessLevel enum (5 levels)
+  - Added MaintenanceType enum (6 types)
+  - Added MaintenanceStatus enum (5 statuses)
+  - Added FacilityPermission interface
+  - Added SpaceMaintenanceLog interface
+- Created facilitiesService.ts with comprehensive API client
+  - Space management methods (5 methods)
+  - Permission management methods (4 methods)
+  - Maintenance tracking methods (4 methods)
+  - Type-safe query parameter handling
+
+#### Files Created/Modified
+**Created:**
+- `/workspaces/myScheduling/backend/src/MyScheduling.Api/Controllers/FacilitiesController.cs`
+- `/workspaces/myScheduling/backend/src/MyScheduling.Infrastructure/Migrations/*_EnhanceFacilitiesManagement.cs`
+- `/workspaces/myScheduling/frontend/src/services/facilitiesService.ts`
+
+**Modified:**
+- `/workspaces/myScheduling/backend/src/MyScheduling.Core/Entities/Hoteling.cs` (enhanced Space, added FacilityPermission, SpaceMaintenanceLog)
+- `/workspaces/myScheduling/backend/src/MyScheduling.Infrastructure/Data/MySchedulingDbContext.cs` (added DbSets and configurations)
+- `/workspaces/myScheduling/frontend/src/types/api.ts` (added facilities types and enums)
+
+#### Frontend Implementation (Continued)
+- Created FacilitiesPage component with tabbed interface
+  - Spaces tab: Comprehensive filtering (office, type, status), statistics cards, data table
+  - Permissions tab: Permission listing with user/role and access level display
+  - Maintenance tab: Maintenance log tracking with type and status display
+- Added routing and navigation
+  - Added FacilitiesPage import and route to App.tsx
+  - Added Facilities navigation link to DashboardLayout
+  - Role-based access control (OfficeManager, ResourceManager, TenantAdmin, SystemAdmin)
+- Integrated with existing services
+  - Uses facilitiesService for all API calls
+  - Uses bookingsService for office dropdown data
+  - Full React Query integration with query keys and caching
+
+#### Files Created/Modified (Frontend)
+**Created:**
+- `/workspaces/myScheduling/frontend/src/pages/FacilitiesPage.tsx`
+
+**Modified:**
+- `/workspaces/myScheduling/frontend/src/App.tsx` (added FacilitiesPage route)
+- `/workspaces/myScheduling/frontend/src/components/layout/DashboardLayout.tsx` (added Facilities navigation)
+
+#### Next Steps (Optional Enhancements)
+- Build modal components for Create/Edit operations
+- Add inline editing capabilities
+- Enhance with real-time updates
+- Add export/import functionality
+
+---
+
+### Previous Work Session (2025-11-20) - WBS Phase 1 Complete ✅
 **Achievement**: Complete end-to-end WBS Master Data Management implementation
 
 #### Architecture & Design

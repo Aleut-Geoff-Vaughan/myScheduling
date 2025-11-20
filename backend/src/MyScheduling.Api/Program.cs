@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Core.Interfaces;
+using MyScheduling.Infrastructure.Services;
 using AspNetCoreRateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -87,6 +89,10 @@ builder.Services.AddControllers()
 
 // Register Database Seeder
 builder.Services.AddScoped<DatabaseSeeder>();
+
+// Register Validation Services
+builder.Services.AddScoped<IValidationEngine, ValidationEngine>();
+builder.Services.AddScoped<IRuleInterpreter, RuleInterpreter>();
 
 // Health Checks
 builder.Services.AddHealthChecks()

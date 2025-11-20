@@ -22,10 +22,20 @@ public class MySchedulingDbContext : DbContext
     public DbSet<ResumeProfile> ResumeProfiles => Set<ResumeProfile>();
     public DbSet<ResumeSection> ResumeSections => Set<ResumeSection>();
     public DbSet<ResumeEntry> ResumeEntries => Set<ResumeEntry>();
+    public DbSet<ResumeVersion> ResumeVersions => Set<ResumeVersion>();
+    public DbSet<ResumeDocument> ResumeDocuments => Set<ResumeDocument>();
+    public DbSet<ResumeApproval> ResumeApprovals => Set<ResumeApproval>();
+    public DbSet<ResumeTemplate> ResumeTemplates => Set<ResumeTemplate>();
+    public DbSet<LinkedInImport> LinkedInImports => Set<LinkedInImport>();
     public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<PersonSkill> PersonSkills => Set<PersonSkill>();
     public DbSet<Certification> Certifications => Set<Certification>();
     public DbSet<PersonCertification> PersonCertifications => Set<PersonCertification>();
+
+    // File Storage
+    public DbSet<StoredFile> StoredFiles => Set<StoredFile>();
+    public DbSet<FileAccessLog> FileAccessLogs => Set<FileAccessLog>();
+    public DbSet<SharePointConfiguration> SharePointConfigurations => Set<SharePointConfiguration>();
 
     // Projects & WBS
     public DbSet<Project> Projects => Set<Project>();
@@ -41,6 +51,12 @@ public class MySchedulingDbContext : DbContext
     public DbSet<Space> Spaces => Set<Space>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<CheckInEvent> CheckInEvents => Set<CheckInEvent>();
+    public DbSet<FacilityPermission> FacilityPermissions => Set<FacilityPermission>();
+    public DbSet<SpaceMaintenanceLog> SpaceMaintenanceLogs => Set<SpaceMaintenanceLog>();
+    public DbSet<WorkLocationPreference> WorkLocationPreferences => Set<WorkLocationPreference>();
+
+    // Validation
+    public DbSet<ValidationRule> ValidationRules => Set<ValidationRule>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,9 +65,12 @@ public class MySchedulingDbContext : DbContext
         // Configure entity relationships and constraints
         ConfigureIdentity(modelBuilder);
         ConfigurePeople(modelBuilder);
+        ConfigureResume(modelBuilder);
+        ConfigureFileStorage(modelBuilder);
         ConfigureProjects(modelBuilder);
         ConfigureStaffing(modelBuilder);
         ConfigureHoteling(modelBuilder);
+        ConfigureValidation(modelBuilder);
 
         // Apply naming conventions for PostgreSQL (snake_case)
         ApplyPostgreSqlNaming(modelBuilder);
@@ -292,11 +311,17 @@ public class MySchedulingDbContext : DbContext
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
 
             entity.HasIndex(e => new { e.TenantId, e.OfficeId, e.Type });
+            entity.HasIndex(e => new { e.ManagerUserId, e.IsActive });
 
             entity.HasOne(e => e.Office)
                 .WithMany(o => o.Spaces)
                 .HasForeignKey(e => e.OfficeId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Manager)
+                .WithMany()
+                .HasForeignKey(e => e.ManagerUserId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Booking>(entity =>
@@ -329,6 +354,322 @@ public class MySchedulingDbContext : DbContext
                 .WithMany(b => b.CheckInEvents)
                 .HasForeignKey(e => e.BookingId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<FacilityPermission>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => new { e.OfficeId, e.SpaceId, e.UserId });
+            entity.HasIndex(e => new { e.Role, e.AccessLevel });
+
+            entity.HasOne(e => e.Office)
+                .WithMany()
+                .HasForeignKey(e => e.OfficeId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Space)
+                .WithMany(s => s.Permissions)
+                .HasForeignKey(e => e.SpaceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SpaceMaintenanceLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(1000);
+
+            entity.HasIndex(e => new { e.SpaceId, e.Status });
+            entity.HasIndex(e => new { e.ScheduledDate, e.Status });
+
+            entity.HasOne(e => e.Space)
+                .WithMany(s => s.MaintenanceLogs)
+                .HasForeignKey(e => e.SpaceId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ReportedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ReportedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.AssignedTo)
+                .WithMany()
+                .HasForeignKey(e => e.AssignedToUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<WorkLocationPreference>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RemoteLocation).HasMaxLength(200);
+            entity.Property(e => e.City).HasMaxLength(100);
+            entity.Property(e => e.State).HasMaxLength(100);
+            entity.Property(e => e.Country).HasMaxLength(100);
+            entity.Property(e => e.Notes).HasMaxLength(500);
+
+            // One preference per person per day
+            entity.HasIndex(e => new { e.TenantId, e.PersonId, e.WorkDate }).IsUnique();
+            entity.HasIndex(e => new { e.WorkDate, e.LocationType });
+
+            entity.HasOne(e => e.Person)
+                .WithMany(p => p.WorkLocationPreferences)
+                .HasForeignKey(e => e.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Office)
+                .WithMany()
+                .HasForeignKey(e => e.OfficeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Booking)
+                .WithMany()
+                .HasForeignKey(e => e.BookingId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
+    private void ConfigureResume(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ResumeProfile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status).IsRequired().HasDefaultValue(MyScheduling.Core.Enums.ResumeStatus.Draft);
+            entity.Property(e => e.IsPublic).IsRequired().HasDefaultValue(false);
+
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.PersonId).IsUnique();
+
+            entity.HasOne(e => e.CurrentVersion)
+                .WithMany()
+                .HasForeignKey(e => e.CurrentVersionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.LastReviewedBy)
+                .WithMany()
+                .HasForeignKey(e => e.LastReviewedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ResumeVersion>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.VersionName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.VersionNumber).IsRequired();
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+
+            entity.HasIndex(e => new { e.ResumeProfileId, e.VersionNumber });
+            entity.HasIndex(e => new { e.ResumeProfileId, e.IsActive });
+
+            entity.HasOne(e => e.ResumeProfile)
+                .WithMany(r => r.Versions)
+                .HasForeignKey(e => e.ResumeProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ResumeDocument>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.DocumentType).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.GeneratedAt).IsRequired();
+
+            entity.HasIndex(e => new { e.ResumeProfileId, e.GeneratedAt });
+            entity.HasIndex(e => e.StoredFileId);
+
+            entity.HasOne(e => e.ResumeProfile)
+                .WithMany(r => r.Documents)
+                .HasForeignKey(e => e.ResumeProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ResumeVersion)
+                .WithMany(v => v.GeneratedDocuments)
+                .HasForeignKey(e => e.ResumeVersionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.StoredFile)
+                .WithMany()
+                .HasForeignKey(e => e.StoredFileId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.GeneratedBy)
+                .WithMany()
+                .HasForeignKey(e => e.GeneratedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ResumeApproval>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.RequestedAt).IsRequired();
+            entity.Property(e => e.Status).IsRequired().HasDefaultValue(MyScheduling.Core.Enums.ApprovalStatus.Pending);
+
+            entity.HasIndex(e => new { e.Status, e.RequestedAt });
+            entity.HasIndex(e => new { e.ResumeProfileId, e.Status });
+            entity.HasIndex(e => e.ReviewedByUserId);
+
+            entity.HasOne(e => e.ResumeProfile)
+                .WithMany(r => r.Approvals)
+                .HasForeignKey(e => e.ResumeProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ResumeVersion)
+                .WithMany()
+                .HasForeignKey(e => e.ResumeVersionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.RequestedBy)
+                .WithMany()
+                .HasForeignKey(e => e.RequestedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ReviewedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ReviewedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ResumeTemplate>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.Type).IsRequired();
+            entity.Property(e => e.IsDefault).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+
+            entity.HasIndex(e => new { e.TenantId, e.Type, e.IsActive });
+            entity.HasIndex(e => new { e.TenantId, e.IsDefault });
+
+            entity.HasOne(e => e.StoredFile)
+                .WithMany()
+                .HasForeignKey(e => e.StoredFileId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<LinkedInImport>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.LinkedInProfileUrl).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.ImportedAt).IsRequired();
+            entity.Property(e => e.Status).IsRequired();
+
+            entity.HasIndex(e => new { e.PersonId, e.ImportedAt });
+            entity.HasIndex(e => new { e.ResumeProfileId, e.Status });
+
+            entity.HasOne(e => e.Person)
+                .WithMany()
+                .HasForeignKey(e => e.PersonId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ResumeProfile)
+                .WithMany()
+                .HasForeignKey(e => e.ResumeProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ImportedBy)
+                .WithMany()
+                .HasForeignKey(e => e.ImportedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private void ConfigureFileStorage(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<StoredFile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.OriginalFileName).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.ContentType).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.FileSizeBytes).IsRequired();
+            entity.Property(e => e.FileHash).IsRequired().HasMaxLength(64); // SHA256
+            entity.Property(e => e.StorageProvider).IsRequired();
+            entity.Property(e => e.StorageProviderId).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.StoragePath).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.EntityType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.EntityId).IsRequired();
+            entity.Property(e => e.AccessLevel).IsRequired().HasDefaultValue(MyScheduling.Core.Enums.FileAccessLevel.Private);
+            entity.Property(e => e.IsDeleted).IsRequired().HasDefaultValue(false);
+            entity.Property(e => e.Version).IsRequired().HasDefaultValue(1);
+
+            entity.HasIndex(e => new { e.TenantId, e.EntityType, e.EntityId });
+            entity.HasIndex(e => new { e.TenantId, e.IsDeleted });
+            entity.HasIndex(e => e.FileHash); // For deduplication
+            entity.HasIndex(e => new { e.StorageProvider, e.StorageProviderId });
+
+            entity.HasOne(e => e.DeletedBy)
+                .WithMany()
+                .HasForeignKey(e => e.DeletedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.PreviousVersion)
+                .WithMany()
+                .HasForeignKey(e => e.PreviousVersionId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<FileAccessLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.AccessedAt).IsRequired();
+            entity.Property(e => e.AccessType).IsRequired();
+
+            entity.HasIndex(e => new { e.StoredFileId, e.AccessedAt });
+            entity.HasIndex(e => new { e.AccessedByUserId, e.AccessedAt });
+            entity.HasIndex(e => new { e.AccessType, e.AccessedAt });
+
+            entity.HasOne(e => e.StoredFile)
+                .WithMany(f => f.AccessLogs)
+                .HasForeignKey(e => e.StoredFileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.AccessedBy)
+                .WithMany()
+                .HasForeignKey(e => e.AccessedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SharePointConfiguration>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.SiteUrl).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.SiteId).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.DriveId).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.DriveName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ClientId).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ClientSecret).IsRequired().HasMaxLength(500); // Encrypted
+            entity.Property(e => e.TenantIdMicrosoft).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+
+            entity.HasIndex(e => new { e.TenantId, e.IsActive }).IsUnique();
+        });
+    }
+
+    private void ConfigureValidation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<ValidationRule>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EntityType).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.FieldName).HasMaxLength(100);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.RuleExpression).IsRequired();
+            entity.Property(e => e.ErrorMessage).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.ExecutionOrder).IsRequired().HasDefaultValue(0);
+
+            entity.HasIndex(e => new { e.TenantId, e.EntityType, e.FieldName, e.IsActive });
+            entity.HasIndex(e => new { e.EntityType, e.ExecutionOrder });
+            entity.HasIndex(e => new { e.TenantId, e.IsActive });
         });
     }
 

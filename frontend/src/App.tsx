@@ -12,6 +12,9 @@ import { ProjectsPage } from './pages/ProjectsPage';
 import { WbsPage } from './pages/WbsPage';
 import { StaffingPage } from './pages/StaffingPage';
 import { HotelingPage } from './pages/HotelingPage';
+import { FacilitiesPage } from './pages/FacilitiesPage';
+import { ResumesPage } from './pages/ResumesPage';
+import { ResumeDetailPage } from './pages/ResumeDetailPage';
 import { AdminPage } from './pages/AdminPage';
 import { useAuthStore } from './stores/authStore';
 
@@ -104,6 +107,9 @@ function App() {
               <Route path="wbs" element={<WbsPage />} />
               <Route path="staffing" element={<StaffingPage />} />
               <Route path="hoteling" element={<HotelingPage />} />
+              <Route path="facilities" element={<FacilitiesPage />} />
+              <Route path="resumes" element={<ResumesPage />} />
+              <Route path="resumes/:id" element={<ResumeDetailPage />} />
               <Route path="reports" element={<div className="p-6">Reports Module (Coming Soon)</div>} />
             </Route>
             <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />

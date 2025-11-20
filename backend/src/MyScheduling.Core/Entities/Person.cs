@@ -20,6 +20,7 @@ public class Person : TenantEntity
     public virtual ICollection<PersonCertification> PersonCertifications { get; set; } = new List<PersonCertification>();
     public virtual ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
     public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
+    public virtual ICollection<WorkLocationPreference> WorkLocationPreferences { get; set; } = new List<WorkLocationPreference>();
 }
 
 public enum PersonType
