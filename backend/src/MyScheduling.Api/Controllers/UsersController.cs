@@ -2,20 +2,27 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
+using MyScheduling.Core.Interfaces;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController : ControllerBase
+public class UsersController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<UsersController> _logger;
+    private readonly IAuthorizationService _authService;
 
-    public UsersController(MySchedulingDbContext context, ILogger<UsersController> logger)
+    public UsersController(
+        MySchedulingDbContext context,
+        ILogger<UsersController> logger,
+        IAuthorizationService authService)
     {
         _context = context;
         _logger = logger;
+        _authService = authService;
     }
 
     // GET: api/users
@@ -23,6 +30,7 @@ public class UsersController : ControllerBase
     // Use ?tenantId=xxx for tenant-specific filtering (Tenant Admin view)
     // No tenantId parameter returns all users across all tenants (System Admin view)
     [HttpGet]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<User>>> GetUsers(
         [FromQuery] Guid? tenantId = null,
         [FromQuery] string? search = null,
@@ -66,6 +74,7 @@ public class UsersController : ControllerBase
 
     // GET: api/users/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Read)]
     public async Task<ActionResult<User>> GetUser(Guid id)
     {
         try
@@ -91,6 +100,7 @@ public class UsersController : ControllerBase
 
     // POST: api/users
     [HttpPost]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Create)]
     public async Task<ActionResult<User>> CreateUser(User user)
     {
         try
@@ -127,6 +137,7 @@ public class UsersController : ControllerBase
 
     // PUT: api/users/{id}
     [HttpPut("{id}")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Update)]
     public async Task<IActionResult> UpdateUser(Guid id, User user)
     {
         if (id != user.Id)
@@ -160,8 +171,9 @@ public class UsersController : ControllerBase
         }
     }
 
-    // DELETE: api/users/{id}
+    // DELETE: api/users/{id} (Hard Delete with Archive - Platform Admin Only)
     [HttpDelete("{id}")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.HardDelete)]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
         try
@@ -172,8 +184,27 @@ public class UsersController : ControllerBase
                 return NotFound($"User with ID {id} not found");
             }
 
+            // Create archive record before deletion
+            var archive = new DataArchive
+            {
+                Id = Guid.NewGuid(),
+                TenantId = null, // Users are cross-tenant
+                EntityType = "User",
+                EntityId = user.Id,
+                EntitySnapshot = System.Text.Json.JsonSerializer.Serialize(user),
+                ArchivedAt = DateTime.UtcNow,
+                ArchivedByUserId = GetCurrentUserId(),
+                Status = DataArchiveStatus.PermanentlyDeleted,
+                PermanentlyDeletedAt = DateTime.UtcNow,
+                PermanentlyDeletedByUserId = GetCurrentUserId(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.DataArchives.Add(archive);
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
+
+            _logger.LogWarning("User {UserId} HARD DELETED by user {DeletedBy}", id, GetCurrentUserId());
 
             return NoContent();
         }
@@ -186,6 +217,7 @@ public class UsersController : ControllerBase
 
     // POST: api/users/{id}/roles
     [HttpPost("{id}/roles")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Update)]
     public async Task<IActionResult> AssignRole(Guid id, [FromBody] RoleAssignment roleAssignment)
     {
         try
@@ -218,6 +250,7 @@ public class UsersController : ControllerBase
 
     // DELETE: api/users/{id}/roles/{roleAssignmentId}
     [HttpDelete("{id}/roles/{roleAssignmentId}")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Update)]
     public async Task<IActionResult> RemoveRole(Guid id, Guid roleAssignmentId)
     {
         try
@@ -248,6 +281,7 @@ public class UsersController : ControllerBase
 
     // POST: api/users/{id}/deactivate
     [HttpPost("{id}/deactivate")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Update)]
     public async Task<IActionResult> DeactivateUser(Guid id, [FromBody] DeactivateUserRequest? request = null)
     {
         try
@@ -300,6 +334,7 @@ public class UsersController : ControllerBase
 
     // POST: api/users/{id}/reactivate
     [HttpPost("{id}/reactivate")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Update)]
     public async Task<IActionResult> ReactivateUser(Guid id)
     {
         try
@@ -339,6 +374,7 @@ public class UsersController : ControllerBase
     // GET: api/users/me
     // Get current user's profile
     [HttpGet("me")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Read)]
     public async Task<ActionResult<UserProfileDto>> GetMyProfile()
     {
         try
@@ -384,6 +420,7 @@ public class UsersController : ControllerBase
     // PUT: api/users/me
     // Update current user's profile
     [HttpPut("me")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Update)]
     public async Task<ActionResult<UserProfileDto>> UpdateMyProfile([FromBody] UpdateUserProfileDto request)
     {
         try
@@ -438,6 +475,7 @@ public class UsersController : ControllerBase
     // POST: api/users/me/change-password
     // Change current user's password
     [HttpPost("me/change-password")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Update)]
     public async Task<IActionResult> ChangeMyPassword([FromBody] ChangePasswordDto request)
     {
         try
@@ -479,6 +517,7 @@ public class UsersController : ControllerBase
     // POST: api/users/me/profile-photo
     // Upload profile photo
     [HttpPost("me/profile-photo")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Update)]
     public async Task<ActionResult<ProfilePhotoResponseDto>> UploadProfilePhoto([FromForm] IFormFile file)
     {
         try
@@ -536,6 +575,7 @@ public class UsersController : ControllerBase
     // DELETE: api/users/me/profile-photo
     // Delete profile photo
     [HttpDelete("me/profile-photo")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Update)]
     public async Task<IActionResult> DeleteProfilePhoto()
     {
         try

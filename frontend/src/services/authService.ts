@@ -12,6 +12,8 @@ export interface TenantAccessInfo {
 }
 
 export interface LoginResponse {
+  token: string;
+  expiresAt: string;
   userId: string;
   email: string;
   displayName: string;

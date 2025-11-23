@@ -2,24 +2,32 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
+using MyScheduling.Core.Interfaces;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TenantsController : ControllerBase
+public class TenantsController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<TenantsController> _logger;
+    private readonly IAuthorizationService _authService;
 
-    public TenantsController(MySchedulingDbContext context, ILogger<TenantsController> logger)
+    public TenantsController(
+        MySchedulingDbContext context,
+        ILogger<TenantsController> logger,
+        IAuthorizationService authService)
     {
         _context = context;
         _logger = logger;
+        _authService = authService;
     }
 
     // GET: api/tenants
     [HttpGet]
+    [RequiresPermission(Resource = "Tenant", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<Tenant>>> GetTenants(
         [FromQuery] TenantStatus? status = null)
     {
@@ -50,6 +58,7 @@ public class TenantsController : ControllerBase
 
     // GET: api/tenants/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "Tenant", Action = PermissionAction.Read)]
     public async Task<ActionResult<Tenant>> GetTenant(Guid id)
     {
         try
@@ -75,6 +84,7 @@ public class TenantsController : ControllerBase
 
     // POST: api/tenants
     [HttpPost]
+    [RequiresPermission(Resource = "Tenant", Action = PermissionAction.Create)]
     public async Task<ActionResult<Tenant>> CreateTenant(Tenant tenant)
     {
         try
@@ -102,6 +112,7 @@ public class TenantsController : ControllerBase
 
     // PUT: api/tenants/{id}
     [HttpPut("{id}")]
+    [RequiresPermission(Resource = "Tenant", Action = PermissionAction.Update)]
     public async Task<IActionResult> UpdateTenant(Guid id, Tenant tenant)
     {
         if (id != tenant.Id)
@@ -135,8 +146,9 @@ public class TenantsController : ControllerBase
         }
     }
 
-    // DELETE: api/tenants/{id}
+    // DELETE: api/tenants/{id} (Hard Delete with Archive - Platform Admin Only)
     [HttpDelete("{id}")]
+    [RequiresPermission(Resource = "Tenant", Action = PermissionAction.HardDelete)]
     public async Task<IActionResult> DeleteTenant(Guid id)
     {
         try
@@ -147,8 +159,27 @@ public class TenantsController : ControllerBase
                 return NotFound($"Tenant with ID {id} not found");
             }
 
+            // Create archive record before deletion
+            var archive = new DataArchive
+            {
+                Id = Guid.NewGuid(),
+                TenantId = tenant.Id,
+                EntityType = "Tenant",
+                EntityId = tenant.Id,
+                EntitySnapshot = System.Text.Json.JsonSerializer.Serialize(tenant),
+                ArchivedAt = DateTime.UtcNow,
+                ArchivedByUserId = GetCurrentUserId(),
+                Status = DataArchiveStatus.PermanentlyDeleted,
+                PermanentlyDeletedAt = DateTime.UtcNow,
+                PermanentlyDeletedByUserId = GetCurrentUserId(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.DataArchives.Add(archive);
             _context.Tenants.Remove(tenant);
             await _context.SaveChangesAsync();
+
+            _logger.LogWarning("Tenant {TenantId} HARD DELETED by user {DeletedBy}", id, GetCurrentUserId());
 
             return NoContent();
         }
@@ -161,6 +192,7 @@ public class TenantsController : ControllerBase
 
     // GET: api/tenants/{id}/users
     [HttpGet("{id}/users")]
+    [RequiresPermission(Resource = "User", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<User>>> GetTenantUsers(Guid id)
     {
         try

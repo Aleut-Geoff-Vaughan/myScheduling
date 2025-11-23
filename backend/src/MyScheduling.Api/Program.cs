@@ -3,6 +3,9 @@ using MyScheduling.Infrastructure.Data;
 using MyScheduling.Core.Interfaces;
 using MyScheduling.Infrastructure.Services;
 using AspNetCoreRateLimit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +17,34 @@ builder.Services.AddDbContext<MySchedulingDbContext>(options =>
         builder.Configuration.GetConnectionString("DefaultConnection"),
         npgsqlOptions => npgsqlOptions.MigrationsAssembly("MyScheduling.Infrastructure")
     ));
+
+// JWT Authentication
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "MyScheduling-Super-Secret-Key-For-Development-Only-Change-In-Production-2024";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "MyScheduling";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "MyScheduling";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.SaveToken = true;
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ClockSkew = TimeSpan.Zero // Remove default 5 minute clock skew
+    };
+});
 
 // CORS - Environment-specific configuration
 if (builder.Environment.IsDevelopment())
@@ -50,6 +81,9 @@ else
 // In-Memory Caching
 builder.Services.AddMemoryCache();
 builder.Services.AddResponseCaching();
+
+// Authorization Service
+builder.Services.AddScoped<IAuthorizationService, AuthorizationService>();
 
 // Rate Limiting
 builder.Services.Configure<IpRateLimitOptions>(options =>
@@ -118,12 +152,17 @@ if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+    var context = scope.ServiceProvider.GetRequiredService<MySchedulingDbContext>();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
     try
     {
         await seeder.SeedAsync();
         logger.LogInformation("Database seeding completed successfully");
+
+        // Seed role permission templates
+        await MyScheduling.Infrastructure.Data.Seeds.PermissionSeeder.SeedRolePermissionTemplatesAsync(context, logger);
+        logger.LogInformation("Permission templates seeding completed successfully");
     }
     catch (Exception ex)
     {
@@ -144,6 +183,7 @@ app.UseCors();
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

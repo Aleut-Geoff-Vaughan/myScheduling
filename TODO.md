@@ -20,7 +20,84 @@ npm run dev -- --host 0.0.0.0
 
 ## 🎯 Active Development Priorities
 
-### 1. Resume Management System 🟡 IN PROGRESS
+### 1. Zero-Trust Authorization Framework 🟡 IN PROGRESS - 36% COMPLETE
+**Current Status**: 8 of 22 controllers secured (36% complete)
+**Documents**:
+- [AUTHORIZATION_FRAMEWORK_PLAN.md](./AUTHORIZATION_FRAMEWORK_PLAN.md) - Complete design
+- [AUTHORIZATION_UPDATES.md](./AUTHORIZATION_UPDATES.md) - Implementation progress
+
+#### Overview
+Comprehensive zero-trust authorization implementing explicit permissions, granular access control, soft-delete, and audit logging.
+
+#### Completed ✅
+- [x] Add soft delete fields to BaseEntity (IsDeleted, DeletedAt, DeletedByUserId, DeletionReason)
+- [x] Create Permission, RolePermissionTemplate entities
+- [x] Create AuthorizationAuditLog entity
+- [x] Create TenantDropdownConfiguration entity
+- [x] Create DataArchive entity for hard delete tracking
+- [x] Add migration script (20251123125416_AddAuthorizationFramework)
+- [x] Implement IAuthorizationService interface
+- [x] Create AuthorizationService with memory caching
+- [x] Create RequiresPermissionAttribute filter
+- [x] Add global query filter for soft deletes
+- [x] Seed default permissions for all 12 roles
+- [x] Configure 100+ role-permission templates
+- [x] Secure 8 high-priority controllers
+
+#### Controllers Secured (8/22) ✅
+1. ✅ PeopleController - Full CRUD + soft/hard delete + restore
+2. ✅ ProjectsController - Full CRUD + soft/hard delete + restore
+3. ✅ AssignmentsController - Full CRUD + approve + soft/hard delete + restore
+4. ✅ BookingsController - Full CRUD + check-in + soft/hard delete + restore
+5. ✅ UsersController - Full CRUD + profile + deactivate/reactivate
+6. ✅ TenantsController - Full CRUD + hard delete (no soft delete)
+7. ✅ ResumesController - Full CRUD + versions + sections + soft/hard delete + restore
+8. ✅ DashboardController - Read operations
+
+#### Immediate Next Steps (High Priority)
+1. [ ] **WbsController** - Replace manual VerifyUserAccess with [RequiresPermission]
+2. [ ] **WorkLocationPreferencesController** - Replace manual auth with [RequiresPermission]
+3. [ ] **FacilitiesController** - Add authorization + soft delete
+4. [ ] **UserInvitationsController** - Add authorization
+5. [ ] **TenantMembershipsController** - Add authorization
+6. [ ] **ResumeApprovalsController** - Add authorization
+7. [ ] **ResumeTemplatesController** - Add authorization
+
+#### Medium Priority (8 controllers remaining)
+- [ ] TeamCalendarController
+- [ ] WorkLocationTemplatesController
+- [ ] HolidaysController
+- [ ] DelegationOfAuthorityController
+- [ ] ValidationController
+- [ ] AuthController (review - authentication vs authorization)
+- [ ] WeatherForecastController (remove - demo only)
+
+#### Testing & Validation (Phase 4)
+- [ ] Unit tests for AuthorizationService
+- [ ] Integration tests for authorization flow
+- [ ] Cross-tenant isolation tests
+- [ ] End-to-end authorization testing
+- [ ] Performance testing (permission check < 50ms)
+
+#### Future Enhancements
+- [ ] Configurable dropdowns UI (18 enums to make tenant-specific)
+- [ ] Permission delegation capability
+- [ ] Time-based permissions (start/end dates)
+- [ ] Permission approval workflows
+
+#### Priority Dropdowns to Make Configurable (High Priority First)
+1. PersonType (Employee, Contractor, Vendor, External)
+2. PersonStatus (Active, Terminated, LOA, Inactive)
+3. WbsType (Billable, NonBillable, B&P, Overhead, G&A)
+4. SpaceType (Desk, HotDesk, Office, Conference Room, etc.)
+5. WorkLocationType (Remote, Remote Plus, Client Site, Office, PTO)
+6. HolidayType (Federal, Company, Religious, Cultural, Regional)
+7. MaintenanceType (Routine, Repair, Inspection, Cleaning, Equipment, Safety)
+8. ResumeTemplateType (Federal, Commercial, Executive, Technical, Academic)
+
+---
+
+### 2. Resume Management System 🟡 IN PROGRESS
 **Current Focus**: Testing and polish for resume creation/editing workflow
 
 #### Completed ✅
@@ -46,7 +123,7 @@ npm run dev -- --host 0.0.0.0
 
 ---
 
-### 2. Work Location Templates System 🟡 IN PROGRESS
+### 3. Work Location Templates System 🟡 IN PROGRESS
 **Current Focus**: Template application and calendar refresh issues
 
 #### Completed ✅
@@ -156,13 +233,47 @@ npm run dev -- --host 0.0.0.0
 
 ---
 
+## 🔴 CRITICAL SECURITY ISSUES - MUST FIX BEFORE PRODUCTION
+
+**⚠️ DO NOT DEPLOY TO PRODUCTION UNTIL THESE ARE RESOLVED ⚠️**
+
+### 1. No Password Hashing (CRITICAL)
+**Location**: `backend/src/MyScheduling.Api/Controllers/AuthController.cs:38`
+**Status**: ❌ Currently accepts ANY password for ANY user
+**Impact**: Complete authentication bypass - any user can log in as anyone
+**Fix**: Implement BCrypt password hashing
+**Effort**: 2-3 days
+**Priority**: 🔴 **IMMEDIATE**
+
+### 2. Header-Based Authentication (CRITICAL)
+**Location**: Multiple controllers using `X-User-Id` header
+**Status**: ❌ Client can set any user ID to impersonate users
+**Impact**: User impersonation, privilege escalation to admin
+**Fix**: Implement JWT token-based authentication with signature verification
+**Effort**: 3-4 days
+**Priority**: 🔴 **IMMEDIATE**
+
+### 3. Missing Authorization on 64% of Controllers
+**Status**: ❌ 14 of 22 controllers lack `[RequiresPermission]` attributes
+**Impact**: Inconsistent access control, potential unauthorized access
+**Fix**: Apply authorization to all remaining controllers
+**Effort**: 2-3 weeks (1 day per controller)
+**Priority**: 🟡 **HIGH**
+
+**📋 See [CODE_REVIEW_2025-11-23.md](./CODE_REVIEW_2025-11-23.md) for complete security analysis**
+
+---
+
 ## 🐛 Known Issues & Technical Debt
 
 ### High Priority
 - [ ] Template application calendar refresh (testing in progress)
 - [ ] Resume workflow end-to-end testing
-- [ ] Password hashing implementation (currently accepts any password)
-- [ ] JWT token-based authentication
+- [x] ~~Password hashing implementation~~ - **MOVED TO CRITICAL SECURITY ISSUES ABOVE**
+- [x] ~~JWT token-based authentication~~ - **MOVED TO CRITICAL SECURITY ISSUES ABOVE**
+- [ ] User context injection (CreatedByUserId, UpdatedByUserId)
+- [ ] Email notification system (user invitations incomplete)
+- [ ] File storage implementation (profile photos non-functional)
 
 ### Medium Priority
 - [ ] N+1 query optimization
@@ -179,6 +290,105 @@ npm run dev -- --host 0.0.0.0
 ---
 
 ## 📝 Recent Work Sessions
+
+### Session 2025-11-23 (Afternoon) - Code Review & Documentation Update ✅
+**Achievement**: Comprehensive code review and documentation update
+
+#### Completed
+- [x] Fixed AdminPage navigation bug - Added useEffect to watch viewOverride prop
+- [x] Fixed frontend type error - Changed BookingStatusType to BookingStatus
+- [x] Completed DashboardController authorization - 8th controller secured
+- [x] Fixed authorization bug - Replaced ForbidResult with proper 403 response
+- [x] Comprehensive code review of entire application
+  - Reviewed all 22 controllers for authorization status
+  - Analyzed frontend pages for integration issues
+  - Identified critical security vulnerabilities
+  - Catalogued all TODO items and technical debt
+  - Assessed testing gaps and code quality issues
+- [x] Updated all documentation
+  - Updated AUTHORIZATION_UPDATES.md with today's progress
+  - Updated TODO.md with security issues and code review findings
+  - Created comprehensive CODE_REVIEW_2025-11-23.md (12,000+ words)
+
+#### Key Findings from Code Review
+**Security**:
+- 🔴 CRITICAL: No password hashing implemented
+- 🔴 CRITICAL: Header-based auth allows user impersonation
+- 🟡 HIGH: 64% of controllers lack authorization (14/22)
+
+**Testing**:
+- ❌ ZERO unit or integration tests exist
+- Need xUnit backend tests + Vitest frontend tests
+- Estimated 3-4 weeks for comprehensive coverage
+
+**Code Quality**:
+- GetCurrentUserId() duplicated in 8+ controllers
+- Manual VerifyUserAccess in 2 controllers (needs conversion)
+- 18 files contain console.log statements
+- N+1 query potential in complex includes
+
+**Outstanding TODOs**:
+- 11 high-priority TODOs identified
+- User context injection needed
+- Email notifications incomplete
+- File storage not implemented
+- Frontend auth context missing
+
+#### Files Modified
+- `/workspaces/myScheduling/frontend/src/pages/AdminPage.tsx` - Fixed navigation
+- `/workspaces/myScheduling/frontend/src/pages/HotelingPage.tsx` - Fixed type import
+- `/workspaces/myScheduling/backend/src/MyScheduling.Api/Controllers/DashboardController.cs` - Added authorization
+- `/workspaces/myScheduling/backend/src/MyScheduling.Api/Attributes/RequiresPermissionAttribute.cs` - Fixed 403 response
+
+#### Files Created
+- `/workspaces/myScheduling/CODE_REVIEW_2025-11-23.md` - Comprehensive review report
+
+#### Files Updated
+- `/workspaces/myScheduling/TODO.md` - Added critical security section, updated status
+- `/workspaces/myScheduling/AUTHORIZATION_UPDATES.md` - Added today's progress
+
+---
+
+### Session 2025-11-23 (Late Morning) - Authorization Framework Planning ✅
+**Achievement**: Comprehensive zero-trust authorization framework designed
+
+#### Completed
+- [x] Analyzed current authorization implementation
+  - Reviewed existing AppRole enum and TenantMembership structure
+  - Identified gaps: no object-level permissions, inconsistent checks, hard deletes
+  - Catalogued 14+ entities requiring authorization
+
+- [x] Designed zero-trust permission model
+  - Permission entity with resource/action/scope
+  - RolePermissionTemplate for default role mappings
+  - Platform Admin (all tenants) vs Tenant Admin (single tenant)
+  - Soft delete with IsDeleted flag on BaseEntity
+
+- [x] Identified 18 enums for tenant-configurable dropdowns
+  - High priority: PersonType, PersonStatus, WbsType, SpaceType, WorkLocationType
+  - Medium priority: MaintenanceType, HolidayType, BookingStatus
+  - Low priority: Status/approval workflow enums
+
+- [x] Created comprehensive implementation plan
+  - 4-week roadmap with detailed phases
+  - Week 1: Foundation (database, service, seed data)
+  - Week 2: Core authorization (controllers, soft delete, audit)
+  - Week 3: Dropdown configuration (API, migration, frontend)
+  - Week 4: Testing & polish
+
+- [x] Documented security architecture
+  - Permission resolution order (SystemAdmin → TenantAdmin → Explicit → Role → Deny)
+  - Caching strategy for performance
+  - Audit logging for all authorization decisions
+  - Migration strategy with backward compatibility
+
+#### Files Created
+- `AUTHORIZATION_FRAMEWORK_PLAN.md` - 25+ page comprehensive design document
+
+#### Updated
+- `TODO.md` - Added authorization framework as #1 priority with immediate next steps
+
+---
 
 ### Session 2025-11-23 (Morning) - Fresh Start & Documentation Cleanup ✅
 **Goal**: Clean slate for productive day ahead
@@ -285,6 +495,8 @@ npm run dev -- --host 0.0.0.0
 
 ---
 
-Last Updated: 2025-11-23
-Status: Active Development
+Last Updated: 2025-11-23 (Afternoon - Code Review Complete)
+Status: Active Development - 36% Authorization Complete, Critical Security Issues Identified
 Version: 1.0.0-beta
+
+**📋 See [CODE_REVIEW_2025-11-23.md](./CODE_REVIEW_2025-11-23.md) for comprehensive analysis**

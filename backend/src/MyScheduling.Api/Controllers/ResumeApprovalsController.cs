@@ -3,12 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Core.Enums;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/resume-approvals")]
-public class ResumeApprovalsController : ControllerBase
+public class ResumeApprovalsController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<ResumeApprovalsController> _logger;
@@ -21,6 +22,7 @@ public class ResumeApprovalsController : ControllerBase
 
     // GET: api/resume-approvals
     [HttpGet]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<ResumeApproval>>> GetApprovals(
         [FromQuery] ApprovalStatus? status = null,
         [FromQuery] Guid? reviewerId = null)
@@ -62,6 +64,7 @@ public class ResumeApprovalsController : ControllerBase
 
     // GET: api/resume-approvals/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Read)]
     public async Task<ActionResult<ResumeApproval>> GetApproval(Guid id)
     {
         try
@@ -90,6 +93,7 @@ public class ResumeApprovalsController : ControllerBase
 
     // POST: api/resume-approvals
     [HttpPost]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Create)]
     public async Task<ActionResult<ResumeApproval>> RequestApproval([FromBody] CreateApprovalRequest request)
     {
         try
@@ -158,6 +162,7 @@ public class ResumeApprovalsController : ControllerBase
 
     // PUT: api/resume-approvals/{id}/approve
     [HttpPut("{id}/approve")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Approve)]
     public async Task<ActionResult> ApproveResume(Guid id, [FromBody] ApproveResumeRequest request)
     {
         try
@@ -203,6 +208,7 @@ public class ResumeApprovalsController : ControllerBase
 
     // PUT: api/resume-approvals/{id}/reject
     [HttpPut("{id}/reject")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Approve)]
     public async Task<ActionResult> RejectResume(Guid id, [FromBody] RejectResumeRequest request)
     {
         try
@@ -251,6 +257,7 @@ public class ResumeApprovalsController : ControllerBase
 
     // PUT: api/resume-approvals/{id}/request-changes
     [HttpPut("{id}/request-changes")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Approve)]
     public async Task<ActionResult> RequestChanges(Guid id, [FromBody] RequestChangesRequest request)
     {
         try
@@ -299,6 +306,7 @@ public class ResumeApprovalsController : ControllerBase
 
     // GET: api/resume-approvals/pending
     [HttpGet("pending")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<ResumeApproval>>> GetPendingApprovals([FromQuery] Guid? tenantId = null)
     {
         try
@@ -330,10 +338,13 @@ public class ResumeApprovalsController : ControllerBase
 
     // GET: api/resume-approvals/my-requests
     [HttpGet("my-requests")]
-    public async Task<ActionResult<IEnumerable<ResumeApproval>>> GetMyRequests([FromQuery] Guid userId)
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Read)]
+    public async Task<ActionResult<IEnumerable<ResumeApproval>>> GetMyRequests()
     {
         try
         {
+            var userId = GetCurrentUserId();
+
             var approvals = await _context.ResumeApprovals
                 .Include(a => a.ResumeProfile)
                     .ThenInclude(r => r.Person)
@@ -346,13 +357,14 @@ public class ResumeApprovalsController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving approval requests for user {UserId}", userId);
+            _logger.LogError(ex, "Error retrieving approval requests for user {UserId}", GetCurrentUserId());
             return StatusCode(500, "An error occurred while retrieving approval requests");
         }
     }
 
     // DELETE: api/resume-approvals/{id}
     [HttpDelete("{id}")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Delete)]
     public async Task<ActionResult> CancelApproval(Guid id)
     {
         try

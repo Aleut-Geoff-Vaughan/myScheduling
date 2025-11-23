@@ -2,24 +2,33 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
+using MyScheduling.Core.Interfaces;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PeopleController : ControllerBase
+public class PeopleController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<PeopleController> _logger;
+    private readonly IAuthorizationService _authService;
 
-    public PeopleController(MySchedulingDbContext context, ILogger<PeopleController> logger)
+    public PeopleController(
+        MySchedulingDbContext context,
+        ILogger<PeopleController> logger,
+        IAuthorizationService authService)
     {
         _context = context;
         _logger = logger;
+        _authService = authService;
     }
+
 
     // GET: api/people
     [HttpGet]
+    [RequiresPermission(Resource = "Person", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<Person>>> GetPeople(
         [FromQuery] Guid? tenantId = null,
         [FromQuery] PersonStatus? status = null,
@@ -68,6 +77,7 @@ public class PeopleController : ControllerBase
 
     // GET: api/people/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "Person", Action = PermissionAction.Read)]
     public async Task<ActionResult<Person>> GetPerson(Guid id)
     {
         try
@@ -97,12 +107,11 @@ public class PeopleController : ControllerBase
         }
     }
 
-    /// <summary>
     /// Get current user's person record
-    /// </summary>
     /// <param name="userId">Current user's ID</param>
     /// <returns>Person record for the current user</returns>
     [HttpGet("me")]
+    [RequiresPermission(Resource = "Person", Action = PermissionAction.Read)]
     [ProducesResponseType(typeof(Person), 200)]
     [ProducesResponseType(404)]
     [ProducesResponseType(500)]
@@ -136,6 +145,7 @@ public class PeopleController : ControllerBase
 
     // POST: api/people
     [HttpPost]
+    [RequiresPermission(Resource = "Person", Action = PermissionAction.Create)]
     public async Task<ActionResult<Person>> CreatePerson(Person person)
     {
         try
@@ -168,6 +178,7 @@ public class PeopleController : ControllerBase
 
     // PUT: api/people/{id}
     [HttpPut("{id}")]
+    [RequiresPermission(Resource = "Person", Action = PermissionAction.Update)]
     public async Task<IActionResult> UpdatePerson(Guid id, Person person)
     {
         if (id != person.Id)
@@ -206,9 +217,10 @@ public class PeopleController : ControllerBase
         }
     }
 
-    // DELETE: api/people/{id}
+    // DELETE: api/people/{id} (Soft Delete)
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeletePerson(Guid id)
+    [RequiresPermission(Resource = "Person", Action = PermissionAction.Delete)]
+    public async Task<IActionResult> DeletePerson(Guid id, [FromQuery] string? reason = null)
     {
         try
         {
@@ -218,20 +230,112 @@ public class PeopleController : ControllerBase
                 return NotFound($"Person with ID {id} not found");
             }
 
-            _context.People.Remove(person);
+            // Soft delete - set flags but don't remove from database
+            person.IsDeleted = true;
+            person.DeletedAt = DateTime.UtcNow;
+            person.DeletedByUserId = GetCurrentUserId();
+            person.DeletionReason = reason;
+
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Person {PersonId} soft-deleted by user {UserId}", id, person.DeletedByUserId);
 
             return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting person {PersonId}", id);
+            _logger.LogError(ex, "Error soft-deleting person {PersonId}", id);
             return StatusCode(500, "An error occurred while deleting the person");
+        }
+    }
+
+    // DELETE: api/people/{id}/hard (Hard Delete - Platform Admin Only)
+    [HttpDelete("{id}/hard")]
+    [RequiresPermission(Resource = "Person", Action = PermissionAction.HardDelete)]
+    public async Task<IActionResult> HardDeletePerson(Guid id)
+    {
+        try
+        {
+            // Use IgnoreQueryFilters to get soft-deleted records
+            var person = await _context.People
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (person == null)
+            {
+                return NotFound($"Person with ID {id} not found");
+            }
+
+            // Create archive record before hard delete
+            var archive = new DataArchive
+            {
+                Id = Guid.NewGuid(),
+                TenantId = person.TenantId,
+                EntityType = "Person",
+                EntityId = person.Id,
+                EntitySnapshot = System.Text.Json.JsonSerializer.Serialize(person),
+                ArchivedAt = DateTime.UtcNow,
+                ArchivedByUserId = GetCurrentUserId(),
+                Status = DataArchiveStatus.PermanentlyDeleted,
+                PermanentlyDeletedAt = DateTime.UtcNow,
+                PermanentlyDeletedByUserId = GetCurrentUserId(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.DataArchives.Add(archive);
+            _context.People.Remove(person);
+            await _context.SaveChangesAsync();
+
+            _logger.LogWarning("Person {PersonId} HARD DELETED by user {UserId}", id, GetCurrentUserId());
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error hard-deleting person {PersonId}", id);
+            return StatusCode(500, "An error occurred while permanently deleting the person");
+        }
+    }
+
+    // POST: api/people/{id}/restore (Restore Soft-Deleted)
+    [HttpPost("{id}/restore")]
+    [RequiresPermission(Resource = "Person", Action = PermissionAction.Restore)]
+    public async Task<IActionResult> RestorePerson(Guid id)
+    {
+        try
+        {
+            // Use IgnoreQueryFilters to get soft-deleted records
+            var person = await _context.People
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted);
+
+            if (person == null)
+            {
+                return NotFound($"Soft-deleted person with ID {id} not found");
+            }
+
+            // Restore the person
+            person.IsDeleted = false;
+            person.DeletedAt = null;
+            person.DeletedByUserId = null;
+            person.DeletionReason = null;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Person {PersonId} restored by user {UserId}", id, GetCurrentUserId());
+
+            return Ok(person);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring person {PersonId}", id);
+            return StatusCode(500, "An error occurred while restoring the person");
         }
     }
 
     // GET: api/people/{id}/resume
     [HttpGet("{id}/resume")]
+    [RequiresPermission(Resource = "ResumeProfile", Action = PermissionAction.Read)]
     public async Task<ActionResult<ResumeProfile>> GetPersonResume(Guid id)
     {
         try

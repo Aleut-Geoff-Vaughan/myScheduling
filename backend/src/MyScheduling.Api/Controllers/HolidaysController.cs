@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class HolidaysController : ControllerBase
+public class HolidaysController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<HolidaysController> _logger;
@@ -18,54 +19,9 @@ public class HolidaysController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>
-    /// Verify that a user has access to a tenant and has appropriate roles
-    /// </summary>
-    private async Task<(bool isAuthorized, string? errorMessage, TenantMembership? membership)>
-        VerifyUserAccess(Guid userId, Guid tenantId, params AppRole[] requiredRoles)
-    {
-        var user = await _context.Users
-            .Include(u => u.TenantMemberships)
-            .FirstOrDefaultAsync(u => u.Id == userId);
-
-        if (user == null)
-        {
-            return (false, "User not found", null);
-        }
-
-        var tenantMembership = user.TenantMemberships
-            .FirstOrDefault(tm => tm.TenantId == tenantId && tm.IsActive);
-
-        if (tenantMembership == null)
-        {
-            _logger.LogWarning("User {UserId} attempted to access holidays from tenant {TenantId} without membership",
-                userId, tenantId);
-            return (false, "User does not have access to this tenant", null);
-        }
-
-        // System admins bypass role checks
-        if (user.IsSystemAdmin)
-        {
-            return (true, null, tenantMembership);
-        }
-
-        // Check if user has any of the required roles
-        if (requiredRoles.Length > 0)
-        {
-            var hasRole = tenantMembership.Roles.Any(r => requiredRoles.Contains(r));
-            if (!hasRole)
-            {
-                _logger.LogWarning("User {UserId} lacks required roles {RequiredRoles} for holiday management",
-                    userId, string.Join(", ", requiredRoles));
-                return (false, $"User does not have permission. Required role: {string.Join(" or ", requiredRoles)}", tenantMembership);
-            }
-        }
-
-        return (true, null, tenantMembership);
-    }
-
     // GET: api/holidays
     [HttpGet]
+    [RequiresPermission(Resource = "Holiday", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<CompanyHoliday>>> GetHolidays(
         [FromQuery] Guid tenantId,
         [FromQuery] int? year = null,
@@ -108,6 +64,7 @@ public class HolidaysController : ControllerBase
 
     // GET: api/holidays/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "Holiday", Action = PermissionAction.Read)]
     public async Task<ActionResult<CompanyHoliday>> GetHoliday(Guid id)
     {
         try
@@ -131,23 +88,11 @@ public class HolidaysController : ControllerBase
 
     // POST: api/holidays
     [HttpPost]
-    public async Task<ActionResult<CompanyHoliday>> CreateHoliday(
-        [FromQuery] Guid userId,
-        CompanyHoliday holiday)
+    [RequiresPermission(Resource = "Holiday", Action = PermissionAction.Create)]
+    public async Task<ActionResult<CompanyHoliday>> CreateHoliday(CompanyHoliday holiday)
     {
         try
         {
-            // Verify user access - only admins can manage holidays
-            var (isAuthorized, errorMessage, _) = await VerifyUserAccess(
-                userId,
-                holiday.TenantId,
-                AppRole.TenantAdmin);
-
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
-
             _context.CompanyHolidays.Add(holiday);
             await _context.SaveChangesAsync();
 
@@ -162,10 +107,8 @@ public class HolidaysController : ControllerBase
 
     // PUT: api/holidays/{id}
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateHoliday(
-        Guid id,
-        [FromQuery] Guid userId,
-        CompanyHoliday holiday)
+    [RequiresPermission(Resource = "Holiday", Action = PermissionAction.Update)]
+    public async Task<IActionResult> UpdateHoliday(Guid id, CompanyHoliday holiday)
     {
         if (id != holiday.Id)
         {
@@ -178,17 +121,6 @@ public class HolidaysController : ControllerBase
             if (existing == null)
             {
                 return NotFound($"Holiday with ID {id} not found");
-            }
-
-            // Verify user access
-            var (isAuthorized, errorMessage, _) = await VerifyUserAccess(
-                userId,
-                existing.TenantId,
-                AppRole.TenantAdmin);
-
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
             }
 
             _context.Entry(existing).CurrentValues.SetValues(holiday);
@@ -207,9 +139,8 @@ public class HolidaysController : ControllerBase
 
     // DELETE: api/holidays/{id}
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteHoliday(
-        Guid id,
-        [FromQuery] Guid userId)
+    [RequiresPermission(Resource = "Holiday", Action = PermissionAction.Delete)]
+    public async Task<IActionResult> DeleteHoliday(Guid id)
     {
         try
         {
@@ -217,17 +148,6 @@ public class HolidaysController : ControllerBase
             if (holiday == null)
             {
                 return NotFound($"Holiday with ID {id} not found");
-            }
-
-            // Verify user access
-            var (isAuthorized, errorMessage, _) = await VerifyUserAccess(
-                userId,
-                holiday.TenantId,
-                AppRole.TenantAdmin);
-
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
             }
 
             _context.CompanyHolidays.Remove(holiday);

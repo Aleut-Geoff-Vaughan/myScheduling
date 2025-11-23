@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class DelegationOfAuthorityController : ControllerBase
+public class DelegationOfAuthorityController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<DelegationOfAuthorityController> _logger;
@@ -18,51 +19,23 @@ public class DelegationOfAuthorityController : ControllerBase
         _logger = logger;
     }
 
-    private async Task<(bool isAuthorized, string? errorMessage, Guid? tenantId)> VerifyUserAccess(Guid userId)
-    {
-        var user = await _context.Users
-            .Include(u => u.TenantMemberships)
-            .FirstOrDefaultAsync(u => u.Id == userId);
-
-        if (user == null)
-        {
-            return (false, "User not found", null);
-        }
-
-        var activeMembership = user.TenantMemberships.FirstOrDefault(tm => tm.IsActive);
-        if (activeMembership == null)
-        {
-            return (false, "User does not have an active tenant membership", null);
-        }
-
-        return (true, null, activeMembership.TenantId);
-    }
-
     // GET: api/delegationofauthority
     [HttpGet]
+    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<DelegationOfAuthorityLetter>>> GetDOALetters(
         [FromQuery] string? filter = null) // "created", "assigned", "all"
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var tenantIds = GetUserTenantIds();
 
             var query = _context.DelegationOfAuthorityLetters
                 .Include(d => d.DelegatorUser)
                 .Include(d => d.DesigneeUser)
                 .Include(d => d.Signatures)
                 .Include(d => d.Activations)
-                .Where(d => d.TenantId == tenantId)
+                .Where(d => tenantIds.Contains(d.TenantId))
                 .AsNoTracking();
 
             // Apply filter
@@ -94,28 +67,20 @@ public class DelegationOfAuthorityController : ControllerBase
 
     // GET: api/delegationofauthority/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Read)]
     public async Task<ActionResult<DelegationOfAuthorityLetter>> GetDOALetter(Guid id)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var tenantIds = GetUserTenantIds();
 
             var letter = await _context.DelegationOfAuthorityLetters
                 .Include(d => d.DelegatorUser)
                 .Include(d => d.DesigneeUser)
                 .Include(d => d.Signatures)
                 .Include(d => d.Activations)
-                .FirstOrDefaultAsync(d => d.Id == id && d.TenantId == tenantId);
+                .FirstOrDefaultAsync(d => d.Id == id && tenantIds.Contains(d.TenantId));
 
             if (letter == null)
             {
@@ -139,21 +104,14 @@ public class DelegationOfAuthorityController : ControllerBase
 
     // POST: api/delegationofauthority
     [HttpPost]
+    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Create)]
     public async Task<ActionResult<DelegationOfAuthorityLetter>> CreateDOALetter(DelegationOfAuthorityLetter letter)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var tenantIds = GetUserTenantIds();
+            var tenantId = tenantIds.FirstOrDefault();
 
             // Validate dates
             if (letter.EffectiveEndDate <= letter.EffectiveStartDate)
@@ -180,7 +138,7 @@ public class DelegationOfAuthorityController : ControllerBase
             // Set IDs and metadata
             letter.Id = Guid.NewGuid();
             letter.DelegatorUserId = userId;
-            letter.TenantId = tenantId!.Value;
+            letter.TenantId = tenantId;
             letter.Status = DOAStatus.Draft;
             letter.CreatedAt = DateTime.UtcNow;
 
@@ -201,6 +159,7 @@ public class DelegationOfAuthorityController : ControllerBase
 
     // PUT: api/delegationofauthority/{id}
     [HttpPut("{id}")]
+    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Update)]
     public async Task<IActionResult> UpdateDOALetter(Guid id, DelegationOfAuthorityLetter letter)
     {
         if (id != letter.Id)
@@ -210,17 +169,9 @@ public class DelegationOfAuthorityController : ControllerBase
 
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var tenantIds = GetUserTenantIds();
+            var tenantId = tenantIds.FirstOrDefault();
 
             var existing = await _context.DelegationOfAuthorityLetters
                 .FirstOrDefaultAsync(d => d.Id == id && d.TenantId == tenantId);
@@ -263,21 +214,14 @@ public class DelegationOfAuthorityController : ControllerBase
 
     // DELETE: api/delegationofauthority/{id}
     [HttpDelete("{id}")]
+    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Delete)]
     public async Task<IActionResult> DeleteDOALetter(Guid id)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var tenantIds = GetUserTenantIds();
+            var tenantId = tenantIds.FirstOrDefault();
 
             var letter = await _context.DelegationOfAuthorityLetters
                 .FirstOrDefaultAsync(d => d.Id == id && d.TenantId == tenantId);
@@ -313,21 +257,14 @@ public class DelegationOfAuthorityController : ControllerBase
 
     // POST: api/delegationofauthority/{id}/sign
     [HttpPost("{id}/sign")]
+    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Approve)]
     public async Task<ActionResult<DigitalSignature>> SignDOALetter(Guid id, [FromBody] SignatureRequest request)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var tenantIds = GetUserTenantIds();
+            var tenantId = tenantIds.FirstOrDefault();
 
             var letter = await _context.DelegationOfAuthorityLetters
                 .Include(d => d.Signatures)
@@ -406,21 +343,14 @@ public class DelegationOfAuthorityController : ControllerBase
 
     // POST: api/delegationofauthority/{id}/revoke
     [HttpPost("{id}/revoke")]
+    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Update)]
     public async Task<IActionResult> RevokeDOALetter(Guid id)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var tenantIds = GetUserTenantIds();
+            var tenantId = tenantIds.FirstOrDefault();
 
             var letter = await _context.DelegationOfAuthorityLetters
                 .Include(d => d.Activations)
@@ -466,21 +396,14 @@ public class DelegationOfAuthorityController : ControllerBase
 
     // POST: api/delegationofauthority/{id}/activate
     [HttpPost("{id}/activate")]
+    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Update)]
     public async Task<ActionResult<DOAActivation>> ActivateDOALetter(Guid id, [FromBody] ActivationRequest request)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var tenantIds = GetUserTenantIds();
+            var tenantId = tenantIds.FirstOrDefault();
 
             var letter = await _context.DelegationOfAuthorityLetters
                 .FirstOrDefaultAsync(d => d.Id == id && d.TenantId == tenantId);
@@ -514,7 +437,7 @@ public class DelegationOfAuthorityController : ControllerBase
             {
                 Id = Guid.NewGuid(),
                 DOALetterId = id,
-                TenantId = tenantId!.Value,
+                TenantId = tenantId,
                 StartDate = request.StartDate,
                 EndDate = request.EndDate,
                 Reason = request.Reason,
@@ -537,21 +460,14 @@ public class DelegationOfAuthorityController : ControllerBase
 
     // GET: api/delegationofauthority/active
     [HttpGet("active")]
+    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<DOAActivation>>> GetActiveActivations([FromQuery] DateOnly? date = null)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var tenantIds = GetUserTenantIds();
+            var tenantId = tenantIds.FirstOrDefault();
 
             var checkDate = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
 

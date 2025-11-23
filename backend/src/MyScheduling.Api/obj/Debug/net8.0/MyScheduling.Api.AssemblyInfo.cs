@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MyScheduling.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+310246e814055f16a0fa5c58121eb408c15b272e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+694fd475079ebfbcff844f64f6f41471c0373a2f")]
 [assembly: System.Reflection.AssemblyProductAttribute("MyScheduling.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MyScheduling.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

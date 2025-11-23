@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input, Modal } from '../components/ui';
 import { useBookings, useSpaces, useOffices } from '../hooks/useBookings';
 import type { Booking } from '../types/api';
-import { BookingStatusType } from '../types/api';
+import { BookingStatus } from '../types/api';
 import { BookingModal } from '../components/BookingModal';
 
 export function HotelingPage() {

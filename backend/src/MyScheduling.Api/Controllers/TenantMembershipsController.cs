@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/tenant-memberships")]
-public class TenantMembershipsController : ControllerBase
+public class TenantMembershipsController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<TenantMembershipsController> _logger;
@@ -23,6 +24,7 @@ public class TenantMembershipsController : ControllerBase
     // GET: api/tenant-memberships/{id}
     // Get a specific tenant membership with details
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "TenantMembership", Action = PermissionAction.Read)]
     public async Task<ActionResult<TenantMembership>> GetTenantMembership(Guid id)
     {
         try
@@ -49,6 +51,7 @@ public class TenantMembershipsController : ControllerBase
     // POST: api/tenant-memberships
     // Add a user to a tenant with specified roles
     [HttpPost]
+    [RequiresPermission(Resource = "TenantMembership", Action = PermissionAction.Create)]
     public async Task<ActionResult<TenantMembership>> CreateTenantMembership([FromBody] CreateTenantMembershipRequest request)
     {
         try
@@ -124,6 +127,7 @@ public class TenantMembershipsController : ControllerBase
     // PUT: api/tenant-memberships/{id}/roles
     // Update roles for an existing tenant membership
     [HttpPut("{id}/roles")]
+    [RequiresPermission(Resource = "TenantMembership", Action = PermissionAction.Update)]
     public async Task<ActionResult<TenantMembership>> UpdateTenantMembershipRoles(
         Guid id,
         [FromBody] UpdateRolesRequest request)
@@ -166,6 +170,7 @@ public class TenantMembershipsController : ControllerBase
     // PUT: api/tenant-memberships/{id}/status
     // Activate or deactivate a tenant membership
     [HttpPut("{id}/status")]
+    [RequiresPermission(Resource = "TenantMembership", Action = PermissionAction.Update)]
     public async Task<ActionResult<TenantMembership>> UpdateTenantMembershipStatus(
         Guid id,
         [FromBody] UpdateStatusRequest request)
@@ -202,6 +207,7 @@ public class TenantMembershipsController : ControllerBase
     // DELETE: api/tenant-memberships/{id}
     // Remove a user from a tenant
     [HttpDelete("{id}")]
+    [RequiresPermission(Resource = "TenantMembership", Action = PermissionAction.Delete)]
     public async Task<IActionResult> DeleteTenantMembership(Guid id)
     {
         try
@@ -230,6 +236,7 @@ public class TenantMembershipsController : ControllerBase
     // GET: api/tenant-memberships/roles
     // Get list of available roles with descriptions
     [HttpGet("roles")]
+    [RequiresPermission(Resource = "TenantMembership", Action = PermissionAction.Read)]
     public ActionResult<IEnumerable<RoleInfo>> GetAvailableRoles()
     {
         try

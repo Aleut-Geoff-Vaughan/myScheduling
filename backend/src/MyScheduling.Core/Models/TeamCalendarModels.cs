@@ -41,6 +41,7 @@ public class TeamCalendarMemberResponse
 /// </summary>
 public class CreateTeamCalendarRequest
 {
+    public Guid TenantId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public TeamCalendarType Type { get; set; } = TeamCalendarType.Team;

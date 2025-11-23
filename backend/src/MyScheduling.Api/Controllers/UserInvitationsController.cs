@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/user-invitations")]
-public class UserInvitationsController : ControllerBase
+public class UserInvitationsController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<UserInvitationsController> _logger;
@@ -23,6 +24,7 @@ public class UserInvitationsController : ControllerBase
     // POST: api/user-invitations
     // Send invitation to new user
     [HttpPost]
+    [RequiresPermission(Resource = "UserInvitation", Action = PermissionAction.Create)]
     public async Task<ActionResult<UserInvitation>> CreateInvitation([FromBody] CreateInvitationRequest request)
     {
         try
@@ -106,6 +108,7 @@ public class UserInvitationsController : ControllerBase
     // GET: api/user-invitations/{id}
     // Get invitation details
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "UserInvitation", Action = PermissionAction.Read)]
     public async Task<ActionResult<UserInvitation>> GetInvitation(Guid id)
     {
         try
@@ -131,6 +134,7 @@ public class UserInvitationsController : ControllerBase
     // GET: api/user-invitations/pending
     // Get all pending invitations
     [HttpGet("pending")]
+    [RequiresPermission(Resource = "UserInvitation", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<UserInvitation>>> GetPendingInvitations([FromQuery] Guid? tenantId = null)
     {
         try
@@ -160,6 +164,7 @@ public class UserInvitationsController : ControllerBase
     // DELETE: api/user-invitations/{id}
     // Cancel/revoke an invitation
     [HttpDelete("{id}")]
+    [RequiresPermission(Resource = "UserInvitation", Action = PermissionAction.Delete)]
     public async Task<IActionResult> CancelInvitation(Guid id)
     {
         try
@@ -195,6 +200,7 @@ public class UserInvitationsController : ControllerBase
     // POST: api/user-invitations/resend/{id}
     // Resend an invitation email
     [HttpPost("resend/{id}")]
+    [RequiresPermission(Resource = "UserInvitation", Action = PermissionAction.Update)]
     public async Task<IActionResult> ResendInvitation(Guid id)
     {
         try

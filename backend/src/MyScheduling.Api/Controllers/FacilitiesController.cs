@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class FacilitiesController : ControllerBase
+public class FacilitiesController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<FacilitiesController> _logger;
@@ -22,6 +23,7 @@ public class FacilitiesController : ControllerBase
 
     // GET: api/facilities/spaces
     [HttpGet("spaces")]
+    [RequiresPermission(Resource = "Space", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<Space>>> GetSpaces(
         [FromQuery] Guid? officeId = null,
         [FromQuery] SpaceType? type = null,
@@ -78,6 +80,7 @@ public class FacilitiesController : ControllerBase
 
     // GET: api/facilities/spaces/{id}
     [HttpGet("spaces/{id}")]
+    [RequiresPermission(Resource = "Space", Action = PermissionAction.Read)]
     public async Task<ActionResult<Space>> GetSpace(Guid id)
     {
         try
@@ -105,6 +108,7 @@ public class FacilitiesController : ControllerBase
 
     // POST: api/facilities/spaces
     [HttpPost("spaces")]
+    [RequiresPermission(Resource = "Space", Action = PermissionAction.Create)]
     public async Task<ActionResult<Space>> CreateSpace([FromBody] Space space)
     {
         try
@@ -148,6 +152,7 @@ public class FacilitiesController : ControllerBase
 
     // PUT: api/facilities/spaces/{id}
     [HttpPut("spaces/{id}")]
+    [RequiresPermission(Resource = "Space", Action = PermissionAction.Update)]
     public async Task<IActionResult> UpdateSpace(Guid id, [FromBody] Space space)
     {
         try
@@ -191,6 +196,7 @@ public class FacilitiesController : ControllerBase
 
     // DELETE: api/facilities/spaces/{id}
     [HttpDelete("spaces/{id}")]
+    [RequiresPermission(Resource = "Space", Action = PermissionAction.Delete)]
     public async Task<IActionResult> DeleteSpace(Guid id)
     {
         try
@@ -227,6 +233,7 @@ public class FacilitiesController : ControllerBase
 
     // GET: api/facilities/permissions
     [HttpGet("permissions")]
+    [RequiresPermission(Resource = "FacilityPermission", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<FacilityPermission>>> GetPermissions(
         [FromQuery] Guid? officeId = null,
         [FromQuery] Guid? spaceId = null,
@@ -275,6 +282,7 @@ public class FacilitiesController : ControllerBase
 
     // GET: api/facilities/permissions/user/{userId}
     [HttpGet("permissions/user/{userId}")]
+    [RequiresPermission(Resource = "FacilityPermission", Action = PermissionAction.Read)]
     public async Task<ActionResult<object>> GetUserPermissions(Guid userId)
     {
         try
@@ -321,6 +329,7 @@ public class FacilitiesController : ControllerBase
 
     // POST: api/facilities/permissions
     [HttpPost("permissions")]
+    [RequiresPermission(Resource = "FacilityPermission", Action = PermissionAction.Create)]
     public async Task<ActionResult<FacilityPermission>> GrantPermission([FromBody] FacilityPermission permission)
     {
         try
@@ -382,6 +391,7 @@ public class FacilitiesController : ControllerBase
 
     // DELETE: api/facilities/permissions/{id}
     [HttpDelete("permissions/{id}")]
+    [RequiresPermission(Resource = "FacilityPermission", Action = PermissionAction.Delete)]
     public async Task<IActionResult> RevokePermission(Guid id)
     {
         try
@@ -408,6 +418,7 @@ public class FacilitiesController : ControllerBase
 
     // GET: api/facilities/maintenance
     [HttpGet("maintenance")]
+    [RequiresPermission(Resource = "SpaceMaintenance", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<SpaceMaintenanceLog>>> GetMaintenanceLogs(
         [FromQuery] Guid? spaceId = null,
         [FromQuery] MaintenanceStatus? status = null,
@@ -465,6 +476,7 @@ public class FacilitiesController : ControllerBase
 
     // GET: api/facilities/spaces/{spaceId}/maintenance
     [HttpGet("spaces/{spaceId}/maintenance")]
+    [RequiresPermission(Resource = "SpaceMaintenance", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<SpaceMaintenanceLog>>> GetSpaceMaintenanceLogs(Guid spaceId)
     {
         try
@@ -494,6 +506,7 @@ public class FacilitiesController : ControllerBase
 
     // POST: api/facilities/spaces/{spaceId}/maintenance
     [HttpPost("spaces/{spaceId}/maintenance")]
+    [RequiresPermission(Resource = "SpaceMaintenance", Action = PermissionAction.Create)]
     public async Task<ActionResult<SpaceMaintenanceLog>> ReportMaintenance(Guid spaceId, [FromBody] SpaceMaintenanceLog maintenanceLog)
     {
         try
@@ -551,6 +564,7 @@ public class FacilitiesController : ControllerBase
 
     // PUT: api/facilities/maintenance/{id}
     [HttpPut("maintenance/{id}")]
+    [RequiresPermission(Resource = "SpaceMaintenance", Action = PermissionAction.Update)]
     public async Task<IActionResult> UpdateMaintenance(Guid id, [FromBody] SpaceMaintenanceLog maintenanceLog)
     {
         try

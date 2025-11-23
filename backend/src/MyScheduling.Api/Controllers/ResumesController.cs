@@ -3,24 +3,32 @@ using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Core.Enums;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
+using MyScheduling.Core.Interfaces;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ResumesController : ControllerBase
+public class ResumesController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<ResumesController> _logger;
+    private readonly IAuthorizationService _authService;
 
-    public ResumesController(MySchedulingDbContext context, ILogger<ResumesController> logger)
+    public ResumesController(
+        MySchedulingDbContext context,
+        ILogger<ResumesController> logger,
+        IAuthorizationService authService)
     {
         _context = context;
         _logger = logger;
+        _authService = authService;
     }
 
     // GET: api/resumes
     [HttpGet]
+    [RequiresPermission(Resource = "ResumeProfile", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<ResumeProfile>>> GetResumes(
         [FromQuery] Guid? tenantId = null,
         [FromQuery] ResumeStatus? status = null,
@@ -76,6 +84,7 @@ public class ResumesController : ControllerBase
 
     // GET: api/resumes/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "ResumeProfile", Action = PermissionAction.Read)]
     public async Task<ActionResult<ResumeProfile>> GetResume(Guid id)
     {
         try
@@ -111,6 +120,7 @@ public class ResumesController : ControllerBase
 
     // POST: api/resumes
     [HttpPost]
+    [RequiresPermission(Resource = "ResumeProfile", Action = PermissionAction.Create)]
     public async Task<ActionResult<ResumeProfile>> CreateResume([FromBody] CreateResumeRequest request)
     {
         try
@@ -158,6 +168,7 @@ public class ResumesController : ControllerBase
 
     // PUT: api/resumes/{id}
     [HttpPut("{id}")]
+    [RequiresPermission(Resource = "ResumeProfile", Action = PermissionAction.Update)]
     public async Task<ActionResult> UpdateResume(Guid id, [FromBody] UpdateResumeRequest request)
     {
         try
@@ -196,13 +207,47 @@ public class ResumesController : ControllerBase
         }
     }
 
-    // DELETE: api/resumes/{id}
+    // DELETE: api/resumes/{id} (Soft Delete)
     [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteResume(Guid id)
+    [RequiresPermission(Resource = "ResumeProfile", Action = PermissionAction.Delete)]
+    public async Task<ActionResult> DeleteResume(Guid id, [FromQuery] string? reason = null)
+    {
+        try
+        {
+            var resume = await _context.ResumeProfiles.FindAsync(id);
+            if (resume == null)
+            {
+                return NotFound($"Resume with ID {id} not found");
+            }
+
+            resume.IsDeleted = true;
+            resume.DeletedAt = DateTime.UtcNow;
+            resume.DeletedByUserId = GetCurrentUserId();
+            resume.DeletionReason = reason;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Resume {ResumeId} soft-deleted by user {UserId}", id, resume.DeletedByUserId);
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error soft-deleting resume {ResumeId}", id);
+            return StatusCode(500, "An error occurred while deleting the resume");
+        }
+    }
+
+    // DELETE: api/resumes/{id}/hard (Hard Delete - Platform Admin Only)
+    [HttpDelete("{id}/hard")]
+    [RequiresPermission(Resource = "ResumeProfile", Action = PermissionAction.HardDelete)]
+    public async Task<IActionResult> HardDeleteResume(Guid id)
     {
         try
         {
             var resume = await _context.ResumeProfiles
+                .IgnoreQueryFilters()
+                .Include(r => r.Person)
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (resume == null)
@@ -210,22 +255,73 @@ public class ResumesController : ControllerBase
                 return NotFound($"Resume with ID {id} not found");
             }
 
+            var archive = new DataArchive
+            {
+                Id = Guid.NewGuid(),
+                TenantId = resume.Person.TenantId,
+                EntityType = "ResumeProfile",
+                EntityId = resume.Id,
+                EntitySnapshot = System.Text.Json.JsonSerializer.Serialize(resume),
+                ArchivedAt = DateTime.UtcNow,
+                ArchivedByUserId = GetCurrentUserId(),
+                Status = DataArchiveStatus.PermanentlyDeleted,
+                PermanentlyDeletedAt = DateTime.UtcNow,
+                PermanentlyDeletedByUserId = GetCurrentUserId(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.DataArchives.Add(archive);
             _context.ResumeProfiles.Remove(resume);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Deleted resume {ResumeId}", id);
+            _logger.LogWarning("Resume {ResumeId} HARD DELETED by user {UserId}", id, GetCurrentUserId());
 
             return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting resume {ResumeId}", id);
-            return StatusCode(500, "An error occurred while deleting the resume");
+            _logger.LogError(ex, "Error hard-deleting resume {ResumeId}", id);
+            return StatusCode(500, "An error occurred while permanently deleting the resume");
+        }
+    }
+
+    // POST: api/resumes/{id}/restore (Restore Soft-Deleted)
+    [HttpPost("{id}/restore")]
+    [RequiresPermission(Resource = "ResumeProfile", Action = PermissionAction.Restore)]
+    public async Task<IActionResult> RestoreResume(Guid id)
+    {
+        try
+        {
+            var resume = await _context.ResumeProfiles
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(r => r.Id == id && r.IsDeleted);
+
+            if (resume == null)
+            {
+                return NotFound($"Soft-deleted resume with ID {id} not found");
+            }
+
+            resume.IsDeleted = false;
+            resume.DeletedAt = null;
+            resume.DeletedByUserId = null;
+            resume.DeletionReason = null;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Resume {ResumeId} restored by user {UserId}", id, GetCurrentUserId());
+
+            return Ok(resume);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring resume {ResumeId}", id);
+            return StatusCode(500, "An error occurred while restoring the resume");
         }
     }
 
     // POST: api/resumes/{id}/sections
     [HttpPost("{id}/sections")]
+    [RequiresPermission(Resource = "ResumeSection", Action = PermissionAction.Create)]
     public async Task<ActionResult<ResumeSection>> AddSection(Guid id, [FromBody] CreateResumeSectionRequest request)
     {
         try
@@ -262,6 +358,7 @@ public class ResumesController : ControllerBase
 
     // POST: api/resumes/sections/{sectionId}/entries
     [HttpPost("sections/{sectionId}/entries")]
+    [RequiresPermission(Resource = "ResumeEntry", Action = PermissionAction.Create)]
     public async Task<ActionResult<ResumeEntry>> AddEntry(Guid sectionId, [FromBody] CreateResumeEntryRequest request)
     {
         try
@@ -301,6 +398,7 @@ public class ResumesController : ControllerBase
 
     // PUT: api/resumes/entries/{entryId}
     [HttpPut("entries/{entryId}")]
+    [RequiresPermission(Resource = "ResumeEntry", Action = PermissionAction.Update)]
     public async Task<ActionResult> UpdateEntry(Guid entryId, [FromBody] UpdateResumeEntryRequest request)
     {
         try
@@ -347,6 +445,7 @@ public class ResumesController : ControllerBase
 
     // DELETE: api/resumes/entries/{entryId}
     [HttpDelete("entries/{entryId}")]
+    [RequiresPermission(Resource = "ResumeEntry", Action = PermissionAction.Delete)]
     public async Task<ActionResult> DeleteEntry(Guid entryId)
     {
         try
@@ -377,6 +476,7 @@ public class ResumesController : ControllerBase
 
     // GET: api/resumes/{id}/versions
     [HttpGet("{id}/versions")]
+    [RequiresPermission(Resource = "ResumeVersion", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<ResumeVersion>>> GetVersions(Guid id)
     {
         try
@@ -406,6 +506,7 @@ public class ResumesController : ControllerBase
 
     // GET: api/resumes/{id}/versions/{versionId}
     [HttpGet("{id}/versions/{versionId}")]
+    [RequiresPermission(Resource = "ResumeVersion", Action = PermissionAction.Read)]
     public async Task<ActionResult<ResumeVersion>> GetVersion(Guid id, Guid versionId)
     {
         try
@@ -431,6 +532,7 @@ public class ResumesController : ControllerBase
 
     // POST: api/resumes/{id}/versions
     [HttpPost("{id}/versions")]
+    [RequiresPermission(Resource = "ResumeVersion", Action = PermissionAction.Create)]
     public async Task<ActionResult<ResumeVersion>> CreateVersion(Guid id, [FromBody] CreateResumeVersionRequest request)
     {
         try
@@ -517,6 +619,7 @@ public class ResumesController : ControllerBase
 
     // POST: api/resumes/{id}/versions/{versionId}/activate
     [HttpPost("{id}/versions/{versionId}/activate")]
+    [RequiresPermission(Resource = "ResumeVersion", Action = PermissionAction.Update)]
     public async Task<ActionResult> ActivateVersion(Guid id, Guid versionId)
     {
         try
@@ -566,6 +669,7 @@ public class ResumesController : ControllerBase
 
     // DELETE: api/resumes/{id}/versions/{versionId}
     [HttpDelete("{id}/versions/{versionId}")]
+    [RequiresPermission(Resource = "ResumeVersion", Action = PermissionAction.Delete)]
     public async Task<ActionResult> DeleteVersion(Guid id, Guid versionId)
     {
         try

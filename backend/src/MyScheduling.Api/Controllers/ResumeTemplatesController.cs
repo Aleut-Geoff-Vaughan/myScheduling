@@ -3,12 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Core.Enums;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/resume-templates")]
-public class ResumeTemplatesController : ControllerBase
+public class ResumeTemplatesController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<ResumeTemplatesController> _logger;
@@ -21,6 +22,7 @@ public class ResumeTemplatesController : ControllerBase
 
     // GET: api/resume-templates
     [HttpGet]
+    [RequiresPermission(Resource = "ResumeTemplate", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<ResumeTemplate>>> GetTemplates(
         [FromQuery] Guid? tenantId = null,
         [FromQuery] ResumeTemplateType? type = null,
@@ -66,6 +68,7 @@ public class ResumeTemplatesController : ControllerBase
 
     // GET: api/resume-templates/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "ResumeTemplate", Action = PermissionAction.Read)]
     public async Task<ActionResult<ResumeTemplate>> GetTemplate(Guid id)
     {
         try
@@ -90,6 +93,7 @@ public class ResumeTemplatesController : ControllerBase
 
     // POST: api/resume-templates
     [HttpPost]
+    [RequiresPermission(Resource = "ResumeTemplate", Action = PermissionAction.Create)]
     public async Task<ActionResult<ResumeTemplate>> CreateTemplate([FromBody] CreateTemplateRequest request)
     {
         try
@@ -158,6 +162,7 @@ public class ResumeTemplatesController : ControllerBase
 
     // PUT: api/resume-templates/{id}
     [HttpPut("{id}")]
+    [RequiresPermission(Resource = "ResumeTemplate", Action = PermissionAction.Update)]
     public async Task<ActionResult> UpdateTemplate(Guid id, [FromBody] UpdateTemplateRequest request)
     {
         try
@@ -223,6 +228,7 @@ public class ResumeTemplatesController : ControllerBase
 
     // DELETE: api/resume-templates/{id}
     [HttpDelete("{id}")]
+    [RequiresPermission(Resource = "ResumeTemplate", Action = PermissionAction.Delete)]
     public async Task<ActionResult> DeleteTemplate(Guid id)
     {
         try
@@ -264,6 +270,7 @@ public class ResumeTemplatesController : ControllerBase
 
     // GET: api/resume-templates/default
     [HttpGet("default")]
+    [RequiresPermission(Resource = "ResumeTemplate", Action = PermissionAction.Read)]
     public async Task<ActionResult<ResumeTemplate>> GetDefaultTemplate(
         [FromQuery] Guid tenantId,
         [FromQuery] ResumeTemplateType type)
@@ -294,6 +301,7 @@ public class ResumeTemplatesController : ControllerBase
 
     // POST: api/resume-templates/{id}/preview
     [HttpPost("{id}/preview")]
+    [RequiresPermission(Resource = "ResumeTemplate", Action = PermissionAction.Read)]
     public async Task<ActionResult<string>> PreviewTemplate(Guid id, [FromBody] PreviewTemplateRequest request)
     {
         try
@@ -321,6 +329,7 @@ public class ResumeTemplatesController : ControllerBase
 
     // POST: api/resume-templates/{id}/duplicate
     [HttpPost("{id}/duplicate")]
+    [RequiresPermission(Resource = "ResumeTemplate", Action = PermissionAction.Create)]
     public async Task<ActionResult<ResumeTemplate>> DuplicateTemplate(Guid id, [FromBody] DuplicateTemplateRequest request)
     {
         try

@@ -2,12 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class WorkLocationTemplatesController : ControllerBase
+public class WorkLocationTemplatesController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<WorkLocationTemplatesController> _logger;
@@ -18,47 +19,36 @@ public class WorkLocationTemplatesController : ControllerBase
         _logger = logger;
     }
 
-    private async Task<(bool isAuthorized, string? errorMessage, Guid? tenantId)> VerifyUserAccess(Guid userId)
-    {
-        var user = await _context.Users
-            .Include(u => u.TenantMemberships)
-            .FirstOrDefaultAsync(u => u.Id == userId);
-
-        if (user == null)
-        {
-            return (false, "User not found", null);
-        }
-
-        var activeMembership = user.TenantMemberships.FirstOrDefault(tm => tm.IsActive);
-        if (activeMembership == null)
-        {
-            return (false, "User does not have an active tenant membership", null);
-        }
-
-        return (true, null, activeMembership.TenantId);
-    }
-
     // GET: api/worklocationtemplates
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<WorkLocationTemplate>>> GetTemplates()
+    [RequiresPermission(Resource = "WorkLocationTemplate", Action = PermissionAction.Read)]
+    public async Task<ActionResult<IEnumerable<WorkLocationTemplate>>> GetTemplates([FromQuery] Guid? tenantId = null)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
+            var userId = GetCurrentUserId();
+            var userTenantIds = GetUserTenantIds();
 
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
-
-            var templates = await _context.WorkLocationTemplates
+            var query = _context.WorkLocationTemplates
                 .Include(t => t.Items)
-                .Where(t => t.TenantId == tenantId && (t.UserId == userId || t.IsShared))
+                .Where(t => (t.UserId == userId || t.IsShared));
+
+            // Filter by tenant if specified and user has access
+            if (tenantId.HasValue)
+            {
+                if (!userTenantIds.Contains(tenantId.Value) && !IsSystemAdmin())
+                {
+                    return StatusCode(403, "You do not have access to this tenant");
+                }
+                query = query.Where(t => t.TenantId == tenantId.Value);
+            }
+            else
+            {
+                // Show templates from all tenants user has access to
+                query = query.Where(t => userTenantIds.Contains(t.TenantId));
+            }
+
+            var templates = await query
                 .OrderByDescending(t => t.CreatedAt)
                 .AsNoTracking()
                 .ToListAsync();
@@ -74,33 +64,31 @@ public class WorkLocationTemplatesController : ControllerBase
 
     // GET: api/worklocationtemplates/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "WorkLocationTemplate", Action = PermissionAction.Read)]
     public async Task<ActionResult<WorkLocationTemplate>> GetTemplate(Guid id)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var userTenantIds = GetUserTenantIds();
 
             var template = await _context.WorkLocationTemplates
                 .Include(t => t.Items.OrderBy(i => i.DayOffset))
-                .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (template == null)
             {
                 return NotFound($"Template with ID {id} not found");
             }
 
-            // Check access - user must own it or it must be shared
-            if (template.UserId != userId && !template.IsShared)
+            // Check tenant access
+            if (!userTenantIds.Contains(template.TenantId) && !IsSystemAdmin())
+            {
+                return StatusCode(403, "You do not have access to this tenant");
+            }
+
+            // Check template access - user must own it or it must be shared
+            if (template.UserId != userId && !template.IsShared && !IsSystemAdmin())
             {
                 return StatusCode(403, "You do not have permission to view this template");
             }
@@ -116,20 +104,18 @@ public class WorkLocationTemplatesController : ControllerBase
 
     // POST: api/worklocationtemplates
     [HttpPost]
+    [RequiresPermission(Resource = "WorkLocationTemplate", Action = PermissionAction.Create)]
     public async Task<ActionResult<WorkLocationTemplate>> CreateTemplate(WorkLocationTemplate template)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
+            var userId = GetCurrentUserId();
+            var userTenantIds = GetUserTenantIds();
 
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
+            // Validate tenant access
+            if (!userTenantIds.Contains(template.TenantId) && !IsSystemAdmin())
             {
-                return StatusCode(403, errorMessage);
+                return StatusCode(403, "You do not have access to this tenant");
             }
 
             // Validate template type and items
@@ -141,7 +127,6 @@ public class WorkLocationTemplatesController : ControllerBase
             // Set IDs and metadata
             template.Id = Guid.NewGuid();
             template.UserId = userId;
-            template.TenantId = tenantId!.Value;
             template.CreatedAt = DateTime.UtcNow;
 
             foreach (var item in template.Items)
@@ -168,6 +153,7 @@ public class WorkLocationTemplatesController : ControllerBase
 
     // PUT: api/worklocationtemplates/{id}
     [HttpPut("{id}")]
+    [RequiresPermission(Resource = "WorkLocationTemplate", Action = PermissionAction.Update)]
     public async Task<IActionResult> UpdateTemplate(Guid id, WorkLocationTemplate template)
     {
         if (id != template.Id)
@@ -177,29 +163,26 @@ public class WorkLocationTemplatesController : ControllerBase
 
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var userTenantIds = GetUserTenantIds();
 
             var existing = await _context.WorkLocationTemplates
                 .Include(t => t.Items)
-                .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (existing == null)
             {
                 return NotFound($"Template with ID {id} not found");
             }
 
-            // Only the owner can modify
-            if (existing.UserId != userId)
+            // Check tenant access
+            if (!userTenantIds.Contains(existing.TenantId) && !IsSystemAdmin())
+            {
+                return StatusCode(403, "You do not have access to this tenant");
+            }
+
+            // Only the owner can modify (unless system admin)
+            if (existing.UserId != userId && !IsSystemAdmin())
             {
                 return StatusCode(403, "Only the template owner can modify it");
             }
@@ -236,32 +219,30 @@ public class WorkLocationTemplatesController : ControllerBase
 
     // DELETE: api/worklocationtemplates/{id}
     [HttpDelete("{id}")]
+    [RequiresPermission(Resource = "WorkLocationTemplate", Action = PermissionAction.Delete)]
     public async Task<IActionResult> DeleteTemplate(Guid id)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var userTenantIds = GetUserTenantIds();
 
             var template = await _context.WorkLocationTemplates
-                .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (template == null)
             {
                 return NotFound($"Template with ID {id} not found");
             }
 
-            // Only the owner can delete
-            if (template.UserId != userId)
+            // Check tenant access
+            if (!userTenantIds.Contains(template.TenantId) && !IsSystemAdmin())
+            {
+                return StatusCode(403, "You do not have access to this tenant");
+            }
+
+            // Only the owner can delete (unless system admin)
+            if (template.UserId != userId && !IsSystemAdmin())
             {
                 return StatusCode(403, "Only the template owner can delete it");
             }
@@ -280,46 +261,44 @@ public class WorkLocationTemplatesController : ControllerBase
 
     // POST: api/worklocationtemplates/{id}/apply
     [HttpPost("{id}/apply")]
+    [RequiresPermission(Resource = "WorkLocationTemplate", Action = PermissionAction.Update)]
     public async Task<ActionResult<IEnumerable<WorkLocationPreference>>> ApplyTemplate(
         Guid id,
         [FromBody] ApplyTemplateRequest request)
     {
         try
         {
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
-
-            var (isAuthorized, errorMessage, tenantId) = await VerifyUserAccess(userId);
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
+            var userId = GetCurrentUserId();
+            var userTenantIds = GetUserTenantIds();
 
             var template = await _context.WorkLocationTemplates
                 .Include(t => t.Items.OrderBy(i => i.DayOffset))
-                .FirstOrDefaultAsync(t => t.Id == id && t.TenantId == tenantId);
+                .FirstOrDefaultAsync(t => t.Id == id);
 
             if (template == null)
             {
                 return NotFound($"Template with ID {id} not found");
             }
 
-            // Check access
-            if (template.UserId != userId && !template.IsShared)
+            // Check tenant access
+            if (!userTenantIds.Contains(template.TenantId) && !IsSystemAdmin())
+            {
+                return StatusCode(403, "You do not have access to this tenant");
+            }
+
+            // Check template access
+            if (template.UserId != userId && !template.IsShared && !IsSystemAdmin())
             {
                 return StatusCode(403, "You do not have permission to use this template");
             }
 
-            // Get the person associated with this user
+            // Get the person associated with this user in the template's tenant
             var person = await _context.People
-                .FirstOrDefaultAsync(p => p.UserId == userId && p.TenantId == tenantId);
+                .FirstOrDefaultAsync(p => p.UserId == userId && p.TenantId == template.TenantId);
 
             if (person == null)
             {
-                return NotFound("Person record not found for user");
+                return NotFound("Person record not found for user in this tenant");
             }
 
             var createdPreferences = new List<WorkLocationPreference>();
@@ -336,7 +315,7 @@ public class WorkLocationTemplatesController : ControllerBase
                         .FirstOrDefaultAsync(w =>
                             w.PersonId == person.Id &&
                             w.WorkDate == workDate &&
-                            w.TenantId == tenantId);
+                            w.TenantId == template.TenantId);
 
                     if (existing != null)
                     {
@@ -358,7 +337,7 @@ public class WorkLocationTemplatesController : ControllerBase
                         {
                             Id = Guid.NewGuid(),
                             PersonId = person.Id,
-                            TenantId = tenantId.Value,
+                            TenantId = template.TenantId,
                             WorkDate = workDate,
                             LocationType = item.LocationType,
                             OfficeId = item.OfficeId,

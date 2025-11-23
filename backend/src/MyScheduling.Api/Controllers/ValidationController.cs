@@ -3,12 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Core.Interfaces;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ValidationController : ControllerBase
+public class ValidationController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly IValidationEngine _validationEngine;
@@ -30,6 +31,7 @@ public class ValidationController : ControllerBase
     // ==================== VALIDATION RULES CRUD ====================
 
     [HttpGet("rules")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<ValidationRule>>> GetRules(
         [FromQuery] Guid tenantId,
         [FromQuery] string? entityType = null,
@@ -57,6 +59,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpGet("rules/{id}")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Read)]
     public async Task<ActionResult<ValidationRule>> GetRule(Guid id, [FromQuery] Guid tenantId)
     {
         var rule = await _context.ValidationRules
@@ -69,6 +72,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpPost("rules")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Create)]
     public async Task<ActionResult<ValidationRule>> CreateRule([FromQuery] Guid tenantId, [FromBody] ValidationRule rule)
     {
         rule.TenantId = tenantId;
@@ -85,6 +89,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpPut("rules/{id}")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Update)]
     public async Task<IActionResult> UpdateRule(Guid id, [FromQuery] Guid tenantId, [FromBody] ValidationRule rule)
     {
         var existingRule = await _context.ValidationRules
@@ -115,6 +120,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpDelete("rules/{id}")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Delete)]
     public async Task<IActionResult> DeleteRule(Guid id, [FromQuery] Guid tenantId)
     {
         var rule = await _context.ValidationRules
@@ -129,6 +135,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpPatch("rules/{id}/active")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Update)]
     public async Task<IActionResult> SetRuleActive(Guid id, [FromQuery] Guid tenantId, [FromBody] SetActiveRequest request)
     {
         var rule = await _context.ValidationRules
@@ -146,6 +153,7 @@ public class ValidationController : ControllerBase
     // ==================== VALIDATION OPERATIONS ====================
 
     [HttpPost("validate")]
+    [RequiresPermission(Resource = "Validation", Action = PermissionAction.Read)]
     public async Task<ActionResult<ValidationResult>> ValidateEntity([FromQuery] Guid tenantId, [FromBody] ValidateEntityRequest request)
     {
         var result = await _validationEngine.ValidateAsync(request.EntityType, request.EntityData, tenantId);
@@ -153,6 +161,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpPost("validate-field")]
+    [RequiresPermission(Resource = "Validation", Action = PermissionAction.Read)]
     public async Task<ActionResult<ValidationResult>> ValidateField([FromQuery] Guid tenantId, [FromBody] ValidateFieldRequest request)
     {
         var result = await _validationEngine.ValidateFieldAsync(
@@ -166,6 +175,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpPost("rules/{id}/test")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Read)]
     public async Task<ActionResult<ValidationResult>> TestRule(Guid id, [FromQuery] Guid tenantId, [FromBody] Dictionary<string, object?> testData)
     {
         var rule = await _context.ValidationRules
@@ -179,6 +189,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpGet("rules/entity/{entityType}")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<ValidationRule>>> GetRulesForEntity(string entityType, [FromQuery] Guid tenantId)
     {
         var rules = await _validationEngine.GetRulesForEntityAsync(entityType, tenantId);
@@ -186,6 +197,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpGet("entity-types")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<string>>> GetEntityTypes([FromQuery] Guid tenantId)
     {
         var entityTypes = await _context.ValidationRules
@@ -199,6 +211,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpPost("validate-expression")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Read)]
     public ActionResult<ExpressionValidationResult> ValidateExpression([FromBody] ValidateExpressionRequest request)
     {
         var isValid = _ruleInterpreter.ValidateExpression(request.RuleType, request.Expression);
@@ -210,6 +223,7 @@ public class ValidationController : ControllerBase
     }
 
     [HttpPatch("rules/reorder")]
+    [RequiresPermission(Resource = "ValidationRule", Action = PermissionAction.Update)]
     public async Task<IActionResult> ReorderRules([FromQuery] Guid tenantId, [FromBody] List<RuleOrderUpdate> updates)
     {
         var ruleIds = updates.Select(u => u.RuleId).ToList();

@@ -71,6 +71,18 @@ public class MySchedulingDbContext : DbContext
     // Validation
     public DbSet<ValidationRule> ValidationRules => Set<ValidationRule>();
 
+    // Authorization & Permissions
+    public DbSet<Permission> Permissions => Set<Permission>();
+    public DbSet<RolePermissionTemplate> RolePermissionTemplates => Set<RolePermissionTemplate>();
+    public DbSet<AuthorizationAuditLog> AuthorizationAuditLogs => Set<AuthorizationAuditLog>();
+
+    // Dropdown Configuration
+    public DbSet<TenantDropdownConfiguration> TenantDropdownConfigurations => Set<TenantDropdownConfiguration>();
+
+    // Data Archive Management
+    public DbSet<DataArchive> DataArchives => Set<DataArchive>();
+    public DbSet<DataArchiveExport> DataArchiveExports => Set<DataArchiveExport>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -86,6 +98,11 @@ public class MySchedulingDbContext : DbContext
         ConfigureWorkLocationTemplates(modelBuilder);
         ConfigureTeamCalendars(modelBuilder);
         ConfigureValidation(modelBuilder);
+        ConfigureAuthorization(modelBuilder);
+        ConfigureDataArchive(modelBuilder);
+
+        // Apply global query filters for soft deletes
+        ApplySoftDeleteFilter(modelBuilder);
 
         // Apply naming conventions for PostgreSQL (snake_case)
         ApplyPostgreSqlNaming(modelBuilder);
@@ -949,6 +966,89 @@ public class MySchedulingDbContext : DbContext
                 ? $"_{x}"
                 : x.ToString())
         ).ToLower();
+    }
+
+    private void ConfigureAuthorization(ModelBuilder modelBuilder)
+    {
+        // Permission
+        modelBuilder.Entity<Permission>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Resource).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Action).IsRequired();
+            entity.Property(e => e.Scope).IsRequired();
+            entity.HasIndex(e => new { e.UserId, e.Resource, e.Action });
+            entity.HasIndex(e => new { e.Role, e.Resource, e.Action });
+            entity.HasIndex(e => e.TenantId);
+        });
+
+        // RolePermissionTemplate
+        modelBuilder.Entity<RolePermissionTemplate>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Resource).IsRequired().HasMaxLength(100);
+            entity.HasIndex(e => new { e.Role, e.Resource });
+            entity.HasIndex(e => e.TenantId);
+        });
+
+        // AuthorizationAuditLog
+        modelBuilder.Entity<AuthorizationAuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Resource).IsRequired().HasMaxLength(100);
+            entity.HasIndex(e => new { e.UserId, e.Timestamp });
+            entity.HasIndex(e => new { e.TenantId, e.Timestamp });
+            entity.HasIndex(e => e.Timestamp);
+        });
+
+        // TenantDropdownConfiguration
+        modelBuilder.Entity<TenantDropdownConfiguration>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
+            entity.HasIndex(e => new { e.TenantId, e.Category }).IsUnique();
+        });
+    }
+
+    private void ConfigureDataArchive(ModelBuilder modelBuilder)
+    {
+        // DataArchive
+        modelBuilder.Entity<DataArchive>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EntityType).IsRequired().HasMaxLength(100);
+            entity.HasIndex(e => new { e.TenantId, e.Status });
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+            entity.HasIndex(e => e.ArchivedAt);
+            entity.HasIndex(e => e.ScheduledPermanentDeletionAt);
+        });
+
+        // DataArchiveExport
+        modelBuilder.Entity<DataArchiveExport>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EntityType).IsRequired().HasMaxLength(100);
+            entity.HasIndex(e => new { e.TenantId, e.Status });
+            entity.HasIndex(e => e.RequestedAt);
+        });
+    }
+
+    private void ApplySoftDeleteFilter(ModelBuilder modelBuilder)
+    {
+        // Apply global query filter to exclude soft-deleted entities
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                var parameter = System.Linq.Expressions.Expression.Parameter(entityType.ClrType, "e");
+                var property = System.Linq.Expressions.Expression.Property(parameter, nameof(BaseEntity.IsDeleted));
+                var filter = System.Linq.Expressions.Expression.Lambda(
+                    System.Linq.Expressions.Expression.Equal(property, System.Linq.Expressions.Expression.Constant(false)),
+                    parameter
+                );
+                entityType.SetQueryFilter(filter);
+            }
+        }
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)

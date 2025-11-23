@@ -30,6 +30,10 @@ interface AuthState {
   // User info (set after login)
   user: User | null;
 
+  // JWT token and expiry
+  token: string | null;
+  tokenExpiresAt: string | null;
+
   // Available workspaces
   availableTenants: TenantAccessInfo[];
 
@@ -46,12 +50,15 @@ interface AuthState {
   logout: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   setUser: (user: Partial<User>) => void;
+  getToken: () => string | null;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      token: null,
+      tokenExpiresAt: null,
       availableTenants: [],
       currentWorkspace: null,
       isAuthenticated: false,
@@ -69,6 +76,8 @@ export const useAuthStore = create<AuthState>()(
 
           set({
             user,
+            token: response.token,
+            tokenExpiresAt: response.expiresAt,
             availableTenants: response.tenantAccess,
             isAuthenticated: true,
             currentWorkspace: null  // User must select workspace
@@ -76,6 +85,8 @@ export const useAuthStore = create<AuthState>()(
         } catch (error) {
           set({
             user: null,
+            token: null,
+            tokenExpiresAt: null,
             availableTenants: [],
             currentWorkspace: null,
             isAuthenticated: false
@@ -100,6 +111,8 @@ export const useAuthStore = create<AuthState>()(
         } finally {
           set({
             user: null,
+            token: null,
+            tokenExpiresAt: null,
             availableTenants: [],
             currentWorkspace: null,
             isAuthenticated: false
@@ -118,10 +131,32 @@ export const useAuthStore = create<AuthState>()(
           set({ user: { ...user, ...updatedUser } });
         }
       },
+
+      getToken: () => {
+        const { token, tokenExpiresAt } = get();
+
+        // Check if token is expired
+        if (token && tokenExpiresAt) {
+          const expiryDate = new Date(tokenExpiresAt);
+          if (expiryDate > new Date()) {
+            return token;
+          }
+          // Token expired, clear auth state
+          set({
+            user: null,
+            token: null,
+            tokenExpiresAt: null,
+            availableTenants: [],
+            currentWorkspace: null,
+            isAuthenticated: false
+          });
+        }
+        return null;
+      },
     }),
     {
       name: 'auth-storage',
-      version: 2, // Increment this to force clear old incompatible storage
+      version: 3, // Increment this to force clear old incompatible storage (v3: JWT tokens)
     }
   )
 );

@@ -2,24 +2,33 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
+using MyScheduling.Core.Interfaces;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProjectsController : ControllerBase
+public class ProjectsController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<ProjectsController> _logger;
+    private readonly IAuthorizationService _authService;
 
-    public ProjectsController(MySchedulingDbContext context, ILogger<ProjectsController> logger)
+    public ProjectsController(
+        MySchedulingDbContext context,
+        ILogger<ProjectsController> logger,
+        IAuthorizationService authService)
     {
         _context = context;
         _logger = logger;
+        _authService = authService;
     }
+
 
     // GET: api/projects
     [HttpGet]
+    [RequiresPermission(Resource = "Project", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<Project>>> GetProjects(
         [FromQuery] Guid? tenantId = null,
         [FromQuery] ProjectStatus? status = null,
@@ -63,6 +72,7 @@ public class ProjectsController : ControllerBase
 
     // GET: api/projects/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "Project", Action = PermissionAction.Read)]
     public async Task<ActionResult<Project>> GetProject(Guid id)
     {
         try
@@ -90,6 +100,7 @@ public class ProjectsController : ControllerBase
 
     // POST: api/projects
     [HttpPost]
+    [RequiresPermission(Resource = "Project", Action = PermissionAction.Create)]
     public async Task<ActionResult<Project>> CreateProject(Project project)
     {
         try
@@ -108,6 +119,7 @@ public class ProjectsController : ControllerBase
 
     // PUT: api/projects/{id}
     [HttpPut("{id}")]
+    [RequiresPermission(Resource = "Project", Action = PermissionAction.Update)]
     public async Task<IActionResult> UpdateProject(Guid id, Project project)
     {
         if (id != project.Id)
@@ -141,9 +153,10 @@ public class ProjectsController : ControllerBase
         }
     }
 
-    // DELETE: api/projects/{id}
+    // DELETE: api/projects/{id} (Soft Delete)
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteProject(Guid id)
+    [RequiresPermission(Resource = "Project", Action = PermissionAction.Delete)]
+    public async Task<IActionResult> DeleteProject(Guid id, [FromQuery] string? reason = null)
     {
         try
         {
@@ -153,20 +166,107 @@ public class ProjectsController : ControllerBase
                 return NotFound($"Project with ID {id} not found");
             }
 
-            _context.Projects.Remove(project);
+            project.IsDeleted = true;
+            project.DeletedAt = DateTime.UtcNow;
+            project.DeletedByUserId = GetCurrentUserId();
+            project.DeletionReason = reason;
+
             await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Project {ProjectId} soft-deleted by user {UserId}", id, project.DeletedByUserId);
 
             return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting project {ProjectId}", id);
+            _logger.LogError(ex, "Error soft-deleting project {ProjectId}", id);
             return StatusCode(500, "An error occurred while deleting the project");
+        }
+    }
+
+    // DELETE: api/projects/{id}/hard (Hard Delete - Platform Admin Only)
+    [HttpDelete("{id}/hard")]
+    [RequiresPermission(Resource = "Project", Action = PermissionAction.HardDelete)]
+    public async Task<IActionResult> HardDeleteProject(Guid id)
+    {
+        try
+        {
+            var project = await _context.Projects
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Id == id);
+
+            if (project == null)
+            {
+                return NotFound($"Project with ID {id} not found");
+            }
+
+            var archive = new DataArchive
+            {
+                Id = Guid.NewGuid(),
+                TenantId = project.TenantId,
+                EntityType = "Project",
+                EntityId = project.Id,
+                EntitySnapshot = System.Text.Json.JsonSerializer.Serialize(project),
+                ArchivedAt = DateTime.UtcNow,
+                ArchivedByUserId = GetCurrentUserId(),
+                Status = DataArchiveStatus.PermanentlyDeleted,
+                PermanentlyDeletedAt = DateTime.UtcNow,
+                PermanentlyDeletedByUserId = GetCurrentUserId(),
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.DataArchives.Add(archive);
+            _context.Projects.Remove(project);
+            await _context.SaveChangesAsync();
+
+            _logger.LogWarning("Project {ProjectId} HARD DELETED by user {UserId}", id, GetCurrentUserId());
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error hard-deleting project {ProjectId}", id);
+            return StatusCode(500, "An error occurred while permanently deleting the project");
+        }
+    }
+
+    // POST: api/projects/{id}/restore (Restore Soft-Deleted)
+    [HttpPost("{id}/restore")]
+    [RequiresPermission(Resource = "Project", Action = PermissionAction.Restore)]
+    public async Task<IActionResult> RestoreProject(Guid id)
+    {
+        try
+        {
+            var project = await _context.Projects
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(p => p.Id == id && p.IsDeleted);
+
+            if (project == null)
+            {
+                return NotFound($"Soft-deleted project with ID {id} not found");
+            }
+
+            project.IsDeleted = false;
+            project.DeletedAt = null;
+            project.DeletedByUserId = null;
+            project.DeletionReason = null;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Project {ProjectId} restored by user {UserId}", id, GetCurrentUserId());
+
+            return Ok(project);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring project {ProjectId}", id);
+            return StatusCode(500, "An error occurred while restoring the project");
         }
     }
 
     // GET: api/projects/{id}/wbs
     [HttpGet("{id}/wbs")]
+    [RequiresPermission(Resource = "WbsElement", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<WbsElement>>> GetProjectWbs(Guid id)
     {
         try

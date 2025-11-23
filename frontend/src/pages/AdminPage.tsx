@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input, Modal, Select, FormGroup } from '../components/ui';
@@ -33,6 +33,13 @@ export function AdminPage({ viewOverride }: AdminPageProps = {}) {
   const [expandedUserIds, setExpandedUserIds] = useState<Set<string>>(new Set());
   const [editingMembershipId, setEditingMembershipId] = useState<string | null>(null);
   const [editingRoles, setEditingRoles] = useState<AppRole[]>([]);
+
+  // Update selected view when viewOverride changes
+  useEffect(() => {
+    if (viewOverride) {
+      setSelectedView(viewOverride);
+    }
+  }, [viewOverride]);
 
   const [tenantForm, setTenantForm] = useState({
     name: '',

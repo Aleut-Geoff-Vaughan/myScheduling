@@ -10,7 +10,9 @@
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Azure.Extensions.AspNetCore.Configuration.Secrets.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Azure.Identity.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Azure.Security.KeyVault.Secrets.dll
+/workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/BCrypt.Net-Next.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Humanizer.dll
+/workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.Bcl.AsyncInterfaces.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.CodeAnalysis.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.CodeAnalysis.CSharp.dll
@@ -37,6 +39,11 @@
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.Identity.Client.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.Identity.Client.Extensions.Msal.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Abstractions.dll
+/workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.IdentityModel.JsonWebTokens.dll
+/workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Logging.dll
+/workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.dll
+/workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+/workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.IdentityModel.Tokens.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Microsoft.OpenApi.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Mono.TextTemplating.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/Newtonsoft.Json.dll
@@ -55,6 +62,7 @@
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/System.Composition.Hosting.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/System.Composition.Runtime.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/System.Composition.TypedParts.dll
+/workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/System.IdentityModel.Tokens.Jwt.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/System.Memory.Data.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/System.Security.Cryptography.ProtectedData.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Api/bin/Debug/net8.0/cs/Microsoft.CodeAnalysis.resources.dll

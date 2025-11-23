@@ -2,31 +2,37 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
+using MyScheduling.Core.Interfaces;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [Produces("application/json")]
-public class DashboardController : ControllerBase
+public class DashboardController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<DashboardController> _logger;
+    private readonly IAuthorizationService _authService;
 
-    public DashboardController(MySchedulingDbContext context, ILogger<DashboardController> logger)
+    public DashboardController(
+        MySchedulingDbContext context,
+        ILogger<DashboardController> logger,
+        IAuthorizationService authService)
     {
         _context = context;
         _logger = logger;
+        _authService = authService;
     }
 
-    /// <summary>
     /// Get dashboard data for current user including work location preferences and statistics
-    /// </summary>
     /// <param name="userId">Current user's ID</param>
     /// <param name="startDate">Optional start date (defaults to Monday of current week)</param>
     /// <param name="endDate">Optional end date (defaults to Friday of next week)</param>
     /// <returns>Dashboard data with person info, preferences, and statistics</returns>
     [HttpGet]
+    [RequiresPermission(Resource = "Dashboard", Action = PermissionAction.Read)]
     [ProducesResponseType(typeof(DashboardData), 200)]
     [ProducesResponseType(404)]
     [ProducesResponseType(500)]

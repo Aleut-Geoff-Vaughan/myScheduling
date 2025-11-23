@@ -3,12 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Core.Models;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TeamCalendarController : ControllerBase
+public class TeamCalendarController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<TeamCalendarController> _logger;
@@ -23,17 +24,35 @@ public class TeamCalendarController : ControllerBase
     /// Get all team calendars for a tenant
     /// </summary>
     [HttpGet]
+    [RequiresPermission(Resource = "TeamCalendar", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<TeamCalendarResponse>>> GetTeamCalendars(
-        [FromQuery] Guid tenantId,
+        [FromQuery] Guid? tenantId = null,
         [FromQuery] bool includeInactive = false)
     {
         try
         {
+            var userTenantIds = GetUserTenantIds();
+
             var query = _context.TeamCalendars
                 .Include(tc => tc.Owner)
                 .Include(tc => tc.Members.Where(m => m.IsActive))
                     .ThenInclude(m => m.Person)
-                .Where(tc => tc.TenantId == tenantId);
+                .AsQueryable();
+
+            // Filter by tenant if specified and user has access
+            if (tenantId.HasValue)
+            {
+                if (!userTenantIds.Contains(tenantId.Value) && !IsSystemAdmin())
+                {
+                    return StatusCode(403, "You do not have access to this tenant");
+                }
+                query = query.Where(tc => tc.TenantId == tenantId.Value);
+            }
+            else
+            {
+                // Show calendars from all tenants user has access to
+                query = query.Where(tc => userTenantIds.Contains(tc.TenantId));
+            }
 
             if (!includeInactive)
             {
@@ -87,7 +106,7 @@ public class TeamCalendarController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving team calendars for tenant {TenantId}", tenantId);
+            _logger.LogError(ex, "Error retrieving team calendars");
             return StatusCode(500, new { error = "An error occurred while retrieving team calendars" });
         }
     }
@@ -96,6 +115,7 @@ public class TeamCalendarController : ControllerBase
     /// Get a specific team calendar by ID
     /// </summary>
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "TeamCalendar", Action = PermissionAction.Read)]
     public async Task<ActionResult<TeamCalendarResponse>> GetTeamCalendar(Guid id)
     {
         try
@@ -166,18 +186,26 @@ public class TeamCalendarController : ControllerBase
     /// Create a new team calendar
     /// </summary>
     [HttpPost]
+    [RequiresPermission(Resource = "TeamCalendar", Action = PermissionAction.Create)]
     public async Task<ActionResult<TeamCalendarResponse>> CreateTeamCalendar(
-        [FromBody] CreateTeamCalendarRequest request,
-        [FromQuery] Guid tenantId,
-        [FromQuery] Guid userId)
+        [FromBody] CreateTeamCalendarRequest request)
     {
         try
         {
+            var userId = GetCurrentUserId();
+            var userTenantIds = GetUserTenantIds();
+
+            // Validate tenant access
+            if (!userTenantIds.Contains(request.TenantId) && !IsSystemAdmin())
+            {
+                return StatusCode(403, "You do not have access to this tenant");
+            }
+
             // Validate owner if provided
             if (request.OwnerId.HasValue)
             {
                 var ownerExists = await _context.People
-                    .AnyAsync(p => p.Id == request.OwnerId.Value && p.TenantId == tenantId);
+                    .AnyAsync(p => p.Id == request.OwnerId.Value && p.TenantId == request.TenantId);
 
                 if (!ownerExists)
                 {
@@ -188,7 +216,7 @@ public class TeamCalendarController : ControllerBase
             var calendar = new TeamCalendar
             {
                 Id = Guid.NewGuid(),
-                TenantId = tenantId,
+                TenantId = request.TenantId,
                 Name = request.Name,
                 Description = request.Description,
                 Type = request.Type,
@@ -201,7 +229,7 @@ public class TeamCalendarController : ControllerBase
             await _context.SaveChangesAsync();
 
             _logger.LogInformation("Team calendar {CalendarId} created for tenant {TenantId} by user {UserId}",
-                calendar.Id, tenantId, userId);
+                calendar.Id, request.TenantId, userId);
 
             // Return the created calendar
             return CreatedAtAction(nameof(GetTeamCalendar), new { id = calendar.Id }, new TeamCalendarResponse
@@ -220,7 +248,7 @@ public class TeamCalendarController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating team calendar for tenant {TenantId}", tenantId);
+            _logger.LogError(ex, "Error creating team calendar");
             return StatusCode(500, new { error = "An error occurred while creating the team calendar" });
         }
     }
@@ -229,13 +257,14 @@ public class TeamCalendarController : ControllerBase
     /// Update a team calendar
     /// </summary>
     [HttpPut("{id}")]
+    [RequiresPermission(Resource = "TeamCalendar", Action = PermissionAction.Update)]
     public async Task<ActionResult<TeamCalendarResponse>> UpdateTeamCalendar(
         Guid id,
-        [FromBody] UpdateTeamCalendarRequest request,
-        [FromQuery] Guid userId)
+        [FromBody] UpdateTeamCalendarRequest request)
     {
         try
         {
+            var userId = GetCurrentUserId();
             var calendar = await _context.TeamCalendars
                 .Include(tc => tc.Owner)
                 .FirstOrDefaultAsync(tc => tc.Id == id);
@@ -300,10 +329,12 @@ public class TeamCalendarController : ControllerBase
     /// Delete a team calendar
     /// </summary>
     [HttpDelete("{id}")]
-    public async Task<ActionResult> DeleteTeamCalendar(Guid id, [FromQuery] Guid userId)
+    [RequiresPermission(Resource = "TeamCalendar", Action = PermissionAction.Delete)]
+    public async Task<ActionResult> DeleteTeamCalendar(Guid id)
     {
         try
         {
+            var userId = GetCurrentUserId();
             var calendar = await _context.TeamCalendars.FindAsync(id);
 
             if (calendar == null)
@@ -329,13 +360,14 @@ public class TeamCalendarController : ControllerBase
     /// Add a member to a team calendar
     /// </summary>
     [HttpPost("{id}/members")]
+    [RequiresPermission(Resource = "TeamCalendar", Action = PermissionAction.Update)]
     public async Task<ActionResult<TeamCalendarMemberResponse>> AddMember(
         Guid id,
-        [FromBody] AddTeamCalendarMemberRequest request,
-        [FromQuery] Guid userId)
+        [FromBody] AddTeamCalendarMemberRequest request)
     {
         try
         {
+            var userId = GetCurrentUserId();
             var calendar = await _context.TeamCalendars
                 .Include(tc => tc.Members)
                 .FirstOrDefaultAsync(tc => tc.Id == id);
@@ -445,13 +477,14 @@ public class TeamCalendarController : ControllerBase
     /// Bulk add members to a team calendar
     /// </summary>
     [HttpPost("{id}/members/bulk")]
+    [RequiresPermission(Resource = "TeamCalendar", Action = PermissionAction.Update)]
     public async Task<ActionResult<IEnumerable<TeamCalendarMemberResponse>>> BulkAddMembers(
         Guid id,
-        [FromBody] BulkAddMembersRequest request,
-        [FromQuery] Guid userId)
+        [FromBody] BulkAddMembersRequest request)
     {
         try
         {
+            var userId = GetCurrentUserId();
             var calendar = await _context.TeamCalendars
                 .Include(tc => tc.Members)
                 .FirstOrDefaultAsync(tc => tc.Id == id);
@@ -571,10 +604,12 @@ public class TeamCalendarController : ControllerBase
     /// Remove a member from a team calendar
     /// </summary>
     [HttpDelete("{id}/members/{memberId}")]
-    public async Task<ActionResult> RemoveMember(Guid id, Guid memberId, [FromQuery] Guid userId)
+    [RequiresPermission(Resource = "TeamCalendar", Action = PermissionAction.Update)]
+    public async Task<ActionResult> RemoveMember(Guid id, Guid memberId)
     {
         try
         {
+            var userId = GetCurrentUserId();
             var member = await _context.TeamCalendarMembers
                 .FirstOrDefaultAsync(m => m.Id == memberId && m.TeamCalendarId == id);
 
@@ -605,6 +640,7 @@ public class TeamCalendarController : ControllerBase
     /// Get team calendar view with work location preferences
     /// </summary>
     [HttpGet("{id}/view")]
+    [RequiresPermission(Resource = "TeamCalendar", Action = PermissionAction.Read)]
     public async Task<ActionResult<TeamCalendarViewResponse>> GetTeamCalendarView(
         Guid id,
         [FromQuery] DateOnly? startDate = null,

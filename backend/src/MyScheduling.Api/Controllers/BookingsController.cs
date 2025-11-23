@@ -2,70 +2,33 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Api.Attributes;
+using MyScheduling.Core.Interfaces;
 
 namespace MyScheduling.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class BookingsController : ControllerBase
+public class BookingsController : AuthorizedControllerBase
 {
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<BookingsController> _logger;
+    private readonly IAuthorizationService _authService;
 
-    public BookingsController(MySchedulingDbContext context, ILogger<BookingsController> logger)
+    public BookingsController(
+        MySchedulingDbContext context,
+        ILogger<BookingsController> logger,
+        IAuthorizationService authService)
     {
         _context = context;
         _logger = logger;
+        _authService = authService;
     }
 
-    /// <summary>
-    /// Verify that a user has access to a booking's tenant and has appropriate roles
-    /// </summary>
-    private async Task<(bool isAuthorized, string? errorMessage, TenantMembership? membership)>
-        VerifyUserAccess(Guid userId, Guid tenantId, params AppRole[] requiredRoles)
-    {
-        var user = await _context.Users
-            .Include(u => u.TenantMemberships)
-            .FirstOrDefaultAsync(u => u.Id == userId);
-
-        if (user == null)
-        {
-            return (false, "User not found", null);
-        }
-
-        var tenantMembership = user.TenantMemberships
-            .FirstOrDefault(tm => tm.TenantId == tenantId && tm.IsActive);
-
-        if (tenantMembership == null)
-        {
-            _logger.LogWarning("User {UserId} attempted to access booking from tenant {TenantId} without membership",
-                userId, tenantId);
-            return (false, "User does not have access to this tenant", null);
-        }
-
-        // System admins bypass role checks
-        if (user.IsSystemAdmin)
-        {
-            return (true, null, tenantMembership);
-        }
-
-        // Check if user has any of the required roles
-        if (requiredRoles.Length > 0)
-        {
-            var hasRole = tenantMembership.Roles.Any(r => requiredRoles.Contains(r));
-            if (!hasRole)
-            {
-                _logger.LogWarning("User {UserId} lacks required roles {RequiredRoles} for booking action",
-                    userId, string.Join(", ", requiredRoles));
-                return (false, $"User does not have permission. Required role: {string.Join(" or ", requiredRoles)}", tenantMembership);
-            }
-        }
-
-        return (true, null, tenantMembership);
-    }
 
     // GET: api/bookings
     [HttpGet]
+    [RequiresPermission(Resource = "Booking", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<Booking>>> GetBookings(
         [FromQuery] Guid? personId = null,
         [FromQuery] Guid? spaceId = null,
@@ -131,6 +94,7 @@ public class BookingsController : ControllerBase
 
     // GET: api/bookings/{id}
     [HttpGet("{id}")]
+    [RequiresPermission(Resource = "Booking", Action = PermissionAction.Read)]
     public async Task<ActionResult<Booking>> GetBooking(Guid id)
     {
         try
@@ -158,43 +122,11 @@ public class BookingsController : ControllerBase
 
     // POST: api/bookings
     [HttpPost]
-    public async Task<ActionResult<Booking>> CreateBooking(
-        [FromQuery] Guid userId,
-        Booking booking)
+    [RequiresPermission(Resource = "Booking", Action = PermissionAction.Create)]
+    public async Task<ActionResult<Booking>> CreateBooking(Booking booking)
     {
         try
         {
-            // Get person to verify tenant
-            var person = await _context.People.FindAsync(booking.PersonId);
-            if (person == null)
-            {
-                return NotFound("Person not found");
-            }
-
-            // Verify user access
-            var (isAuthorized, errorMessage, _) = await VerifyUserAccess(
-                userId,
-                booking.TenantId,
-                AppRole.Employee, AppRole.TeamLead, AppRole.ProjectManager, AppRole.ResourceManager, AppRole.OfficeManager, AppRole.TenantAdmin);
-
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
-
-            // Users can only book for themselves unless they have manager roles
-            if (person.UserId != userId)
-            {
-                var (canModify, modifyError, _) = await VerifyUserAccess(
-                    userId,
-                    booking.TenantId,
-                    AppRole.OfficeManager, AppRole.ResourceManager, AppRole.TenantAdmin);
-
-                if (!canModify)
-                {
-                    return StatusCode(403, "Users can only create bookings for themselves");
-                }
-            }
 
             // Check for space conflicts
             var hasConflict = await _context.Bookings
@@ -225,10 +157,8 @@ public class BookingsController : ControllerBase
 
     // PUT: api/bookings/{id}
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateBooking(
-        Guid id,
-        [FromQuery] Guid userId,
-        Booking booking)
+    [RequiresPermission(Resource = "Booking", Action = PermissionAction.Update)]
+    public async Task<IActionResult> UpdateBooking(Guid id, Booking booking)
     {
         if (id != booking.Id)
         {
@@ -237,39 +167,6 @@ public class BookingsController : ControllerBase
 
         try
         {
-            var existing = await _context.Bookings
-                .Include(b => b.Person)
-                .FirstOrDefaultAsync(b => b.Id == id);
-
-            if (existing == null)
-            {
-                return NotFound($"Booking with ID {id} not found");
-            }
-
-            // Verify user access
-            var (isAuthorized, errorMessage, _) = await VerifyUserAccess(
-                userId,
-                existing.TenantId,
-                AppRole.Employee, AppRole.TeamLead, AppRole.ProjectManager, AppRole.ResourceManager, AppRole.OfficeManager, AppRole.TenantAdmin);
-
-            if (!isAuthorized)
-            {
-                return StatusCode(403, errorMessage);
-            }
-
-            // Users can only update their own bookings unless they have manager roles
-            if (existing.Person?.UserId != userId)
-            {
-                var (canModify, modifyError, _) = await VerifyUserAccess(
-                    userId,
-                    existing.TenantId,
-                    AppRole.OfficeManager, AppRole.ResourceManager, AppRole.TenantAdmin);
-
-                if (!canModify)
-                {
-                    return StatusCode(403, "Users can only update their own bookings");
-                }
-            }
 
             _context.Entry(booking).State = EntityState.Modified;
 
@@ -295,16 +192,46 @@ public class BookingsController : ControllerBase
         }
     }
 
-    // DELETE: api/bookings/{id}
+    // DELETE: api/bookings/{id} (Soft Delete)
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteBooking(
-        Guid id,
-        [FromQuery] Guid userId)
+    [RequiresPermission(Resource = "Booking", Action = PermissionAction.Delete)]
+    public async Task<IActionResult> DeleteBooking(Guid id, [FromQuery] string? reason = null)
+    {
+        try
+        {
+            var booking = await _context.Bookings.FindAsync(id);
+            if (booking == null)
+            {
+                return NotFound($"Booking with ID {id} not found");
+            }
+
+            booking.IsDeleted = true;
+            booking.DeletedAt = DateTime.UtcNow;
+            booking.DeletedByUserId = GetCurrentUserId();
+            booking.DeletionReason = reason;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Booking {BookingId} soft-deleted by user {UserId}", id, booking.DeletedByUserId);
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error soft-deleting booking {BookingId}", id);
+            return StatusCode(500, "An error occurred while deleting the booking");
+        }
+    }
+
+    // DELETE: api/bookings/{id}/hard (Hard Delete - Platform Admin Only)
+    [HttpDelete("{id}/hard")]
+    [RequiresPermission(Resource = "Booking", Action = PermissionAction.HardDelete)]
+    public async Task<IActionResult> HardDeleteBooking(Guid id)
     {
         try
         {
             var booking = await _context.Bookings
-                .Include(b => b.Person)
+                .IgnoreQueryFilters()
                 .FirstOrDefaultAsync(b => b.Id == id);
 
             if (booking == null)
@@ -312,45 +239,73 @@ public class BookingsController : ControllerBase
                 return NotFound($"Booking with ID {id} not found");
             }
 
-            // Verify user access
-            var (isAuthorized, errorMessage, _) = await VerifyUserAccess(
-                userId,
-                booking.TenantId,
-                AppRole.Employee, AppRole.TeamLead, AppRole.ProjectManager, AppRole.ResourceManager, AppRole.OfficeManager, AppRole.TenantAdmin);
-
-            if (!isAuthorized)
+            var archive = new DataArchive
             {
-                return StatusCode(403, errorMessage);
-            }
+                Id = Guid.NewGuid(),
+                TenantId = booking.TenantId,
+                EntityType = "Booking",
+                EntityId = booking.Id,
+                EntitySnapshot = System.Text.Json.JsonSerializer.Serialize(booking),
+                ArchivedAt = DateTime.UtcNow,
+                ArchivedByUserId = GetCurrentUserId(),
+                Status = DataArchiveStatus.PermanentlyDeleted,
+                PermanentlyDeletedAt = DateTime.UtcNow,
+                PermanentlyDeletedByUserId = GetCurrentUserId(),
+                CreatedAt = DateTime.UtcNow
+            };
 
-            // Users can only delete their own bookings unless they have manager roles
-            if (booking.Person?.UserId != userId)
-            {
-                var (canModify, modifyError, _) = await VerifyUserAccess(
-                    userId,
-                    booking.TenantId,
-                    AppRole.OfficeManager, AppRole.ResourceManager, AppRole.TenantAdmin);
-
-                if (!canModify)
-                {
-                    return StatusCode(403, "Users can only delete their own bookings");
-                }
-            }
-
+            _context.DataArchives.Add(archive);
             _context.Bookings.Remove(booking);
             await _context.SaveChangesAsync();
+
+            _logger.LogWarning("Booking {BookingId} HARD DELETED by user {UserId}", id, GetCurrentUserId());
 
             return NoContent();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting booking {BookingId}", id);
-            return StatusCode(500, "An error occurred while deleting the booking");
+            _logger.LogError(ex, "Error hard-deleting booking {BookingId}", id);
+            return StatusCode(500, "An error occurred while permanently deleting the booking");
+        }
+    }
+
+    // POST: api/bookings/{id}/restore (Restore Soft-Deleted)
+    [HttpPost("{id}/restore")]
+    [RequiresPermission(Resource = "Booking", Action = PermissionAction.Restore)]
+    public async Task<IActionResult> RestoreBooking(Guid id)
+    {
+        try
+        {
+            var booking = await _context.Bookings
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(b => b.Id == id && b.IsDeleted);
+
+            if (booking == null)
+            {
+                return NotFound($"Soft-deleted booking with ID {id} not found");
+            }
+
+            booking.IsDeleted = false;
+            booking.DeletedAt = null;
+            booking.DeletedByUserId = null;
+            booking.DeletionReason = null;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Booking {BookingId} restored by user {UserId}", id, GetCurrentUserId());
+
+            return Ok(booking);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring booking {BookingId}", id);
+            return StatusCode(500, "An error occurred while restoring the booking");
         }
     }
 
     // POST: api/bookings/{id}/checkin
     [HttpPost("{id}/checkin")]
+    [RequiresPermission(Resource = "Booking", Action = PermissionAction.Update)]
     public async Task<IActionResult> CheckIn(Guid id, [FromBody] string method)
     {
         try
@@ -384,6 +339,7 @@ public class BookingsController : ControllerBase
 
     // GET: api/bookings/offices
     [HttpGet("offices")]
+    [RequiresPermission(Resource = "Office", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<Office>>> GetOffices([FromQuery] Guid? tenantId = null)
     {
         try
@@ -412,6 +368,7 @@ public class BookingsController : ControllerBase
 
     // GET: api/bookings/spaces
     [HttpGet("spaces")]
+    [RequiresPermission(Resource = "Space", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<Space>>> GetSpaces(
         [FromQuery] Guid? officeId = null,
         [FromQuery] SpaceType? type = null)

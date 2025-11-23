@@ -11,16 +11,25 @@ export class ApiError extends Error {
   }
 }
 
-// Helper to get user ID from localStorage
-function getUserId(): string | null {
+// Helper to get JWT token from localStorage
+function getAuthToken(): string | null {
   try {
     const authState = localStorage.getItem('auth-storage');
     if (authState) {
       const parsed = JSON.parse(authState);
-      return parsed.state?.user?.id || null;
+      const token = parsed.state?.token;
+      const expiresAt = parsed.state?.tokenExpiresAt;
+
+      // Check if token is expired
+      if (token && expiresAt) {
+        const expiryDate = new Date(expiresAt);
+        if (expiryDate > new Date()) {
+          return token;
+        }
+      }
     }
   } catch (error) {
-    console.error('Failed to get user ID from auth storage:', error);
+    console.error('Failed to get auth token from storage:', error);
   }
   return null;
 }
@@ -35,10 +44,10 @@ export async function apiRequest<T>(
     'Content-Type': 'application/json',
   };
 
-  // Add user ID header if available
-  const userId = getUserId();
-  if (userId) {
-    defaultHeaders['X-User-Id'] = userId;
+  // Add JWT token in Authorization header if available
+  const token = getAuthToken();
+  if (token) {
+    defaultHeaders['Authorization'] = `Bearer ${token}`;
   }
 
   const config: RequestInit = {
@@ -53,6 +62,14 @@ export async function apiRequest<T>(
     const response = await fetch(url, config);
 
     if (!response.ok) {
+      // Handle 401 Unauthorized - token expired or invalid
+      if (response.status === 401) {
+        // Clear auth storage and redirect to login
+        localStorage.removeItem('auth-storage');
+        window.location.href = '/login';
+        throw new ApiError(401, 'Unauthorized - Please login again', null);
+      }
+
       const errorData = await response.json().catch(() => null);
       throw new ApiError(response.status, response.statusText, errorData);
     }
