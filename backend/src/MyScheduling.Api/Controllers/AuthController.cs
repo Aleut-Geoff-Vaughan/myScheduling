@@ -39,11 +39,13 @@ public class AuthController : ControllerBase
     {
         try
         {
+            var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+
             // Find user by email with their tenant memberships
             var user = await _context.Users
                 .Include(u => u.TenantMemberships)
                     .ThenInclude(tm => tm.Tenant)
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail);
 
             if (user == null)
             {
