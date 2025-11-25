@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup } from './ui';
 import { projectsService } from '../services/projectsService';
+import { groupService } from '../services/groupService';
 import type { Project } from '../types/api';
 import { ProjectStatus } from '../types/api';
 import { useTenants } from '../hooks/useTenants';
@@ -16,6 +17,11 @@ interface ProjectModalProps {
 export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalProps) {
   const queryClient = useQueryClient();
   const { data: tenants = [] } = useTenants();
+  const { data: approverGroups = [] } = useQuery({
+    queryKey: ['groups', 'active'],
+    queryFn: () => groupService.list({ isActive: true }),
+    staleTime: 60_000,
+  });
 
   const [formData, setFormData] = useState({
     tenantId: '',
@@ -25,6 +31,7 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
     startDate: '',
     endDate: '',
     status: ProjectStatus.Draft,
+    approverGroupId: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -39,6 +46,7 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
         startDate: project.startDate.split('T')[0],
         endDate: project.endDate ? project.endDate.split('T')[0] : '',
         status: project.status,
+        approverGroupId: (project as any).approverGroupId || '',
       });
     } else {
       // Set default tenant if available
@@ -46,6 +54,7 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
         ...prev,
         tenantId: tenants[0]?.id || '',
         startDate: new Date().toISOString().split('T')[0],
+        approverGroupId: '',
       }));
     }
   }, [project, mode, tenants]);
@@ -96,6 +105,7 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
       ...formData,
       startDate: formData.startDate + 'T00:00:00',
       endDate: formData.endDate ? formData.endDate + 'T00:00:00' : undefined,
+      approverGroupId: formData.approverGroupId || undefined,
     };
 
     if (mode === 'create') {
@@ -126,6 +136,9 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
     { value: ProjectStatus.Active.toString(), label: 'Active' },
     { value: ProjectStatus.Closed.toString(), label: 'Closed' },
   ];
+  const approverGroupOptions = [{ value: '', label: 'None' }].concat(
+    approverGroups.map((g) => ({ value: g.id, label: g.name }))
+  );
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
@@ -210,13 +223,19 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
           />
         </FormGroup>
 
-        <FormGroup columns={1} className="mt-4">
+        <FormGroup columns={2} className="mt-4">
           <Select
             label="Status"
             options={statusOptions}
             value={formData.status.toString()}
             onChange={(e) => handleChange('status', parseInt(e.target.value))}
             required
+          />
+          <Select
+            label="Approver Group"
+            options={approverGroupOptions}
+            value={formData.approverGroupId}
+            onChange={(e) => handleChange('approverGroupId', e.target.value)}
           />
         </FormGroup>
       </form>

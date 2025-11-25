@@ -40,9 +40,12 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const url = buildApiUrl(endpoint);
 
-  const defaultHeaders: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
+  const isFormData = options.body instanceof FormData;
+  const defaultHeaders: HeadersInit = isFormData
+    ? {}
+    : {
+        'Content-Type': 'application/json',
+      };
 
   // Add JWT token in Authorization header if available
   const token = getAuthToken();

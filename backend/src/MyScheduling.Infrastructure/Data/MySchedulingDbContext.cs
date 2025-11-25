@@ -45,6 +45,9 @@ public class MySchedulingDbContext : DbContext
     public DbSet<ProjectRole> ProjectRoles => Set<ProjectRole>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
     public DbSet<AssignmentHistory> AssignmentHistory => Set<AssignmentHistory>();
+    public DbSet<AssignmentRequest> AssignmentRequests => Set<AssignmentRequest>();
+    public DbSet<Group> Groups => Set<Group>();
+    public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
 
     // Hoteling
     public DbSet<Office> Offices => Set<Office>();
@@ -99,6 +102,7 @@ public class MySchedulingDbContext : DbContext
         ConfigureTeamCalendars(modelBuilder);
         ConfigureValidation(modelBuilder);
         ConfigureAuthorization(modelBuilder);
+        ConfigureGroups(modelBuilder);
         ConfigureDataArchive(modelBuilder);
 
         // Apply global query filters for soft deletes
@@ -248,6 +252,7 @@ public class MySchedulingDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Code).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Description).IsRequired().HasMaxLength(500);
+            entity.HasIndex(e => e.ApproverGroupId);
 
             entity.HasIndex(e => new { e.TenantId, e.Code }).IsUnique();
             entity.HasIndex(e => e.ProjectId);
@@ -256,6 +261,11 @@ public class MySchedulingDbContext : DbContext
                 .WithMany(p => p.WbsElements)
                 .HasForeignKey(e => e.ProjectId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ApproverGroup)
+                .WithMany()
+                .HasForeignKey(e => e.ApproverGroupId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<WbsChangeHistory>(entity =>
@@ -334,6 +344,53 @@ public class MySchedulingDbContext : DbContext
                 .WithMany(a => a.History)
                 .HasForeignKey(e => e.AssignmentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AssignmentRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.AllocationPct).IsRequired();
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasIndex(e => new { e.TenantId, e.Status });
+            entity.HasIndex(e => new { e.TenantId, e.RequestedForUserId, e.Status });
+            entity.HasIndex(e => new { e.ApproverGroupId, e.Status });
+
+            entity.HasOne(e => e.RequestedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.RequestedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.RequestedForUser)
+                .WithMany()
+                .HasForeignKey(e => e.RequestedForUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ApprovedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ApprovedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.WbsElement)
+                .WithMany()
+                .HasForeignKey(e => e.WbsElementId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Project)
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.Assignment)
+                .WithMany()
+                .HasForeignKey(e => e.AssignmentId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ApproverGroup)
+                .WithMany(g => g.AssignmentRequests)
+                .HasForeignKey(e => e.ApproverGroupId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 
@@ -1025,6 +1082,39 @@ public class MySchedulingDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
             entity.HasIndex(e => new { e.TenantId, e.Category }).IsUnique();
+        });
+    }
+
+    private void ConfigureGroups(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Group>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+
+            entity.HasIndex(e => new { e.TenantId, e.Name }).IsUnique();
+            entity.HasIndex(e => new { e.TenantId, e.IsActive });
+        });
+
+        modelBuilder.Entity<GroupMember>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Role).IsRequired();
+
+            entity.HasIndex(e => new { e.TenantId, e.GroupId, e.UserId }).IsUnique();
+            entity.HasIndex(e => new { e.GroupId, e.Role });
+
+            entity.HasOne(e => e.Group)
+                .WithMany(g => g.Members)
+                .HasForeignKey(e => e.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

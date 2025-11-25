@@ -68,6 +68,7 @@ public class AssignmentHistory : BaseEntity
     public DateTime ChangedAt { get; set; }
     public Guid? ChangedByUserId { get; set; }
     public string? ChangeReason { get; set; }
+    public string? Notes { get; set; }
 
     // Navigation properties
     public virtual Assignment Assignment { get; set; } = null!;

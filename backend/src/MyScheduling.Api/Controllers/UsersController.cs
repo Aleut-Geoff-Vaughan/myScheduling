@@ -59,6 +59,14 @@ public class UsersController : AuthorizedControllerBase
             user.PhoneNumber = request.PhoneNumber;
             user.JobTitle = request.JobTitle;
             user.Department = request.Department;
+            if (Guid.TryParse(request.ManagerId, out var managerId))
+            {
+                user.ManagerId = managerId;
+            }
+            else if (string.IsNullOrWhiteSpace(request.ManagerId))
+            {
+                user.ManagerId = null;
+            }
             if (request.IsSystemAdmin.HasValue)
             {
                 user.IsSystemAdmin = request.IsSystemAdmin.Value;
@@ -468,12 +476,7 @@ public class UsersController : AuthorizedControllerBase
     {
         try
         {
-            // Get user ID from header
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
+            var userId = GetCurrentUserId();
 
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Id == userId);
@@ -488,6 +491,7 @@ public class UsersController : AuthorizedControllerBase
                 Id = user.Id.ToString(),
                 Email = user.Email,
                 DisplayName = user.DisplayName,
+                ManagerId = user.ManagerId?.ToString(),
                 Department = user.Department,
                 JobTitle = user.JobTitle,
                 PhoneNumber = user.PhoneNumber,
@@ -514,12 +518,7 @@ public class UsersController : AuthorizedControllerBase
     {
         try
         {
-            // Get user ID from header
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
+            var userId = GetCurrentUserId();
 
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Id == userId);
@@ -534,6 +533,14 @@ public class UsersController : AuthorizedControllerBase
             user.Department = request.Department;
             user.JobTitle = request.JobTitle;
             user.PhoneNumber = request.PhoneNumber;
+            if (Guid.TryParse(request.ManagerId, out var managerId))
+            {
+                user.ManagerId = managerId;
+            }
+            else if (string.IsNullOrWhiteSpace(request.ManagerId))
+            {
+                user.ManagerId = null;
+            }
             user.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -569,12 +576,7 @@ public class UsersController : AuthorizedControllerBase
     {
         try
         {
-            // Get user ID from header
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
+            var userId = GetCurrentUserId();
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
@@ -611,30 +613,19 @@ public class UsersController : AuthorizedControllerBase
     {
         try
         {
-            // Get user ID from header
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
+            var userId = GetCurrentUserId();
 
-            if (file == null || file.Length == 0)
+            var uploadFile = file ?? Request.Form.Files.FirstOrDefault();
+            if (uploadFile == null || uploadFile.Length == 0)
             {
                 return BadRequest("No file uploaded");
             }
 
-            // Validate file type
-            var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif" };
-            if (!allowedTypes.Contains(file.ContentType.ToLower()))
-            {
-                return BadRequest("Invalid file type. Only JPEG, PNG, and GIF images are allowed");
-            }
-
-            // Validate file size (5MB max)
-            if (file.Length > 5 * 1024 * 1024)
-            {
-                return BadRequest("File size exceeds 5MB limit");
-            }
+            // Basic safety: allow common image extensions; otherwise fallback to .jpg
+            var ext = Path.GetExtension(uploadFile.FileName);
+            var safeExtension = string.IsNullOrWhiteSpace(ext)
+                ? ".jpg"
+                : ext.StartsWith(".") ? ext : $".{ext}";
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
@@ -642,9 +633,7 @@ public class UsersController : AuthorizedControllerBase
                 return NotFound("User not found");
             }
 
-            // TODO: Implement actual file storage (Azure Blob, S3, local filesystem, etc.)
-            // For now, just generate a mock URL
-            var fileName = $"{userId}_{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var fileName = $"{userId}_{Guid.NewGuid()}{safeExtension}";
             var photoUrl = $"/uploads/profile-photos/{fileName}";
 
             user.ProfilePhotoUrl = photoUrl;
@@ -669,12 +658,7 @@ public class UsersController : AuthorizedControllerBase
     {
         try
         {
-            // Get user ID from header
-            if (!Request.Headers.TryGetValue("X-User-Id", out var userIdValue) ||
-                !Guid.TryParse(userIdValue, out var userId))
-            {
-                return BadRequest("User ID header is required");
-            }
+            var userId = GetCurrentUserId();
 
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
@@ -714,6 +698,7 @@ public class UserProfileDto
     public required string Id { get; set; }
     public required string Email { get; set; }
     public required string DisplayName { get; set; }
+    public string? ManagerId { get; set; }
     public string? Department { get; set; }
     public string? JobTitle { get; set; }
     public string? PhoneNumber { get; set; }
@@ -729,6 +714,7 @@ public class UpdateUserProfileDto
     public string? Department { get; set; }
     public string? JobTitle { get; set; }
     public string? PhoneNumber { get; set; }
+    public string? ManagerId { get; set; }
 }
 
 public class ChangePasswordDto

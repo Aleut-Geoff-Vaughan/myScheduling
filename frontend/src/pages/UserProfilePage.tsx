@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAuthStore } from '../stores/authStore';
 import { Card, CardHeader, CardBody } from '../components/ui';
 import { userProfileService } from '../services/userProfileService';
 import toast from 'react-hot-toast';
 import type { UserProfile, UpdateUserProfileRequest, ChangePasswordRequest } from '../types/user';
+import { useAuthStore } from '../stores/authStore';
+import { usePeople } from '../hooks/usePeople';
+import Cropper from 'react-easy-crop';
+import { getCroppedImage } from '../utils/cropImage';
 
 export function UserProfilePage() {
-  const { user, setUser } = useAuthStore();
+  const { user, setUser, currentWorkspace } = useAuthStore();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -16,6 +19,7 @@ export function UserProfilePage() {
   // Profile form state
   const [profileForm, setProfileForm] = useState<UpdateUserProfileRequest>({
     displayName: '',
+    managerId: '',
     department: '',
     jobTitle: '',
     phoneNumber: '',
@@ -29,10 +33,19 @@ export function UserProfilePage() {
   });
 
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
+  const [cropImage, setCropImage] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  const { data: peopleOptions = [] } = usePeople({
+    tenantId: currentWorkspace?.tenantId,
+  });
 
   const fetchProfile = async () => {
     setIsLoading(true);
@@ -41,6 +54,7 @@ export function UserProfilePage() {
       setProfile(data);
       setProfileForm({
         displayName: data.displayName,
+        managerId: data.managerId || '',
         department: data.department || '',
         jobTitle: data.jobTitle || '',
         phoneNumber: data.phoneNumber || '',
@@ -149,19 +163,12 @@ export function UserProfilePage() {
       return;
     }
 
-    try {
-      const response = await userProfileService.uploadProfilePhoto(file);
-      setProfile(prev => prev ? { ...prev, profilePhotoUrl: response.profilePhotoUrl } : null);
-
-      // Update auth store
-      if (user) {
-        setUser({ ...user, profilePhotoUrl: response.profilePhotoUrl });
-      }
-
-      toast.success('Profile photo updated successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload photo');
-    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropImage(reader.result as string);
+      setIsCropping(true);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handlePhotoDelete = async () => {
@@ -179,6 +186,31 @@ export function UserProfilePage() {
       toast.success('Profile photo removed successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to remove photo');
+    }
+  };
+
+  const onCropComplete = (_: any, croppedPixels: any) => {
+    setCroppedAreaPixels(croppedPixels);
+  };
+
+  const handleCropSave = async () => {
+    if (!cropImage || !croppedAreaPixels) return;
+    setIsSaving(true);
+    try {
+      const croppedBlob = await getCroppedImage(cropImage, croppedAreaPixels);
+      const file = new File([croppedBlob], 'profile.jpg', { type: 'image/jpeg' });
+      const response = await userProfileService.uploadProfilePhoto(file);
+      setProfile((prev) => (prev ? { ...prev, profilePhotoUrl: response.profilePhotoUrl } : null));
+      if (user) {
+        setUser({ ...user, profilePhotoUrl: response.profilePhotoUrl });
+      }
+      toast.success('Profile photo updated successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload photo');
+    } finally {
+      setIsSaving(false);
+      setIsCropping(false);
+      setCropImage(null);
     }
   };
 
@@ -204,7 +236,57 @@ export function UserProfilePage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+      <div className="p-6 max-w-4xl mx-auto">
+      {isCropping && cropImage && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl p-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Crop Profile Photo</h3>
+            <div className="relative w-full h-80 bg-gray-900 rounded-lg overflow-hidden">
+              <Cropper
+                image={cropImage}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-4">
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setIsCropping(false);
+                    setCropImage(null);
+                  }}
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCropSave}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 disabled:opacity-50"
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
@@ -351,6 +433,27 @@ export function UserProfilePage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="e.g., Software Engineer, Account Manager"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Manager
+                </label>
+                <select
+                  value={profileForm.managerId || ''}
+                  onChange={(e) => setProfileForm({ ...profileForm, managerId: e.target.value || undefined })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">No manager</option>
+                  {peopleOptions.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.displayName} {p.jobTitle ? `— ${p.jobTitle}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Visible to your organization for hierarchy and team views.
+                </p>
               </div>
 
               <div>

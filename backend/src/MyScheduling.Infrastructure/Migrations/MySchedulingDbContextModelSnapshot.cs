@@ -188,6 +188,10 @@ namespace MyScheduling.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_deleted");
 
+                    b.Property<string>("Notes")
+                        .HasColumnType("text")
+                        .HasColumnName("notes");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("start_date");
@@ -211,6 +215,139 @@ namespace MyScheduling.Infrastructure.Migrations
                         .HasDatabaseName("ix_assignment_history_assignment_id_changed_at");
 
                     b.ToTable("assignment_history");
+                });
+
+            modelBuilder.Entity("MyScheduling.Core.Entities.AssignmentRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AllocationPct")
+                        .HasColumnType("integer")
+                        .HasColumnName("allocation_pct");
+
+                    b.Property<Guid?>("ApprovedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approved_by_user_id");
+
+                    b.Property<Guid?>("ApproverGroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approver_group_id");
+
+                    b.Property<Guid?>("AssignmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("assignment_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by_user_id");
+
+                    b.Property<string>("DeletionReason")
+                        .HasColumnType("text")
+                        .HasColumnName("deletion_reason");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("end_date");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_id");
+
+                    b.Property<Guid?>("ProjectRoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("project_role_id");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_by_user_id");
+
+                    b.Property<Guid>("RequestedForUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requested_for_user_id");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("resolved_at");
+
+                    b.Property<DateTime?>("StartDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("start_date");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<Guid?>("WbsElementId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("wbs_element_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_assignment_requests");
+
+                    b.HasIndex("ApprovedByUserId")
+                        .HasDatabaseName("ix_assignment_requests_approved_by_user_id");
+
+                    b.HasIndex("AssignmentId")
+                        .HasDatabaseName("ix_assignment_requests_assignment_id");
+
+                    b.HasIndex("ProjectId")
+                        .HasDatabaseName("ix_assignment_requests_project_id");
+
+                    b.HasIndex("RequestedByUserId")
+                        .HasDatabaseName("ix_assignment_requests_requested_by_user_id");
+
+                    b.HasIndex("RequestedForUserId")
+                        .HasDatabaseName("ix_assignment_requests_requested_for_user_id");
+
+                    b.HasIndex("WbsElementId")
+                        .HasDatabaseName("ix_assignment_requests_wbs_element_id");
+
+                    b.HasIndex("ApproverGroupId", "Status")
+                        .HasDatabaseName("ix_assignment_requests_approver_group_id_status");
+
+                    b.HasIndex("TenantId", "Status")
+                        .HasDatabaseName("ix_assignment_requests_tenant_id_status");
+
+                    b.HasIndex("TenantId", "RequestedForUserId", "Status")
+                        .HasDatabaseName("ix_assignment_requests_tenant_id_requested_for_user_id_status");
+
+                    b.ToTable("assignment_requests");
                 });
 
             modelBuilder.Entity("MyScheduling.Core.Entities.AuthorizationAuditLog", b =>
@@ -1320,6 +1457,150 @@ namespace MyScheduling.Infrastructure.Migrations
                         .HasDatabaseName("ix_file_access_logs_stored_file_id_accessed_at");
 
                     b.ToTable("file_access_logs");
+                });
+
+            modelBuilder.Entity("MyScheduling.Core.Entities.Group", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by_user_id");
+
+                    b.Property<string>("DeletionReason")
+                        .HasColumnType("text")
+                        .HasColumnName("deletion_reason");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_groups");
+
+                    b.HasIndex("TenantId", "IsActive")
+                        .HasDatabaseName("ix_groups_tenant_id_is_active");
+
+                    b.HasIndex("TenantId", "Name")
+                        .IsUnique()
+                        .HasDatabaseName("ix_groups_tenant_id_name");
+
+                    b.ToTable("groups");
+                });
+
+            modelBuilder.Entity("MyScheduling.Core.Entities.GroupMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid?>("CreatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid?>("DeletedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("deleted_by_user_id");
+
+                    b.Property<string>("DeletionReason")
+                        .HasColumnType("text")
+                        .HasColumnName("deletion_reason");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("group_id");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("integer")
+                        .HasColumnName("role");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tenant_id");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid?>("UpdatedByUserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("updated_by_user_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_group_members");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_group_members_user_id");
+
+                    b.HasIndex("GroupId", "Role")
+                        .HasDatabaseName("ix_group_members_group_id_role");
+
+                    b.HasIndex("TenantId", "GroupId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_group_members_tenant_id_group_id_user_id");
+
+                    b.ToTable("group_members");
                 });
 
             modelBuilder.Entity("MyScheduling.Core.Entities.LinkedInImport", b =>
@@ -4110,6 +4391,10 @@ namespace MyScheduling.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("approved_at");
 
+                    b.Property<Guid?>("ApproverGroupId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("approver_group_id");
+
                     b.Property<Guid?>("ApproverId")
                         .HasColumnType("uuid")
                         .HasColumnName("approver_id");
@@ -4208,6 +4493,9 @@ namespace MyScheduling.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_wbs_elements");
+
+                    b.HasIndex("ApproverGroupId")
+                        .HasDatabaseName("ix_wbs_elements_approver_group_id");
 
                     b.HasIndex("ApproverId")
                         .HasDatabaseName("ix_wbs_elements_approver_id");
@@ -4579,6 +4867,77 @@ namespace MyScheduling.Infrastructure.Migrations
                     b.Navigation("Assignment");
                 });
 
+            modelBuilder.Entity("MyScheduling.Core.Entities.AssignmentRequest", b =>
+                {
+                    b.HasOne("MyScheduling.Core.Entities.User", "ApprovedByUser")
+                        .WithMany()
+                        .HasForeignKey("ApprovedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_assignment_requests__users_approved_by_user_id");
+
+                    b.HasOne("MyScheduling.Core.Entities.Group", "ApproverGroup")
+                        .WithMany("AssignmentRequests")
+                        .HasForeignKey("ApproverGroupId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_assignment_requests__groups_approver_group_id");
+
+                    b.HasOne("MyScheduling.Core.Entities.Assignment", "Assignment")
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_assignment_requests_assignments_assignment_id");
+
+                    b.HasOne("MyScheduling.Core.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_assignment_requests__projects_project_id");
+
+                    b.HasOne("MyScheduling.Core.Entities.User", "RequestedByUser")
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_assignment_requests__users_requested_by_user_id");
+
+                    b.HasOne("MyScheduling.Core.Entities.User", "RequestedForUser")
+                        .WithMany()
+                        .HasForeignKey("RequestedForUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_assignment_requests__users_requested_for_user_id");
+
+                    b.HasOne("MyScheduling.Core.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_assignment_requests__tenants_tenant_id");
+
+                    b.HasOne("MyScheduling.Core.Entities.WbsElement", "WbsElement")
+                        .WithMany()
+                        .HasForeignKey("WbsElementId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_assignment_requests__wbs_elements_wbs_element_id");
+
+                    b.Navigation("ApprovedByUser");
+
+                    b.Navigation("ApproverGroup");
+
+                    b.Navigation("Assignment");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("RequestedByUser");
+
+                    b.Navigation("RequestedForUser");
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("WbsElement");
+                });
+
             modelBuilder.Entity("MyScheduling.Core.Entities.AuthorizationAuditLog", b =>
                 {
                     b.HasOne("MyScheduling.Core.Entities.Tenant", "Tenant")
@@ -4829,6 +5188,48 @@ namespace MyScheduling.Infrastructure.Migrations
                     b.Navigation("AccessedBy");
 
                     b.Navigation("StoredFile");
+                });
+
+            modelBuilder.Entity("MyScheduling.Core.Entities.Group", b =>
+                {
+                    b.HasOne("MyScheduling.Core.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_groups__tenants_tenant_id");
+
+                    b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("MyScheduling.Core.Entities.GroupMember", b =>
+                {
+                    b.HasOne("MyScheduling.Core.Entities.Group", "Group")
+                        .WithMany("Members")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_group_members_groups_group_id");
+
+                    b.HasOne("MyScheduling.Core.Entities.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_group_members__tenants_tenant_id");
+
+                    b.HasOne("MyScheduling.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_group_members__users_user_id");
+
+                    b.Navigation("Group");
+
+                    b.Navigation("Tenant");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("MyScheduling.Core.Entities.LinkedInImport", b =>
@@ -5432,6 +5833,12 @@ namespace MyScheduling.Infrastructure.Migrations
 
             modelBuilder.Entity("MyScheduling.Core.Entities.WbsElement", b =>
                 {
+                    b.HasOne("MyScheduling.Core.Entities.Group", "ApproverGroup")
+                        .WithMany()
+                        .HasForeignKey("ApproverGroupId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_wbs_elements_groups_approver_group_id");
+
                     b.HasOne("MyScheduling.Core.Entities.User", "Approver")
                         .WithMany()
                         .HasForeignKey("ApproverId")
@@ -5457,6 +5864,8 @@ namespace MyScheduling.Infrastructure.Migrations
                         .HasConstraintName("fk_wbs_elements_tenants_tenant_id");
 
                     b.Navigation("Approver");
+
+                    b.Navigation("ApproverGroup");
 
                     b.Navigation("Owner");
 
@@ -5576,6 +5985,13 @@ namespace MyScheduling.Infrastructure.Migrations
                     b.Navigation("Activations");
 
                     b.Navigation("Signatures");
+                });
+
+            modelBuilder.Entity("MyScheduling.Core.Entities.Group", b =>
+                {
+                    b.Navigation("AssignmentRequests");
+
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("MyScheduling.Core.Entities.Office", b =>

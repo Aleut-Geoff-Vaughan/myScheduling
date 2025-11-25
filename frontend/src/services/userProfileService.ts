@@ -35,11 +35,7 @@ export const userProfileService = {
     const formData = new FormData();
     formData.append('file', file);
 
-    return api.post<UploadProfilePhotoResponse>('/users/me/profile-photo', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    return api.post<UploadProfilePhotoResponse>('/users/me/profile-photo', formData);
   },
 
   /**

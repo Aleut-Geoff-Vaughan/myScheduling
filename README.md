@@ -1,324 +1,94 @@
-# myScheduling - Enterprise Staffing & Work Location Management Platform
+# myScheduling
 
-A comprehensive web application for managing project staffing, resource allocation, work location preferences, and office hoteling with advanced security and workflow approvals.
+Enterprise staffing, work-location management, hoteling, WBS workflow, resumes, and tenant-aware RBAC. All historical docs now live in `docs/archive/`; this README is the current source of truth.
 
-## 🎯 Project Overview
+## Overview
+- Work locations: calendars (week/two-week/month), templates (day/week/custom), stats, and supervisor visibility.
+- Staffing: assignments with statuses, capacity view, request handling with inbox/approvals, admin/manager views.
+- WBS & projects: lifecycle workflow, approvals, history, and bulk ops.
+- Hoteling: spaces/bookings with check-in tracking UI.
+- Resumes: profiles, sections, versions, approvals (needs full E2E testing).
+- Admin portal: users/tenants/roles, invitations, profile editing (manager hierarchy), groups for approvers, login reports.
 
-myScheduling is an enterprise solution providing:
-- **Work Location Management**: Daily tracking with 6 location types (Remote, Remote Plus, Client Site, Office, Office + Reservation, PTO)
-- **Work Location Templates**: Save and apply schedule patterns across weeks
-- **Staffing Management**: Project assignments with approval workflows
-- **WBS Workflow System**: Complete approval workflow for Work Breakdown Structure management
-- **Resource Forecasting**: Utilization and capacity tracking
-- **Office Hoteling**: Desk and room booking with check-in tracking
-- **Resume Management**: Database-driven employee profiles with skills and certifications
-- **Company Holidays**: Federal holidays tracking with admin configuration
-- **Multi-Tenant Architecture**: Complete tenant isolation with role-based security
+## Architecture & Stack
+- Backend: .NET 8 Web API, EF Core, PostgreSQL, Swagger.
+- Frontend: React + TypeScript, Vite, Tailwind, TanStack Query, React Router, Zustand.
+- Auth: JWT bearer (dev symmetric key), bcrypt password hashing, `[RequiresPermission]` authorization (coverage still in progress).
+- Dev DB: Azure PostgreSQL (`myscheduling` @ `myscheduling.postgres.database.azure.com`).
+- Ports: API `5107`; Frontend `5173` proxied to API.
 
-## ✨ Key Features
+## Setup & Run (local)
+Prereqs: .NET 8 SDK, Node 18+, PostgreSQL (or the provided Azure DB), npm.
 
-### Dashboard & Work Location ✅
-- **Interactive 2-Week Calendar**: Monday-Friday work location planning
-- **6 Location Types**: Remote, Remote Plus, Client Site, Office (No Reservation), Office (With Reservation), PTO
-- **Visual Calendar**: Color-coded with icons (🏠 Remote, 🏢 Client, 🏛️ Office, 🌴 PTO)
-- **Statistics Dashboard**: Track remote days, office days, client sites, and unset days
-- **Work Location Templates**: Save common schedule patterns for quick reuse
-- **Template Types**: Day, Week (5-day), or Custom multi-day templates
-- **Multi-Week Application**: Apply templates across multiple weeks at once
-
-### WBS (Work Breakdown Structure) Management ✅
-- **Complete Workflow**: Draft → Pending Approval → Approved/Rejected → Suspended → Closed
-- **Approval System**: Assigned approvers with override capabilities
-- **Bulk Operations**: Submit, approve, reject, or close multiple WBS elements at once
-- **Change History**: Full audit trail of all WBS changes
-- **Advanced Filtering**: Filter by project, type, status, and search across fields
-
-### Security & Authorization ✅
-- **Role-Based Access Control (RBAC)**: 12 application roles with granular permissions
-- **22+ Secured Endpoints**: Comprehensive authorization across controllers
-- **Cross-Tenant Protection**: Users cannot access data outside their tenant
-- **Ownership Verification**: Users can only modify their own data (unless manager)
-- **Security Audit Logging**: All authorization failures logged for compliance
-- **System Admin Bypass**: Special permissions for system administrators
-
-### User Management ✅
-- **User Invitations**: Token-based invitations with role templates
-- **Role Management**: Inline role editing with 9 preset templates
-- **Tenant Memberships**: Multi-role assignments per tenant
-- **User Lifecycle**: Activation, deactivation, reactivation workflows
-- **Admin Portal**: Separate interface for system administrators
-
-## 🏗️ Tech Stack
-
-### Backend
-- **.NET 8 Web API** - RESTful services
-- **Entity Framework Core 8** - ORM with code-first migrations
-- **PostgreSQL 14+** - Relational database (Azure hosted)
-- **Swagger/OpenAPI** - API documentation
-
-### Frontend
-- **React 18 + TypeScript** - Type-safe UI framework
-- **Vite** - Build tool and dev server
-- **Tailwind CSS** - Utility-first styling
-- **TanStack Query** - Data fetching and caching
-- **React Router v6** - Client-side routing
-- **Zustand** - Lightweight state management
-
-### Deployment Target
-- **Development**: Azure Commercial
-- **Production**: Azure Government
-- **Authentication**: Entra ID GCC High (planned)
-
-## 🚀 Quick Start
-
-### Prerequisites
-- .NET 8 SDK
-- Node.js 18+ and npm
-- PostgreSQL 14+
-
-### Backend Setup
+Backend
 ```bash
-# Navigate to API directory
 cd backend/src/MyScheduling.Api
-
-# Apply database migrations
-dotnet ef database update
-
-# Start the API (runs on port 5000)
-dotnet run
+dotnet restore
+dotnet run --urls http://localhost:5107
+# or set the connection string:
+# ConnectionStrings__DefaultConnection="Host=...;Port=5432;Database=...;Username=...;Password=...;SslMode=Require"
 ```
 
-API available at: `http://localhost:5000`
-Swagger UI: `http://localhost:5000/swagger`
-
-### Frontend Setup
+Frontend
 ```bash
-# Navigate to frontend directory
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start dev server (runs on port 5173)
-npm run dev -- --host 0.0.0.0
+VITE_API_PROXY_TARGET=http://localhost:5107 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-Frontend available at: `http://localhost:5173`
-
-### Test Accounts
-- **Admin**: `admin@test.com`
-- **Test User**: `test@test.com` (has Person record with full test data)
-
-## 📊 Database
-
-**Connection**: Azure PostgreSQL
-**Host**: myscheduling.postgres.database.azure.com
-**Database**: myscheduling
-**User**: aleutstaffing
-
-### Core Entities
-
-**Identity & Tenancy**
-- Tenant - Multi-tenant isolation
-- User - User accounts (linked to Entra ID)
-- TenantMembership - User membership with roles (JSONB array)
-
-**People & Resumes**
-- Person - Employee/contractor records
-- ResumeProfile, ResumeSection, ResumeEntry - Structured resumes
-- ResumeVersion, ResumeApproval - Version control and approvals
-- Skill, Certification - Skills and certifications tracking
-
-**Projects & WBS**
-- Project - Programs and projects
-- WbsElement - Work Breakdown Structure with workflow
-- WbsChangeHistory - Complete audit trail
-
-**Staffing**
-- ProjectRole - Open seats/roles on projects
-- Assignment - Person assigned to role/WBS with approvals
-- AssignmentHistory - Audit trail
-
-**Hoteling & Work Location**
-- Office, Space - Physical locations and bookable spaces
-- Booking - Space reservations with check-in tracking
-- WorkLocationPreference - Daily work location tracking
-- WorkLocationTemplate, WorkLocationTemplateItem - Schedule templates
-- CompanyHoliday - Federal and company holidays
-
-## 🔐 Security & Roles
-
-### Application Roles
-1. **Employee** - Basic user access
-2. **ViewOnly** - Read-only access across tenant
-3. **TeamLead** - Team management capabilities
-4. **ProjectManager** - Project and WBS management
-5. **ResourceManager** - Resource allocation and assignments
-6. **OfficeManager** - Office and space management
-7. **TenantAdmin** - Full tenant administration
-8. **Executive** - Executive reporting access
-9. **OverrideApprover** - Can override approval workflows
-10. **SystemAdmin** - System-wide administration
-11. **Support** - Support team access
-12. **Auditor** - Audit and compliance access
-
-### Security Features
-- ✅ Cross-tenant isolation enforced at data layer
-- ✅ Row-level authorization checks on all mutations
-- ✅ Ownership verification (users manage their own data)
-- ✅ Manager override capabilities
-- ✅ System admin bypass for administrative tasks
-- ✅ Comprehensive security audit logging
-- ✅ UTC DateTime handling for PostgreSQL compatibility
-
-## 📈 Development Status
-
-### ✅ Completed Features
-- Complete work location management with templates
-- WBS workflow system with approvals
-- User management with invitations and roles
-- Security hardening (22+ secured endpoints)
-- Dashboard with 2-week calendar view
-- Company holidays system
-- Multi-tenant architecture
-
-### 🔄 In Progress
-- **Resume Management**: Testing resume creation/editing workflow
-- **Work Location Templates**: Comprehensive testing of template application
-
-### 📋 Planned Features
-- Phase 5: Enhanced assignments & staffing workflows
-- Phase 6: Hoteling check-in system with mobile support
-- Phase 7: Reporting & analytics dashboard
-- Phase 8: Entra ID authentication integration
-- Phase 9: File upload to Azure/SharePoint
-- Phase 10: Admin configuration portal
-
-## 🧪 Test Data
-
-The database is seeded with comprehensive test data:
-- 2 tenants (Aleut Federal, Partner Organization)
-- 100 employees (50 per tenant)
-- 10 projects per tenant
-- 20-30 WBS elements per tenant
-- Work location preferences for test user
-- Federal holidays for 2025-2026
-- Assignments, bookings, and office spaces
-
-## 📝 API Endpoints
-
-### Authentication
-```
-POST /api/auth/login    # User login
-POST /api/auth/logout   # User logout
+Build checks
+```bash
+cd frontend && npm run build
+cd backend  && dotnet build
 ```
 
-### Dashboard
-```
-GET /api/dashboard?userId={guid}&startDate={date}&endDate={date}
-    Returns: {person, preferences, assignments, bookings, stats}
-```
+Sample accounts (dev seed): `admin@test.com`, `test@test.com` (password per your seed/setup).
 
-### Work Location
-```
-GET    /api/worklocationpreferences    # Get preferences (with filters)
-POST   /api/worklocationpreferences    # Create preference
-PUT    /api/worklocationpreferences/{id}    # Update preference
-DELETE /api/worklocationpreferences/{id}    # Delete preference
-POST   /api/worklocationpreferences/bulk    # Bulk create/update
-```
+## Data, Roles, Auth
+- Tenants: isolation enforced in code; JWT claims carry tenant IDs and roles.
+- Roles: Employee, ViewOnly, TeamLead, ProjectManager, ResourceManager, OfficeManager, TenantAdmin, Executive, OverrideApprover, SysAdmin (system), Support, Auditor.
+- Manager hierarchy: `managerId` on users; used for supervisor display and team filters.
+- JWT: replace dev key per environment; plan for refresh tokens/SSO (Entra ID) for production.
 
-### Work Location Templates
-```
-GET    /api/worklocationtemplates    # List templates
-POST   /api/worklocationtemplates    # Create template
-PUT    /api/worklocationtemplates/{id}    # Update template
-DELETE /api/worklocationtemplates/{id}    # Delete template
-POST   /api/worklocationtemplates/{id}/apply    # Apply template to dates
-```
+## Key Modules
+- Dashboard: reusable view (self or reports) with calendars, stats, and quick links.
+- People: tiles/list, filters (all/direct/direct+indirect), supervisor display, inline edit (permissions), full-record modal edit.
+- Work Location Templates: CRUD/apply; dashboard/cache refresh polish in progress.
+- Staffing: assignments, capacity timeline, tenant-scoped assignment requests with approvals/inbox, CSV export, and admin/manager views.
+- WBS/Projects: workflow, approvals, history, bulk operations.
+- Hoteling: spaces/bookings with check-in UI.
+- Resumes: CRUD + versions/approvals; needs thorough testing.
+- Admin: user/tenant/role management, invitations, profile editing (searchable manager), groups for approvers, login reports.
 
-### WBS Management
-```
-GET  /api/wbs                # List WBS elements
-POST /api/wbs                # Create WBS
-PUT  /api/wbs/{id}           # Update WBS
-POST /api/wbs/{id}/submit    # Submit for approval
-POST /api/wbs/{id}/approve   # Approve WBS
-POST /api/wbs/{id}/reject    # Reject WBS
-POST /api/wbs/bulk-submit    # Bulk submit
-POST /api/wbs/bulk-approve   # Bulk approve
-POST /api/wbs/bulk-reject    # Bulk reject
-```
+## Known Risks & TODO Highlights
+- Authorization coverage incomplete: remaining controllers to secure include WorkLocationPreferences, WBS, Facilities, Invitations, TenantMemberships, ResumeApprovals/Templates, Holidays, DelegationOfAuthority, Validation.
+- Auth hardening: rotate JWT secrets per env; add refresh tokens/SSO/MFA; ensure tokens drive all identity (no header overrides).
+- Manager data hygiene: avoid cycles; UI now guards but data needs validation.
+- Testing gap: no automated suites (backend xUnit/integration, frontend Vitest/Playwright needed).
+- Observability: add structured logs/metrics/traces.
+- Performance: review N+1 queries; add DB indexes for hot paths.
+- Storage: profile photo upload stubbed—implement real storage (Azure Blob/S3) and cleanup.
+- Notifications: invitation/workflow emails unimplemented; staffing approvals need messaging.
+- Work location templates/calendar: ensure apply/refresh flows are reliable and covered by tests.
 
-### Resumes
-```
-GET    /api/resumes              # List resumes
-POST   /api/resumes              # Create resume
-GET    /api/resumes/{id}         # Get resume
-PUT    /api/resumes/{id}         # Update resume
-DELETE /api/resumes/{id}         # Delete resume
-POST   /api/resumes/{id}/sections    # Add section
-GET    /api/resumes/{id}/versions    # Get versions
-```
+## Testing & Verification
+- Manual: `dotnet build`, `npm run build`.
+- Health: `http://localhost:5107/health`.
+- Dev app: `http://localhost:5173` (proxied to API).
+- Add automated integration and UI tests as priority.
 
-See [Swagger UI](http://localhost:5000/swagger) for complete API documentation.
+## Repo Layout
+- `backend/` – .NET solution and API.
+- `frontend/` – React app (Vite).
+- `scripts/` – utilities/seeding.
+- `docs/archive/` – historical docs (designs, reviews, setup notes).
+- `TODO.md` – current backlog/priorities.
+- `LICENSE` – licensing.
 
-## 🔧 Configuration
+## Quick Commands
+- Start API: `cd backend/src/MyScheduling.Api && dotnet run --urls http://localhost:5107`
+- Start FE: `cd frontend && VITE_API_PROXY_TARGET=http://localhost:5107 npm run dev -- --host 0.0.0.0 --port 5173`
+- Build: `cd frontend && npm run build` ; `cd backend && dotnet build`
 
-**Backend** (appsettings.json)
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Database=myscheduling;Username=postgres;Password=***"
-  },
-  "Cors": {
-    "AllowedOrigins": ["http://localhost:5173"]
-  }
-}
-```
-
-**Frontend** (vite.config.ts)
-```typescript
-export default defineConfig({
-  server: {
-    port: 5173,
-    proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true,
-      },
-    },
-  },
-})
-```
-
-## 🌐 Deploying to Azure Static Web Apps
-
-1. Set a GitHub Actions secret named `VITE_API_URL` to your deployed API root (for example `https://<api-hostname>/api`). The Static Web Apps workflow consumes this at build time so the bundled frontend calls the correct API instead of `/api` on the static host.
-2. In your API hosting environment (App Service/Container), set `ConnectionStrings__DefaultConnection` with the production password and `ASPNETCORE_ENVIRONMENT=Production` so the health check can reach the database.
-3. CORS allows local dev plus `https://proud-ocean-0c7274110.3.azurestaticapps.net` and the future `https://myscheduling.aleutfederal.com` domains; add any new hostnames to `backend/src/MyScheduling.Api/appsettings.json` if you change domains.
-4. Verify after deploy:
-   - Frontend build uses the correct base URL: `echo $VITE_API_URL`
-   - API health: `curl -i https://<api-hostname>/api/health`
-
-## 🤝 Contributing
-
-1. Create a feature branch from `main`
-2. Make your changes
-3. Run tests and ensure build succeeds
-4. Update [TODO.md](TODO.md) with work session notes
-5. Submit a pull request
-
-## 📄 License
-
-Copyright © 2025 Aleut Federal. All rights reserved.
-
-## 🆘 Support
-
-For issues or questions, contact the development team or create an issue in this repository.
-
----
-
-**Last Updated**: November 23, 2025
-**Version**: 1.0.0-beta
-**Status**: Active Development
+## Support
+Use the archived docs in `docs/archive/` for historical reference. Keep `README.md` and `TODO.md` current with active work.

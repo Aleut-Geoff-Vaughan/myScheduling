@@ -41,6 +41,7 @@ export interface ApplyTemplateRequest {
 }
 
 export interface CreateTemplateRequest {
+  tenantId: string;
   name: string;
   description?: string;
   type: TemplateType;

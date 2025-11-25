@@ -42,6 +42,7 @@ public class WbsController : AuthorizedControllerBase
     public async Task<ActionResult<PaginatedResponse<WbsElement>>> GetWbsElements(
         [FromQuery] Guid? projectId = null,
         [FromQuery] Guid? ownerId = null,
+        [FromQuery] Guid? approverGroupId = null,
         [FromQuery] WbsType? type = null,
         [FromQuery] WbsApprovalStatus? approvalStatus = null,
         [FromQuery] bool includeHistory = false,
@@ -69,6 +70,11 @@ public class WbsController : AuthorizedControllerBase
             if (ownerId.HasValue)
             {
                 query = query.Where(w => w.OwnerUserId == ownerId.Value);
+            }
+
+            if (approverGroupId.HasValue)
+            {
+                query = query.Where(w => w.ApproverGroupId == approverGroupId.Value);
             }
 
             if (type.HasValue)
@@ -161,7 +167,8 @@ public class WbsController : AuthorizedControllerBase
     [ProducesResponseType(typeof(IEnumerable<WbsElement>), 200)]
     [ProducesResponseType(500)]
     public async Task<ActionResult<IEnumerable<WbsElement>>> GetPendingApprovals(
-        [FromQuery] Guid? approverId = null)
+        [FromQuery] Guid? approverId = null,
+        [FromQuery] Guid? approverGroupId = null)
     {
         try
         {
@@ -169,11 +176,17 @@ public class WbsController : AuthorizedControllerBase
                 .Include(w => w.Project)
                 .Include(w => w.Owner)
                 .Include(w => w.Approver)
+                .Include(w => w.ApproverGroup)
                 .Where(w => w.ApprovalStatus == WbsApprovalStatus.PendingApproval);
 
             if (approverId.HasValue)
             {
                 query = query.Where(w => w.ApproverUserId == approverId.Value);
+            }
+
+            if (approverGroupId.HasValue)
+            {
+                query = query.Where(w => w.ApproverGroupId == approverGroupId.Value);
             }
 
             var pendingWbs = await query

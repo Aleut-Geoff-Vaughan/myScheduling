@@ -10,3 +10,15 @@
 /workspaces/myScheduling/backend/src/MyScheduling.Core/obj/Debug/net8.0/refint/MyScheduling.Core.dll
 /workspaces/myScheduling/backend/src/MyScheduling.Core/obj/Debug/net8.0/MyScheduling.Core.pdb
 /workspaces/myScheduling/backend/src/MyScheduling.Core/obj/Debug/net8.0/ref/MyScheduling.Core.dll
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\bin\Debug\net8.0\MyScheduling.Core.deps.json
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\bin\Debug\net8.0\MyScheduling.Core.dll
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\bin\Debug\net8.0\MyScheduling.Core.pdb
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\obj\Debug\net8.0\MyScheduling.Core.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\obj\Debug\net8.0\MyScheduling.Core.AssemblyInfoInputs.cache
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\obj\Debug\net8.0\MyScheduling.Core.AssemblyInfo.cs
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\obj\Debug\net8.0\MyScheduling.Core.csproj.CoreCompileInputs.cache
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\obj\Debug\net8.0\MyScheduling.Core.sourcelink.json
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\obj\Debug\net8.0\MyScheduling.Core.dll
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\obj\Debug\net8.0\refint\MyScheduling.Core.dll
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\obj\Debug\net8.0\MyScheduling.Core.pdb
+C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Core\obj\Debug\net8.0\ref\MyScheduling.Core.dll

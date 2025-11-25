@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../stores/authStore';
 import { buildApiUrl } from '../config/api';
+import { Link } from 'react-router-dom';
 
 interface HealthStatus {
   status: string;
@@ -20,7 +21,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [healthError, setHealthError] = useState('');
-  const [isCheckingHealth, setIsCheckingHealth] = useState(true);
+  const [rememberMe, setRememberMe] = useState(true);
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
@@ -28,7 +29,6 @@ export function LoginPage() {
   // Health check on component mount
   useEffect(() => {
     const checkHealth = async () => {
-      setIsCheckingHealth(true);
       try {
         const response = await fetch(buildApiUrl('/health'));
         if (response.ok) {
@@ -39,12 +39,18 @@ export function LoginPage() {
         }
       } catch (err) {
         setHealthError('Cannot connect to API');
-      } finally {
-        setIsCheckingHealth(false);
       }
     };
 
     checkHealth();
+  }, []);
+
+  // Prefill remembered email
+  useEffect(() => {
+    const stored = localStorage.getItem('remembered-email');
+    if (stored) {
+      setEmail(stored);
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,6 +59,12 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
+      if (rememberMe) {
+        localStorage.setItem('remembered-email', email);
+      } else {
+        localStorage.removeItem('remembered-email');
+      }
+
       await login(email, password);
       toast.success('Login successful!');
       // After login, redirect to workspace selector
@@ -153,23 +165,56 @@ export function LoginPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={isLoading || isCheckingHealth}
-              className="w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </span>
-              ) : (
-                'Sign In'
-              )}
-            </button>
+            <div className="flex items-center justify-between text-sm">
+              <label className="inline-flex items-center gap-2 text-gray-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 text-primary-600 border-gray-300 rounded"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  disabled={isLoading}
+                />
+                Remember me
+              </label>
+              <span className="text-gray-400">|</span>
+              <Link to="/forgot-password" className="text-primary-600 hover:text-primary-700">
+                Forgot password?
+              </Link>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed border border-blue-700 shadow-sm tracking-wide"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Signing in...
+                  </span>
+                ) : (
+                  'Sign In'
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-800 font-medium py-3 px-4 rounded-lg transition shadow-sm flex items-center justify-center gap-2"
+                onClick={() => toast('Login with Microsoft coming soon')}
+              >
+                <svg className="w-5 h-5" viewBox="0 0 23 23" aria-hidden="true">
+                  <rect width="10.5" height="10.5" x="0.5" y="0.5" fill="#F35325" />
+                  <rect width="10.5" height="10.5" x="12" y="0.5" fill="#81BC06" />
+                  <rect width="10.5" height="10.5" x="0.5" y="12" fill="#05A6F0" />
+                  <rect width="10.5" height="10.5" x="12" y="12" fill="#FFBA08" />
+                </svg>
+                <span>Sign in with Microsoft</span>
+              </button>
+            </div>
           </form>
 
           {/* Login Helper */}

@@ -7,6 +7,7 @@ import type {
 } from '../types/template';
 import { TemplateType } from '../types/template';
 import { WorkLocationType } from '../types/api';
+import { useAuthStore } from '../stores/authStore';
 
 interface TemplateEditorProps {
   template?: WorkLocationTemplate;
@@ -18,6 +19,7 @@ const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClose }) => {
   const createTemplate = useCreateTemplate();
   const updateTemplate = useUpdateTemplate();
+  const currentWorkspace = useAuthStore((state) => state.currentWorkspace);
 
   const [name, setName] = useState(template?.name || '');
   const [description, setDescription] = useState(template?.description || '');
@@ -123,7 +125,14 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClos
       return;
     }
 
+    const tenantId = template?.tenantId || currentWorkspace?.tenantId;
+    if (!tenantId) {
+      alert('Select a tenant workspace before creating templates.');
+      return;
+    }
+
     const requestBase: CreateTemplateRequest = {
+      tenantId,
       name: name.trim(),
       description: description.trim() || undefined,
       type: templateType,

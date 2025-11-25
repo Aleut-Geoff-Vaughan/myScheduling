@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "EvBlEk6QAr0=",
+  "dgSpecHash": "lPLf6VapIP0=",
   "success": true,
-  "projectFilePath": "/workspaces/myScheduling/backend/src/MyScheduling.Core/MyScheduling.Core.csproj",
+  "projectFilePath": "C:\\Users\\GeoffVaughan\\.vscode\\Workspace\\myScheduling\\backend\\src\\MyScheduling.Core\\MyScheduling.Core.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

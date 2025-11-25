@@ -1,11 +1,1 @@
-{
-  "Version": 1,
-  "Hash": "xBSF2iz0ueP+UFPcT+4fxiRZi6k9A+yGwDM2quxc2dc=",
-  "Source": "MyScheduling.Api",
-  "BasePath": "_content/MyScheduling.Api",
-  "Mode": "Default",
-  "ManifestType": "Build",
-  "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": []
-}
+{"Version":1,"Hash":"+N9tIE4K+DzQx0RdN1SbDK8psC+U7WgrxH5XDBBpS8I=","Source":"MyScheduling.Api","BasePath":"/","Mode":"Root","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}

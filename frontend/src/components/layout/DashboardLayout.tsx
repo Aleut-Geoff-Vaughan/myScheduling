@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useAuthStore, AppRole } from '../../stores/authStore';
+import { useInbox } from '../../hooks/useInbox';
+import { AssignmentRequestStatus } from '../../types/api';
 
 interface NavItem {
   name: string;
@@ -13,6 +15,12 @@ export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
   const { user, currentWorkspace, logout, hasRole } = useAuthStore();
+  const { data: inbox = [] } = useInbox(
+    currentWorkspace?.tenantId
+      ? { tenantId: currentWorkspace.tenantId, status: AssignmentRequestStatus.Pending }
+      : undefined
+  );
+  const unreadCount = inbox.filter((i) => i.status === AssignmentRequestStatus.Pending).length;
 
   const navigation: NavItem[] = [
     {
@@ -61,6 +69,26 @@ export function DashboardLayout() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       ),
+    },
+    {
+      name: 'Team Staffing',
+      path: '/staffing/manage',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      roles: [AppRole.TeamLead, AppRole.ResourceManager, AppRole.ProjectManager, AppRole.TenantAdmin, AppRole.SysAdmin],
+    },
+    {
+      name: 'Staffing Admin',
+      path: '/staffing/admin',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v2H7a2 2 0 01-2-2v-1m14 0v1a2 2 0 01-2 2h-2v-2m4-4v1m-4 0v-1m-4 1v-1m-4 1v-1m-2-3h16M5 7l2-2h10l2 2" />
+        </svg>
+      ),
+      roles: [AppRole.ResourceManager, AppRole.TenantAdmin, AppRole.SysAdmin],
     },
     {
       name: 'Hoteling',
@@ -159,6 +187,24 @@ export function DashboardLayout() {
             </div>
 
             <div className="flex items-center space-x-4">
+              {(hasRole(AppRole.SysAdmin) || hasRole(AppRole.TenantAdmin)) && (
+                <Link to="/admin" className="text-gray-500 hover:text-gray-700">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </Link>
+              )}
+              <Link to="/inbox" className="relative text-gray-500 hover:text-gray-700">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7h18M3 7l2 12h14l2-12M3 7l6-4h6l6 4" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full px-1.5">
+                    {unreadCount}
+                  </span>
+                )}
+              </Link>
               {/* User Menu */}
               <div className="flex items-center space-x-3">
                 <Link to="/profile" className="flex items-center space-x-3 hover:opacity-80 transition">

@@ -6,6 +6,7 @@ export interface UserProfile {
   id: string;
   email: string;
   displayName: string;
+  managerId?: string;
   department?: string;
   jobTitle?: string;
   phoneNumber?: string;
@@ -16,7 +17,9 @@ export interface UserProfile {
 }
 
 export interface UpdateUserProfileRequest {
+  email?: string;
   displayName: string;
+  managerId?: string;
   department?: string;
   jobTitle?: string;
   phoneNumber?: string;

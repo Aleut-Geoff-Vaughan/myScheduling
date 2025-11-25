@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input } from '../components/ui';
 import { WbsDetailModal } from '../components/WbsDetailModal';
 import wbsService from '../services/wbsService';
+import { groupService } from '../services/groupService';
 import type { WbsElement } from '../types/api';
 import { WbsType, WbsApprovalStatus } from '../types/api';
 
@@ -10,6 +11,7 @@ export function WbsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<'all' | WbsType>('all');
   const [selectedApprovalFilter, setSelectedApprovalFilter] = useState<'all' | WbsApprovalStatus>('all');
+  const [selectedApproverGroupFilter, setSelectedApproverGroupFilter] = useState<string>('all');
   const [selectedProject] = useState<string | undefined>();
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(50);
@@ -18,15 +20,22 @@ export function WbsPage() {
   const [modalMode, setModalMode] = useState<'create' | 'edit' | 'view'>('view');
 
   const { data: paginatedData, isLoading, error } = useQuery({
-    queryKey: ['wbs', selectedProject, selectedTypeFilter, selectedApprovalFilter, pageNumber, pageSize],
+    queryKey: ['wbs', selectedProject, selectedTypeFilter, selectedApprovalFilter, selectedApproverGroupFilter, pageNumber, pageSize],
     queryFn: () => wbsService.getWbsElements({
       projectId: selectedProject,
       type: selectedTypeFilter !== 'all' ? selectedTypeFilter : undefined,
       approvalStatus: selectedApprovalFilter !== 'all' ? selectedApprovalFilter : undefined,
+      approverGroupId: selectedApproverGroupFilter !== 'all' ? selectedApproverGroupFilter : undefined,
       includeHistory: false,
       pageNumber,
       pageSize,
     }),
+  });
+
+  const { data: approverGroups = [] } = useQuery({
+    queryKey: ['groups', 'active'],
+    queryFn: () => groupService.list({ isActive: true }),
+    staleTime: 60_000,
   });
 
   const wbsElements = paginatedData?.items || [];
@@ -36,15 +45,21 @@ export function WbsPage() {
   const hasNextPage = paginatedData?.hasNextPage || false;
 
   const filteredWbsElements = useMemo(() => {
-    if (!searchTerm) return wbsElements;
-
     const term = searchTerm.toLowerCase();
-    return wbsElements.filter(wbs =>
-      wbs.code.toLowerCase().includes(term) ||
-      wbs.description.toLowerCase().includes(term) ||
-      wbs.project?.name?.toLowerCase().includes(term)
-    );
-  }, [wbsElements, searchTerm]);
+    return wbsElements.filter(wbs => {
+      const matchesSearch =
+        !term ||
+        wbs.code.toLowerCase().includes(term) ||
+        wbs.description.toLowerCase().includes(term) ||
+        wbs.project?.name?.toLowerCase().includes(term);
+
+      const matchesGroup =
+        selectedApproverGroupFilter === 'all' ||
+        wbs.approverGroupId === selectedApproverGroupFilter;
+
+      return matchesSearch && matchesGroup;
+    });
+  }, [wbsElements, searchTerm, selectedApproverGroupFilter]);
 
   const getTypeLabel = (type: WbsType): string => {
     switch (type) {
@@ -169,6 +184,11 @@ export function WbsPage() {
       key: 'owner',
       header: 'Owner',
       render: (wbs: WbsElement) => wbs.owner?.displayName || '—',
+    },
+    {
+      key: 'approverGroup',
+      header: 'Approver Group',
+      render: (wbs: WbsElement) => wbs.approverGroup?.name || '—',
     }
   ];
 
@@ -342,6 +362,23 @@ export function WbsPage() {
                   Rejected
                 </Button>
               </div>
+            </div>
+
+            {/* Approver Group Filter */}
+            <div className="min-w-[220px]">
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Approver Group</label>
+              <select
+                className="w-full border rounded px-3 py-2 text-sm"
+                value={selectedApproverGroupFilter}
+                onChange={(e) => setSelectedApproverGroupFilter(e.target.value)}
+              >
+                <option value="all">All</option>
+                {approverGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Action Buttons */}

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup, StatusBadge, Card, CardBody } from './ui';
 import wbsService from '../services/wbsService';
 import { projectsService } from '../services/projectsService';
+import { groupService } from '../services/groupService';
 import type { WbsElement, WorkflowRequest } from '../types/api';
 import { useAuthStore } from '../stores/authStore';
 import { WbsType, WbsApprovalStatus } from '../types/api';
@@ -20,6 +21,10 @@ export function WbsDetailModal({ isOpen, onClose, wbs, mode }: WbsDetailModalPro
   const [activeTab, setActiveTab] = useState<'details' | 'history'>('details');
   const [showWorkflowAction, setShowWorkflowAction] = useState(false);
   const [workflowNotes, setWorkflowNotes] = useState('');
+  const { data: approverGroups = [] } = useQuery({
+    queryKey: ['groups'],
+    queryFn: () => groupService.list(),
+  });
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
@@ -41,6 +46,7 @@ export function WbsDetailModal({ isOpen, onClose, wbs, mode }: WbsDetailModalPro
     type: WbsType.Billable,
     ownerUserId: '',
     approverUserId: '',
+    approverGroupId: '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -56,6 +62,7 @@ export function WbsDetailModal({ isOpen, onClose, wbs, mode }: WbsDetailModalPro
         type: wbs.type,
         ownerUserId: wbs.ownerUserId || '',
         approverUserId: wbs.approverUserId || '',
+        approverGroupId: wbs.approverGroupId || '',
       });
     } else {
       setFormData({
@@ -67,6 +74,7 @@ export function WbsDetailModal({ isOpen, onClose, wbs, mode }: WbsDetailModalPro
         type: WbsType.Billable,
         ownerUserId: '',
         approverUserId: '',
+        approverGroupId: '',
       });
     }
   }, [wbs, mode, projects]);
@@ -216,6 +224,9 @@ export function WbsDetailModal({ isOpen, onClose, wbs, mode }: WbsDetailModalPro
     { value: WbsType.Overhead.toString(), label: 'Overhead (OH)' },
     { value: WbsType.GeneralAndAdmin.toString(), label: 'General & Admin (G&A)' },
   ];
+  const approverGroupOptions = [{ value: '', label: 'None' }].concat(
+    approverGroups.map((g) => ({ value: g.id, label: g.name }))
+  );
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
   const isReadOnly = mode === 'view';
@@ -381,6 +392,22 @@ export function WbsDetailModal({ isOpen, onClose, wbs, mode }: WbsDetailModalPro
               onChange={(e) => handleChange('validTo', e.target.value)}
               error={errors.validTo}
               helper="Leave empty for indefinite"
+              disabled={isReadOnly}
+            />
+          </FormGroup>
+          <FormGroup columns={2} className="mt-4">
+            <Input
+              label="Approver (User ID)"
+              placeholder="Optional user approver"
+              value={formData.approverUserId}
+              onChange={(e) => handleChange('approverUserId', e.target.value)}
+              disabled={isReadOnly}
+            />
+            <Select
+              label="Approver Group"
+              options={approverGroupOptions}
+              value={formData.approverGroupId}
+              onChange={(e) => handleChange('approverGroupId', e.target.value)}
               disabled={isReadOnly}
             />
           </FormGroup>

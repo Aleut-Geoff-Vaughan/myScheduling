@@ -124,6 +124,7 @@ export interface Person {
   displayName: string;
   jobTitle?: string;
   department?: string;
+  profilePhotoUrl?: string;
   orgUnit?: string;
   location?: string;
   laborCategory?: string;
@@ -144,6 +145,7 @@ export interface Project {
   startDate: string;
   endDate?: string;
   status: ProjectStatus;
+  approverGroupId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -161,6 +163,34 @@ export interface Assignment {
   approvedByUserId?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export enum AssignmentRequestStatus {
+  Pending = 0,
+  Approved = 1,
+  Rejected = 2,
+  Cancelled = 3,
+}
+
+export interface AssignmentRequest {
+  id: string;
+  tenantId: string;
+  requestedByUserId: string;
+  requestedForUserId: string;
+  projectId: string;
+  wbsElementId?: string;
+  projectRoleId?: string;
+  startDate?: string;
+  endDate?: string;
+  allocationPct: number;
+  status: AssignmentRequestStatus;
+  notes?: string;
+  approvedByUserId?: string;
+  resolvedAt?: string;
+  assignmentId?: string;
+  approverGroupId?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface Booking {
@@ -182,6 +212,34 @@ export interface Tenant {
   status: TenantStatus;
   createdAt: string;
   updatedAt: string;
+}
+
+export enum GroupMemberRole {
+  Member = 0,
+  Manager = 1,
+  Approver = 2,
+}
+
+export interface GroupMember {
+  id: string;
+  tenantId: string;
+  groupId: string;
+  userId: string;
+  role: GroupMemberRole;
+  createdAt: string;
+  updatedAt?: string;
+  user?: User;
+}
+
+export interface Group {
+  id: string;
+  tenantId: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  members?: GroupMember[];
 }
 
 export enum AppRole {
@@ -294,12 +352,14 @@ export interface WbsElement {
   isBillable: boolean;
   ownerUserId?: string;
   approverUserId?: string;
+  approverGroupId?: string;
   approvalStatus: WbsApprovalStatus;
   approvalNotes?: string;
   approvedAt?: string;
   project?: Project;
   owner?: User;
   approver?: User;
+  approverGroup?: Group;
   createdAt: string;
   updatedAt: string;
 }

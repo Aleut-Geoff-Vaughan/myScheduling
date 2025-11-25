@@ -11,4 +11,5 @@ public class UpdateUserProfileRequest
     public string? JobTitle { get; set; }
     public string? Department { get; set; }
     public bool? IsSystemAdmin { get; set; }
+    public string? ManagerId { get; set; }
 }

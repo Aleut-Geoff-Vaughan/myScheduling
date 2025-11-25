@@ -19,9 +19,16 @@ import { TeamCalendarPage } from './pages/TeamCalendarPage';
 import { TeamCalendarAdminPage } from './pages/TeamCalendarAdminPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import TemplatesPage from './pages/TemplatesPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import DOAPage from './pages/DOAPage';
 import { useAuthStore } from './stores/authStore';
 import { AdminLoginReport } from './pages/AdminLoginReport';
+import PeoplePage from './pages/PeoplePage';
+import PersonDashboardPage from './pages/PersonDashboardPage';
+import InboxPage from './pages/InboxPage';
+import ManagementStaffingPage from './pages/ManagementStaffingPage';
+import StaffingAdminPage from './pages/StaffingAdminPage';
+import AdminGroupsPage from './pages/AdminGroupsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +87,7 @@ function App() {
           />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/select-workspace" element={<WorkspaceSelectorPage />} />
 
             {/* Admin Portal Routes */}
@@ -94,6 +102,7 @@ function App() {
               <Route index element={<AdminPage />} />
               <Route path="users" element={<AdminPage viewOverride="users" />} />
               <Route path="tenants" element={<AdminPage viewOverride="tenants" />} />
+              <Route path="groups" element={<AdminGroupsPage />} />
               <Route path="settings" element={<AdminPage viewOverride="settings" />} />
               <Route path="logins" element={<AdminLoginReport />} />
             </Route>
@@ -111,8 +120,12 @@ function App() {
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="wbs" element={<WbsPage />} />
               <Route path="staffing" element={<StaffingPage />} />
+              <Route path="staffing/manage" element={<ManagementStaffingPage />} />
+              <Route path="staffing/admin" element={<StaffingAdminPage />} />
               <Route path="hoteling" element={<HotelingPage />} />
               <Route path="facilities" element={<FacilitiesPage />} />
+              <Route path="people" element={<PeoplePage />} />
+              <Route path="people/:id/dashboard" element={<PersonDashboardPage />} />
               <Route path="resumes" element={<ResumesPage />} />
               <Route path="resumes/:id" element={<ResumeDetailPage />} />
               <Route path="team-calendar" element={<TeamCalendarPage />} />
@@ -120,6 +133,7 @@ function App() {
               <Route path="templates" element={<TemplatesPage />} />
               <Route path="doa" element={<DOAPage />} />
               <Route path="profile" element={<UserProfilePage />} />
+              <Route path="inbox" element={<InboxPage />} />
               <Route path="reports" element={<div className="p-6">Reports Module (Coming Soon)</div>} />
             </Route>
             <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />

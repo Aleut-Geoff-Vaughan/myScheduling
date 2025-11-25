@@ -20,6 +20,7 @@ export interface PaginatedResponse<T> {
 export interface WbsFilters {
   projectId?: string;
   ownerId?: string;
+  approverGroupId?: string;
   type?: WbsType;
   approvalStatus?: WbsApprovalStatus;
   includeHistory?: boolean;
@@ -53,6 +54,7 @@ const wbsService = {
     const params = new URLSearchParams();
     if (filters?.projectId) params.append('projectId', filters.projectId);
     if (filters?.ownerId) params.append('ownerId', filters.ownerId);
+    if (filters?.approverGroupId) params.append('approverGroupId', filters.approverGroupId);
     if (filters?.type !== undefined) params.append('type', filters.type.toString());
     if (filters?.approvalStatus !== undefined)
       params.append('approvalStatus', filters.approvalStatus.toString());

@@ -1,17 +1,28 @@
 import { useState, useMemo } from 'react';
-import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input } from '../components/ui';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardHeader, CardBody, Button, Input } from '../components/ui';
 import { useAssignments } from '../hooks/useAssignments';
 import type { Assignment } from '../types/api';
 import { AssignmentStatus } from '../types/api';
-import { AssignmentModal } from '../components/AssignmentModal';
+import { assignmentRequestService, type CreateAssignmentRequest } from '../services/assignmentRequestService';
+import toast from 'react-hot-toast';
+import { useAuthStore } from '../stores/authStore';
+import { groupService } from '../services/groupService';
 
 export function StaffingPage() {
+  const { user, currentWorkspace } = useAuthStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedView, setSelectedView] = useState<'assignments' | 'capacity' | 'requests'>('assignments');
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | undefined>();
+  const [selectedView, setSelectedView] = useState<'assignments' | 'capacity'>('assignments');
+  const [requesting, setRequesting] = useState(false);
+  const [approverGroupId, setApproverGroupId] = useState('');
 
-  const { data: assignments = [], isLoading, error } = useAssignments();
+  const { data: assignments = [], error } = useAssignments(user ? { userId: user.id } : undefined);
+  const { data: approverGroups = [] } = useQuery({
+    queryKey: ['groups', currentWorkspace?.tenantId, 'active'],
+    queryFn: () => groupService.list({ tenantId: currentWorkspace?.tenantId, isActive: true }),
+    enabled: !!currentWorkspace?.tenantId,
+    staleTime: 60_000,
+  });
 
   const getStatusLabel = (status: AssignmentStatus): string => {
     switch (status) {
@@ -30,88 +41,65 @@ export function StaffingPage() {
     }
   };
 
-  const getStatusVariant = (status: AssignmentStatus): 'success' | 'warning' | 'default' | 'danger' => {
-    switch (status) {
-      case AssignmentStatus.Active:
-        return 'success';
-      case AssignmentStatus.PendingApproval:
-      case AssignmentStatus.Draft:
-        return 'warning';
-      case AssignmentStatus.Cancelled:
-        return 'danger';
-      default:
-        return 'default';
+  const handleRequest = async (payload: CreateAssignmentRequest) => {
+    try {
+      setRequesting(true);
+      await assignmentRequestService.create(payload);
+      toast.success('Assignment request submitted');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to submit request');
+    } finally {
+      setRequesting(false);
     }
   };
 
-  const columns = [
-    {
-      key: 'userId',
-      header: 'User ID',
-      render: (assignment: Assignment) => (
-        <div className="font-medium text-gray-900 text-sm">{assignment.userId.substring(0, 8)}...</div>
-      )
-    },
-    {
-      key: 'projectRoleId',
-      header: 'Role ID',
-      render: (assignment: Assignment) => (
-        <div className="text-sm">{assignment.projectRoleId.substring(0, 8)}...</div>
-      )
-    },
-    {
-      key: 'allocation',
-      header: 'Allocation',
-      align: 'center' as const,
-      render: (assignment: Assignment) => (
-        <div>
-          <div className="font-medium">{assignment.allocation}%</div>
-          <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-            <div
-              className="bg-blue-600 h-2 rounded-full"
-              style={{ width: `${assignment.allocation}%` }}
-            ></div>
-          </div>
-        </div>
-      )
-    },
-    {
-      key: 'dates',
-      header: 'Duration',
-      render: (assignment: Assignment) => (
-        <div className="text-sm">
-          <div>{new Date(assignment.startDate).toLocaleDateString()}</div>
-          <div className="text-gray-500">to {new Date(assignment.endDate).toLocaleDateString()}</div>
-        </div>
-      )
-    },
-    {
-      key: 'status',
-      header: 'Status',
-      render: (assignment: Assignment) => (
-        <StatusBadge
-          status={getStatusLabel(assignment.status)}
-          variant={getStatusVariant(assignment.status)}
-        />
-      )
-    }
-  ];
-
-  const filteredAssignments = assignments.filter(assignment =>
-    assignment.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    assignment.userId.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const stats = useMemo(() => {
-    const total = assignments.length;
-    const active = assignments.filter(a => a.status === AssignmentStatus.Active).length;
-    const pending = assignments.filter(a => a.status === AssignmentStatus.PendingApproval).length;
-    const avgAllocation = assignments.length > 0
-      ? Math.round(assignments.reduce((sum, a) => sum + a.allocation, 0) / assignments.length)
-      : 0;
+  const total = assignments.length;
+  const active = assignments.filter(a => a.status === AssignmentStatus.Active).length;
+  const pending = assignments.filter(a => a.status === AssignmentStatus.PendingApproval).length;
+  const avgAllocation = assignments.length > 0
+    ? Math.round(assignments.reduce((sum, a) => sum + a.allocation, 0) / assignments.length)
+    : 0;
 
-    return { total, active, pending, avgAllocation };
+  return { total, active, pending, avgAllocation };
+}, [assignments]);
+
+  const timeline = useMemo(() => {
+    const now = new Date();
+    const sixMonthsOut = new Date();
+    sixMonthsOut.setMonth(now.getMonth() + 6);
+    const totalMs = sixMonthsOut.getTime() - now.getTime();
+    return assignments.map((a) => {
+      const start = new Date(a.startDate);
+      const end = new Date(a.endDate);
+      const clampedStart = start < now ? now : start;
+      const clampedEnd = end > sixMonthsOut ? sixMonthsOut : end;
+      const leftPct = ((clampedStart.getTime() - now.getTime()) / totalMs) * 100;
+      const widthPct = ((clampedEnd.getTime() - clampedStart.getTime()) / totalMs) * 100;
+      return { ...a, leftPct: Math.max(0, leftPct), widthPct: Math.max(2, widthPct) };
+    });
   }, [assignments]);
+
+  const exportCsv = () => {
+    const headers = ['Id', 'UserId', 'ProjectRoleId', 'Allocation', 'StartDate', 'EndDate', 'Status'];
+    const rows = assignments.map((a) => [
+      a.id,
+      a.userId,
+      a.projectRoleId ?? '',
+      a.allocation,
+      a.startDate,
+      a.endDate,
+      getStatusLabel(a.status),
+    ]);
+    const csv = [headers, ...rows].map((r) => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'assignments.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (error) {
     return (
@@ -133,7 +121,7 @@ export function StaffingPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Staffing</h1>
         <p className="text-gray-600 mt-2">
-          Manage assignments, capacity, and staffing requests
+          Your upcoming assignments and utilization
         </p>
       </div>
 
@@ -182,12 +170,6 @@ export function StaffingPage() {
               >
                 Capacity View
               </Button>
-              <Button
-                variant={selectedView === 'requests' ? 'primary' : 'ghost'}
-                onClick={() => setSelectedView('requests')}
-              >
-                Requests
-              </Button>
             </div>
             <div className="flex-1">
               <Input
@@ -196,9 +178,43 @@ export function StaffingPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
-              + New Assignment
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={exportCsv}>
+                Export CSV
+              </Button>
+              <select
+                className="border rounded px-3 py-2 text-sm"
+                value={approverGroupId}
+                onChange={(e) => setApproverGroupId(e.target.value)}
+              >
+                <option value="">Approver Group (optional)</option>
+                {approverGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="primary"
+                onClick={() =>
+                  handleRequest({
+                    projectId: assignments[0]?.projectRoleId || crypto.randomUUID(),
+                    wbsElementId: assignments[0]?.wbsElementId,
+                    projectRoleId: assignments[0]?.projectRoleId,
+                    allocationPct: 50,
+                    tenantId: currentWorkspace?.tenantId,
+                    requestedForUserId: user?.id,
+                    startDate: new Date().toISOString(),
+                    endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+                    notes: 'Requesting assignment',
+                    approverGroupId: approverGroupId || undefined,
+                  })
+                }
+                disabled={requesting}
+              >
+                {requesting ? 'Submitting...' : '+ Request Assignment'}
+              </Button>
+            </div>
           </div>
         </CardBody>
       </Card>
@@ -208,17 +224,29 @@ export function StaffingPage() {
         <Card>
           <CardHeader
             title="All Assignments"
-            subtitle={`${filteredAssignments.length} ${filteredAssignments.length === 1 ? 'assignment' : 'assignments'}`}
+            subtitle={`${assignments.length} ${assignments.length === 1 ? 'assignment' : 'assignments'}`}
           />
-          <Table
-            data={filteredAssignments}
-            columns={columns}
-            onRowClick={(assignment) => {
-              setSelectedAssignment(assignment);
-              setIsModalOpen(true);
-            }}
-            emptyMessage={isLoading ? "Loading assignments..." : "No assignments found"}
-          />
+
+          {/* Gantt-style six-month view */}
+          <div className="border-t border-gray-200 p-4">
+            <h3 className="font-semibold text-gray-900 mb-3">6-Month Timeline</h3>
+            <div className="space-y-3">
+              {timeline.slice(0, 20).map((item) => (
+                <div key={item.id}>
+                  <div className="text-sm text-gray-700 mb-1">
+                    Project {item.projectRoleId ? item.projectRoleId.substring(0, 8) : '—'} • User {item.userId.substring(0,8)}
+                  </div>
+                  <div className="h-4 bg-gray-100 rounded relative overflow-hidden">
+                    <div
+                      className="h-4 bg-blue-500 rounded absolute"
+                      style={{ left: `${item.leftPct}%`, width: `${item.widthPct}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+              {timeline.length === 0 && <p className="text-sm text-gray-500">No timeline data.</p>}
+            </div>
+          </div>
         </Card>
       )}
 
@@ -343,21 +371,19 @@ export function StaffingPage() {
                               <div
                                 key={assignment.id}
                                 className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded hover:bg-gray-100 cursor-pointer"
-                                onClick={() => {
-                                  setSelectedAssignment(assignment);
-                                  setIsModalOpen(true);
-                                }}
+                                onClick={() => {}}
                               >
                                 <div className="flex items-center gap-3">
                                   <div className="font-medium">
                                     {assignment.allocation}%
                                   </div>
                                   <div className="text-gray-600">
-                                    Role: {assignment.projectRoleId.substring(0, 8)}...
+                                    Role: {assignment.projectRoleId ? `${assignment.projectRoleId.substring(0, 8)}...` : '—'}
                                   </div>
                                 </div>
                                 <div className="text-gray-500">
-                                  {new Date(assignment.startDate).toLocaleDateString()} - {new Date(assignment.endDate).toLocaleDateString()}
+                                  {assignment.startDate ? new Date(assignment.startDate).toLocaleDateString() : '—'} -{' '}
+                                  {assignment.endDate ? new Date(assignment.endDate).toLocaleDateString() : '—'}
                                 </div>
                               </div>
                             ))}
@@ -379,64 +405,52 @@ export function StaffingPage() {
       )}
 
       {/* Requests */}
-      {selectedView === 'requests' && (
+      {/* Request CTA */}
+      <div className="mt-4">
         <Card>
-          <CardHeader
-            title="Staffing Requests"
-            subtitle={`${assignments.filter(a => a.status === AssignmentStatus.PendingApproval || a.status === AssignmentStatus.Draft).length} pending requests`}
-          />
-          <Table
-            data={assignments.filter(a => a.status === AssignmentStatus.PendingApproval || a.status === AssignmentStatus.Draft)}
-            columns={[
-              ...columns,
-              {
-                key: 'actions',
-                header: 'Actions',
-                render: (assignment: Assignment) => (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="primary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log('Approve assignment:', assignment.id);
-                      }}
-                      disabled={assignment.status !== AssignmentStatus.PendingApproval}
-                    >
-                      Approve
-                    </Button>
-                    <Button
-                      variant="danger"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        console.log('Reject assignment:', assignment.id);
-                      }}
-                      disabled={assignment.status !== AssignmentStatus.PendingApproval}
-                    >
-                      Reject
-                    </Button>
-                  </div>
-                )
-              }
-            ]}
-            onRowClick={(assignment) => {
-              setSelectedAssignment(assignment);
-              setIsModalOpen(true);
-            }}
-            emptyMessage={isLoading ? "Loading requests..." : "No pending requests"}
-          />
+          <CardBody>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Request an Assignment</h3>
+                <p className="text-sm text-gray-600">Submit a request to staffing managers for approval.</p>
+              </div>
+              <select
+                className="border rounded px-3 py-2 text-sm mr-3"
+                value={approverGroupId}
+                onChange={(e) => setApproverGroupId(e.target.value)}
+              >
+                <option value="">Approver Group (optional)</option>
+                {approverGroups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="primary"
+                onClick={() =>
+                  handleRequest({
+                    projectId: assignments[0]?.projectRoleId || crypto.randomUUID(),
+                    wbsElementId: assignments[0]?.wbsElementId,
+                    projectRoleId: assignments[0]?.projectRoleId,
+                    allocationPct: 50,
+                    tenantId: currentWorkspace?.tenantId,
+                    requestedForUserId: user?.id,
+                    startDate: new Date().toISOString(),
+                    endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+                    notes: 'Requesting assignment',
+                    approverGroupId: approverGroupId || undefined,
+                  })
+                }
+                disabled={requesting}
+              >
+                {requesting ? 'Submitting...' : 'Request Assignment'}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Requests route to the Inbox for approval.</p>
+          </CardBody>
         </Card>
-      )}
-
-      {/* Assignment Modal */}
-      <AssignmentModal
-        isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedAssignment(undefined);
-        }}
-        assignment={selectedAssignment}
-        mode={selectedAssignment ? 'edit' : 'create'}
-      />
+      </div>
     </div>
   );
 }

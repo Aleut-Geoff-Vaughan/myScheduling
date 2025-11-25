@@ -44,6 +44,7 @@ public class WbsElement : TenantEntity
     // Ownership and workflow
     public Guid? OwnerUserId { get; set; }
     public Guid? ApproverUserId { get; set; }
+    public Guid? ApproverGroupId { get; set; }
     public WbsApprovalStatus ApprovalStatus { get; set; }
     public string? ApprovalNotes { get; set; }
     public DateTime? ApprovedAt { get; set; }
@@ -52,6 +53,7 @@ public class WbsElement : TenantEntity
     public virtual Project Project { get; set; } = null!;
     public virtual User? Owner { get; set; }
     public virtual User? Approver { get; set; }
+    public virtual Group? ApproverGroup { get; set; }
     public virtual ICollection<ProjectRole> ProjectRoles { get; set; } = new List<ProjectRole>();
     public virtual ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
     public virtual ICollection<WbsChangeHistory> ChangeHistory { get; set; } = new List<WbsChangeHistory>();
