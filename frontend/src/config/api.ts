@@ -1,3 +1,4 @@
+// API Configuration for MyScheduling
 const rawApiUrl = import.meta.env.VITE_API_URL?.trim();
 const DEFAULT_BASE = '/api';
 
