@@ -62,12 +62,13 @@ export const addSection = async (
   resumeId: string,
   data: {
     type: ResumeSectionType;
+    title?: string;  // Optional, backend may not use it
     displayOrder: number;
   }
 ): Promise<ResumeSection> => {
   return api.post<ResumeSection>(
     `/resumes/${resumeId}/sections`,
-    data
+    { type: data.type, displayOrder: data.displayOrder }
   );
 };
 
@@ -294,4 +295,66 @@ export const duplicateTemplate = async (
     `/resume-templates/${id}/duplicate`,
     { newName }
   );
+};
+
+// ==================== ADMIN ENDPOINTS ====================
+
+export interface ResumeAdminStats {
+  totalResumes: number;
+  resumesByStatus: { status: ResumeStatus; count: number }[];
+  pendingApprovals: number;
+  recentResumes: { id: string; userName: string; status: ResumeStatus; updatedAt: string }[];
+}
+
+export interface ResumeApprovalListItem {
+  id: string;
+  resumeProfileId: string;
+  userName: string;
+  userEmail: string;
+  requestedAt: string;
+  requestedByName: string;
+  requestNotes?: string;
+  resumeStatus: ResumeStatus;
+}
+
+export const getResumeAdminStats = async (): Promise<ResumeAdminStats> => {
+  return api.get<ResumeAdminStats>('/resumes/admin/stats');
+};
+
+export const getAdminPendingApprovals = async (): Promise<ResumeApprovalListItem[]> => {
+  return api.get<ResumeApprovalListItem[]>('/resumes/admin/pending-approvals');
+};
+
+export const adminApproveResume = async (
+  approvalId: string,
+  reviewedByUserId: string,
+  reviewNotes?: string
+): Promise<void> => {
+  return api.post<void>(`/resumes/admin/approve/${approvalId}`, {
+    reviewedByUserId,
+    reviewNotes
+  });
+};
+
+export const adminRejectResume = async (
+  approvalId: string,
+  reviewedByUserId: string,
+  reviewNotes?: string
+): Promise<void> => {
+  return api.post<void>(`/resumes/admin/reject/${approvalId}`, {
+    reviewedByUserId,
+    reviewNotes
+  });
+};
+
+export const bulkApproveResumes = async (
+  approvalIds: string[],
+  reviewedByUserId: string,
+  reviewNotes?: string
+): Promise<{ processed: number; total: number }> => {
+  return api.post<{ processed: number; total: number }>('/resumes/admin/bulk-approve', {
+    approvalIds,
+    reviewedByUserId,
+    reviewNotes
+  });
 };

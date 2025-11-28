@@ -371,8 +371,8 @@ public class ResumesController : AuthorizedControllerBase
                 ResumeSectionId = sectionId,
                 Title = request.Title,
                 Organization = request.Organization,
-                StartDate = request.StartDate,
-                EndDate = request.EndDate,
+                StartDate = ToUtc(request.StartDate),
+                EndDate = ToUtc(request.EndDate),
                 Description = request.Description,
                 AdditionalFields = request.AdditionalFields
             };
@@ -414,10 +414,10 @@ public class ResumesController : AuthorizedControllerBase
                 entry.Organization = request.Organization;
 
             if (request.StartDate.HasValue)
-                entry.StartDate = request.StartDate;
+                entry.StartDate = ToUtc(request.StartDate);
 
             if (request.EndDate.HasValue)
-                entry.EndDate = request.EndDate;
+                entry.EndDate = ToUtc(request.EndDate);
 
             if (request.Description != null)
                 entry.Description = request.Description;
@@ -703,6 +703,227 @@ public class ResumesController : AuthorizedControllerBase
             return StatusCode(500, "An error occurred while deleting the version");
         }
     }
+
+    // ==================== ADMIN ENDPOINTS ====================
+
+    // GET: api/resumes/admin/stats
+    [HttpGet("admin/stats")]
+    [RequiresPermission(Resource = "ResumeProfile", Action = PermissionAction.Read)]
+    public async Task<ActionResult<ResumeAdminStats>> GetAdminStats()
+    {
+        try
+        {
+            var totalResumes = await _context.ResumeProfiles.CountAsync();
+
+            var byStatus = await _context.ResumeProfiles
+                .GroupBy(r => r.Status)
+                .Select(g => new StatusCount { Status = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var pendingApprovals = await _context.ResumeApprovals
+                .Where(a => a.Status == ApprovalStatus.Pending)
+                .CountAsync();
+
+            var recentResumes = await _context.ResumeProfiles
+                .Include(r => r.User)
+                .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)
+                .Take(5)
+                .Select(r => new ResumeListItem
+                {
+                    Id = r.Id,
+                    UserName = r.User.DisplayName,
+                    Status = r.Status,
+                    UpdatedAt = r.UpdatedAt ?? r.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(new ResumeAdminStats
+            {
+                TotalResumes = totalResumes,
+                ResumesByStatus = byStatus,
+                PendingApprovals = pendingApprovals,
+                RecentResumes = recentResumes
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting admin stats");
+            return StatusCode(500, "An error occurred while getting admin stats");
+        }
+    }
+
+    // GET: api/resumes/admin/pending-approvals
+    [HttpGet("admin/pending-approvals")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Read)]
+    public async Task<ActionResult<IEnumerable<ResumeApprovalListItem>>> GetPendingApprovals()
+    {
+        try
+        {
+            var approvals = await _context.ResumeApprovals
+                .Where(a => a.Status == ApprovalStatus.Pending)
+                .Include(a => a.ResumeProfile)
+                    .ThenInclude(r => r.User)
+                .Include(a => a.RequestedBy)
+                .OrderBy(a => a.RequestedAt)
+                .Select(a => new ResumeApprovalListItem
+                {
+                    Id = a.Id,
+                    ResumeProfileId = a.ResumeProfileId,
+                    UserName = a.ResumeProfile.User.DisplayName,
+                    UserEmail = a.ResumeProfile.User.Email,
+                    RequestedAt = a.RequestedAt,
+                    RequestedByName = a.RequestedBy != null ? a.RequestedBy.DisplayName : "Unknown",
+                    RequestNotes = a.RequestNotes,
+                    ResumeStatus = a.ResumeProfile.Status
+                })
+                .ToListAsync();
+
+            return Ok(approvals);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting pending approvals");
+            return StatusCode(500, "An error occurred while getting pending approvals");
+        }
+    }
+
+    // POST: api/resumes/admin/approve/{approvalId}
+    [HttpPost("admin/approve/{approvalId}")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Approve)]
+    public async Task<ActionResult> ApproveResume(Guid approvalId, [FromBody] ReviewResumeRequest request)
+    {
+        try
+        {
+            var approval = await _context.ResumeApprovals
+                .Include(a => a.ResumeProfile)
+                .FirstOrDefaultAsync(a => a.Id == approvalId);
+
+            if (approval == null)
+            {
+                return NotFound($"Approval with ID {approvalId} not found");
+            }
+
+            if (approval.Status != ApprovalStatus.Pending)
+            {
+                return BadRequest("Approval has already been processed");
+            }
+
+            approval.Status = ApprovalStatus.Approved;
+            approval.ReviewedByUserId = request.ReviewedByUserId;
+            approval.ReviewedAt = DateTime.UtcNow;
+            approval.ReviewNotes = request.ReviewNotes;
+
+            approval.ResumeProfile.Status = ResumeStatus.Approved;
+            approval.ResumeProfile.LastReviewedAt = DateTime.UtcNow;
+            approval.ResumeProfile.LastReviewedByUserId = request.ReviewedByUserId;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Approved resume approval {ApprovalId}", approvalId);
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error approving resume {ApprovalId}", approvalId);
+            return StatusCode(500, "An error occurred while approving the resume");
+        }
+    }
+
+    // POST: api/resumes/admin/reject/{approvalId}
+    [HttpPost("admin/reject/{approvalId}")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Approve)]
+    public async Task<ActionResult> RejectResume(Guid approvalId, [FromBody] ReviewResumeRequest request)
+    {
+        try
+        {
+            var approval = await _context.ResumeApprovals
+                .Include(a => a.ResumeProfile)
+                .FirstOrDefaultAsync(a => a.Id == approvalId);
+
+            if (approval == null)
+            {
+                return NotFound($"Approval with ID {approvalId} not found");
+            }
+
+            if (approval.Status != ApprovalStatus.Pending)
+            {
+                return BadRequest("Approval has already been processed");
+            }
+
+            approval.Status = ApprovalStatus.Rejected;
+            approval.ReviewedByUserId = request.ReviewedByUserId;
+            approval.ReviewedAt = DateTime.UtcNow;
+            approval.ReviewNotes = request.ReviewNotes;
+
+            approval.ResumeProfile.Status = ResumeStatus.ChangesRequested;
+            approval.ResumeProfile.LastReviewedAt = DateTime.UtcNow;
+            approval.ResumeProfile.LastReviewedByUserId = request.ReviewedByUserId;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Rejected resume approval {ApprovalId}", approvalId);
+
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error rejecting resume {ApprovalId}", approvalId);
+            return StatusCode(500, "An error occurred while rejecting the resume");
+        }
+    }
+
+    // POST: api/resumes/admin/bulk-approve
+    [HttpPost("admin/bulk-approve")]
+    [RequiresPermission(Resource = "ResumeApproval", Action = PermissionAction.Approve)]
+    public async Task<ActionResult<BulkResumeOperationResult>> BulkApproveResumes([FromBody] BulkResumeApprovalRequest request)
+    {
+        try
+        {
+            var approvals = await _context.ResumeApprovals
+                .Include(a => a.ResumeProfile)
+                .Where(a => request.ApprovalIds.Contains(a.Id) && a.Status == ApprovalStatus.Pending)
+                .ToListAsync();
+
+            var approved = 0;
+            foreach (var approval in approvals)
+            {
+                approval.Status = ApprovalStatus.Approved;
+                approval.ReviewedByUserId = request.ReviewedByUserId;
+                approval.ReviewedAt = DateTime.UtcNow;
+                approval.ReviewNotes = request.ReviewNotes ?? "Bulk approved";
+
+                approval.ResumeProfile.Status = ResumeStatus.Approved;
+                approval.ResumeProfile.LastReviewedAt = DateTime.UtcNow;
+                approval.ResumeProfile.LastReviewedByUserId = request.ReviewedByUserId;
+
+                approved++;
+            }
+
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Bulk approved {Count} resumes", approved);
+
+            return Ok(new BulkResumeOperationResult { Processed = approved, Total = request.ApprovalIds.Count });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error bulk approving resumes");
+            return StatusCode(500, "An error occurred while bulk approving resumes");
+        }
+    }
+
+    // Helper method to convert DateTime to UTC for PostgreSQL compatibility
+    private static DateTime? ToUtc(DateTime? dateTime)
+    {
+        if (dateTime == null) return null;
+        if (dateTime.Value.Kind == DateTimeKind.Utc) return dateTime;
+        if (dateTime.Value.Kind == DateTimeKind.Unspecified)
+        {
+            // Treat unspecified as UTC (dates from HTML date inputs are date-only)
+            return DateTime.SpecifyKind(dateTime.Value, DateTimeKind.Utc);
+        }
+        return dateTime.Value.ToUniversalTime();
+    }
 }
 
 // DTOs
@@ -751,4 +972,58 @@ public class CreateResumeVersionRequest
     public string VersionName { get; set; } = string.Empty;
     public string? Description { get; set; }
     public Guid CreatedByUserId { get; set; }
+}
+
+// Admin DTOs
+public class ResumeAdminStats
+{
+    public int TotalResumes { get; set; }
+    public List<StatusCount> ResumesByStatus { get; set; } = new();
+    public int PendingApprovals { get; set; }
+    public List<ResumeListItem> RecentResumes { get; set; } = new();
+}
+
+public class StatusCount
+{
+    public ResumeStatus Status { get; set; }
+    public int Count { get; set; }
+}
+
+public class ResumeListItem
+{
+    public Guid Id { get; set; }
+    public string UserName { get; set; } = string.Empty;
+    public ResumeStatus Status { get; set; }
+    public DateTime UpdatedAt { get; set; }
+}
+
+public class ResumeApprovalListItem
+{
+    public Guid Id { get; set; }
+    public Guid ResumeProfileId { get; set; }
+    public string UserName { get; set; } = string.Empty;
+    public string UserEmail { get; set; } = string.Empty;
+    public DateTime RequestedAt { get; set; }
+    public string RequestedByName { get; set; } = string.Empty;
+    public string? RequestNotes { get; set; }
+    public ResumeStatus ResumeStatus { get; set; }
+}
+
+public class ReviewResumeRequest
+{
+    public Guid ReviewedByUserId { get; set; }
+    public string? ReviewNotes { get; set; }
+}
+
+public class BulkResumeApprovalRequest
+{
+    public List<Guid> ApprovalIds { get; set; } = new();
+    public Guid ReviewedByUserId { get; set; }
+    public string? ReviewNotes { get; set; }
+}
+
+public class BulkResumeOperationResult
+{
+    public int Processed { get; set; }
+    public int Total { get; set; }
 }

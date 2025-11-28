@@ -862,7 +862,7 @@ public class MySchedulingDbContext : DbContext
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne<ResumeProfile>()
+            entity.HasOne(e => e.ResumeProfile)
                 .WithMany(r => r.Sections)
                 .HasForeignKey(e => e.ResumeProfileId)
                 .OnDelete(DeleteBehavior.Cascade);

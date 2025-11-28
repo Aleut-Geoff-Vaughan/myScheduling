@@ -69,6 +69,7 @@ public class Skill : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
     public SkillCategory Category { get; set; }
+    public bool IsApproved { get; set; } = true; // Skills created by admin are auto-approved
 
     // Navigation properties
     public virtual ICollection<PersonSkill> PersonSkills { get; set; } = new List<PersonSkill>();
@@ -76,10 +77,54 @@ public class Skill : BaseEntity
 
 public enum SkillCategory
 {
-    Technical,
-    Management,
-    Domain,
+    // Programming & Development
+    ProgrammingLanguage,
+    WebDevelopment,
+    MobileDevelopment,
+    DatabaseTechnology,
+
+    // Cloud & Infrastructure
+    CloudPlatform,
+    DevOpsTools,
+    Infrastructure,
+
+    // Security & Compliance
+    CyberSecurity,
+    SecurityClearance,
+    Compliance,
+
+    // Data & Analytics
+    DataAnalytics,
+    MachineLearning,
+    BusinessIntelligence,
+
+    // Design & User Experience
+    UXDesign,
+    UIDesign,
+    DesignTools,
+
+    // Management & Methodology
+    ProjectManagement,
+    AgileMethodology,
+    Leadership,
+
+    // Domain Expertise
+    DefenseDoD,
+    StrategyConsulting,
+    ITOperations,
+    Logistics,
+    FinanceAccounting,
+
+    // Business Tools & Software
+    BusinessSoftware,
+    CollaborationTools,
+
+    // Professional Skills
+    Communication,
     Language,
+    Certification,
+
+    // Other
     Other
 }
 

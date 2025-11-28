@@ -14,7 +14,7 @@ import { StaffingPage } from './pages/StaffingPage';
 import { HotelingPage } from './pages/HotelingPage';
 import { FacilitiesPage } from './pages/FacilitiesPage';
 import { ResumesPage } from './pages/ResumesPage';
-import { ResumeDetailPage } from './pages/ResumeDetailPage';
+import { ResumeProfilePage } from './pages/ResumeProfilePage';
 import { AdminPage } from './pages/AdminPage';
 import { AdminProjectsPage } from './pages/AdminProjectsPage';
 import { AdminWbsPage } from './pages/AdminWbsPage';
@@ -40,6 +40,7 @@ import { AdminOfficesPage } from './pages/AdminOfficesPage';
 import { AdminFacilitiesPage } from './pages/AdminFacilitiesPage';
 import { AdminOfficeDetailPage } from './pages/AdminOfficeDetailPage';
 import { AdminSpaceDetailPage } from './pages/AdminSpaceDetailPage';
+import { AdminResumesPage } from './pages/AdminResumesPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 
 const queryClient = new QueryClient({
@@ -131,6 +132,7 @@ function App() {
               <Route path="facilities" element={<AdminFacilitiesPage />} />
               <Route path="facilities/office/:officeId" element={<AdminOfficeDetailPage />} />
               <Route path="facilities/space/:spaceId" element={<AdminSpaceDetailPage />} />
+              <Route path="resumes" element={<AdminResumesPage />} />
             </Route>
 
             {/* Me Portal Routes (mobile-friendly top nav) */}
@@ -146,7 +148,7 @@ function App() {
               <Route path="staffing" element={<StaffingPage />} />
               <Route path="hoteling" element={<HotelingPage />} />
               <Route path="resumes" element={<ResumesPage />} />
-              <Route path="resumes/:id" element={<ResumeDetailPage />} />
+              <Route path="resumes/:id" element={<ResumeProfilePage />} />
               <Route path="doa" element={<DOAPage />} />
               <Route path="profile" element={<UserProfilePage />} />
               <Route path="inbox" element={<InboxPage />} />

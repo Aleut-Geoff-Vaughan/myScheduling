@@ -187,6 +187,7 @@ public static class PermissionSeeder
             "Project", "WbsElement", "Assignment", "ProjectRole",
             "Booking", "Office", "Space", "WorkLocationPreference",
             "ResumeProfile", "ResumeSection", "ResumeEntry", "ResumeVersion", "ResumeApproval",
+            "Skill", "PersonSkill",
             "WorkLocationTemplate", "DelegationOfAuthorityLetter",
             "ValidationRule", "Permission", "AuthorizationAuditLog",
             "DataArchive"

@@ -137,6 +137,58 @@ export enum ProficiencyLevel {
   Expert = 3,
 }
 
+export enum SkillCategory {
+  // Programming & Development
+  ProgrammingLanguage = 0,
+  WebDevelopment = 1,
+  MobileDevelopment = 2,
+  DatabaseTechnology = 3,
+
+  // Cloud & Infrastructure
+  CloudPlatform = 4,
+  DevOpsTools = 5,
+  Infrastructure = 6,
+
+  // Security & Compliance
+  CyberSecurity = 7,
+  SecurityClearance = 8,
+  Compliance = 9,
+
+  // Data & Analytics
+  DataAnalytics = 10,
+  MachineLearning = 11,
+  BusinessIntelligence = 12,
+
+  // Design & User Experience
+  UXDesign = 13,
+  UIDesign = 14,
+  DesignTools = 15,
+
+  // Management & Methodology
+  ProjectManagement = 16,
+  AgileMethodology = 17,
+  Leadership = 18,
+
+  // Domain Expertise
+  DefenseDoD = 19,
+  StrategyConsulting = 20,
+  ITOperations = 21,
+  Logistics = 22,
+  FinanceAccounting = 23,
+
+  // Business Tools & Software
+  BusinessSoftware = 24,
+  CollaborationTools = 25,
+
+  // Professional Skills
+  Communication = 26,
+  Language = 27,
+  Certification = 28,
+
+  // Other
+  Other = 29,
+}
+
 // Entities
 // User-centric profile (Person table removed)
 export interface Person {
@@ -698,7 +750,7 @@ export interface UpdateResumeSectionRequest {
 export interface Skill {
   id: string;
   name: string;
-  category: string;
+  category: SkillCategory | string;
   createdAt: string;
   updatedAt?: string;
 }

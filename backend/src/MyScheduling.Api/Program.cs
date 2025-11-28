@@ -238,6 +238,28 @@ if (Environment.GetEnvironmentVariable("SEED_FACILITIES")?.Equals("true", String
     }
 }
 
+// Seed skills and certifications catalog
+// Runs only if SEED_SKILLS=true environment variable is set
+// Use SEED_SKILLS_FORCE=true to force refresh (delete and reseed)
+if (Environment.GetEnvironmentVariable("SEED_SKILLS")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true)
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<MySchedulingDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    var forceRefresh = Environment.GetEnvironmentVariable("SEED_SKILLS_FORCE")?.Equals("true", StringComparison.OrdinalIgnoreCase) == true;
+
+    try
+    {
+        await SeedSkillsData.SeedSkillsAndCertifications(context, forceRefresh);
+        logger.LogInformation("Skills and certifications seed data applied successfully");
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning(ex, "Failed to seed skills and certifications data");
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

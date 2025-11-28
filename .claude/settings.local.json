@@ -57,7 +57,9 @@
       "Bash(gh secret:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File:*)",
       "Bash(SEED_FACILITIES=true dotnet run:*)",
-      "Bash(VITE_API_PROXY_TARGET=http://localhost:5000 npm run dev:*)"
+      "Bash(VITE_API_PROXY_TARGET=http://localhost:5000 npm run dev:*)",
+      "Bash(ls:*)",
+      "Bash(PGPASSWORD=postgres psql:*)"
     ],
     "deny": [],
     "ask": []
