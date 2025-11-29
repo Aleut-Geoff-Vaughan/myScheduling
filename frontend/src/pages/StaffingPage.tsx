@@ -524,23 +524,24 @@ export function StaffingPage() {
 
               return (
                 <>
-                  <div className="relative h-8 mb-4 border-b border-gray-300">
-                    {months.map((month, idx) => {
-                      const monthStart = month.getTime();
-                      const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0).getTime();
-                      const leftPct = Math.max(0, ((monthStart - now.getTime()) / totalMs) * 100);
-                      const widthPct = ((monthEnd - Math.max(monthStart, now.getTime())) / totalMs) * 100;
+                  <div className="overflow-x-auto mb-4">
+                    <div className="flex border-b border-gray-300 min-w-max">
+                      {months.map((month, idx) => {
+                        const monthStart = month.getTime();
+                        const monthEnd = new Date(month.getFullYear(), month.getMonth() + 1, 0).getTime();
+                        const widthPct = ((monthEnd - Math.max(monthStart, now.getTime())) / totalMs) * 100;
 
-                      return (
-                        <div
-                          key={idx}
-                          className="absolute top-0 h-full border-l border-gray-300 text-xs text-gray-600 pl-1"
-                          style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-                        >
-                          {month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                        </div>
-                      );
-                    })}
+                        return (
+                          <div
+                            key={idx}
+                            className="h-8 border-l border-gray-200 first:border-l-0 text-xs text-gray-600 px-2 flex items-center justify-center bg-gray-50"
+                            style={{ width: `${Math.max(widthPct, 8)}%`, minWidth: '70px' }}
+                          >
+                            {month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Grouped assignment bars with accordion */}
@@ -596,7 +597,7 @@ export function StaffingPage() {
                               return (
                                 <div key={assignment.id} className="mb-2">
                                   <div className="text-xs text-gray-600 mb-1">
-                                    {assignment.allocation}% • {assignment.projectRoleId ? assignment.projectRoleId.substring(0, 8) : 'No Role'}
+                                    {assignment.allocation ?? 0}% • {assignment.projectRoleId ? assignment.projectRoleId.substring(0, 8) : 'No Role'}
                                   </div>
                                   <div className="h-3 bg-gray-100 rounded relative overflow-hidden">
                                     <div
@@ -634,7 +635,7 @@ export function StaffingPage() {
                                     return (
                                       <div key={assignment.id} className="mb-2">
                                         <div className="text-xs text-gray-500 mb-1">
-                                          {assignment.allocation}% • Role: {assignment.projectRoleId?.substring(0, 8) || 'None'}
+                                          {assignment.allocation ?? 0}% • Role: {assignment.projectRoleId?.substring(0, 8) || 'None'}
                                         </div>
                                         <div className="h-2 bg-gray-100 rounded relative overflow-hidden">
                                           <div
@@ -747,7 +748,7 @@ export function StaffingPage() {
                             aria-label="Allocation Percentage"
                           />
                         ) : (
-                          `${assignment.allocation}%`
+                          `${assignment.allocation ?? 0}%`
                         )}
                       </td>
                       <td className="px-4 py-3 text-sm">
@@ -926,7 +927,7 @@ export function StaffingPage() {
                               >
                                 <div className="flex items-center gap-3">
                                   <div className="font-medium">
-                                    {assignment.allocation}%
+                                    {assignment.allocation ?? 0}%
                                   </div>
                                   <div className="text-gray-600">
                                     Role: {assignment.projectRoleId ? `${assignment.projectRoleId.substring(0, 8)}...` : '—'}

@@ -44,6 +44,7 @@ import { AdminResumesPage } from './pages/AdminResumesPage';
 import { AdminResumeTemplatesPage } from './pages/AdminResumeTemplatesPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { ResumeSharePage } from './pages/ResumeSharePage';
+import { MySchedulePage } from './pages/MySchedulePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -151,6 +152,7 @@ function App() {
               }
             >
               <Route index element={<DashboardPage />} />
+              <Route path="schedule" element={<MySchedulePage />} />
               <Route path="staffing" element={<StaffingPage />} />
               <Route path="hoteling" element={<HotelingPage />} />
               <Route path="resumes" element={<ResumesPage />} />
