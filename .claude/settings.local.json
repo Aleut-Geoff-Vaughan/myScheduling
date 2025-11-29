@@ -59,7 +59,8 @@
       "Bash(SEED_FACILITIES=true dotnet run:*)",
       "Bash(VITE_API_PROXY_TARGET=http://localhost:5000 npm run dev:*)",
       "Bash(ls:*)",
-      "Bash(PGPASSWORD=postgres psql:*)"
+      "Bash(PGPASSWORD=postgres psql:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
