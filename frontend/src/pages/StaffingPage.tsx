@@ -352,76 +352,88 @@ export function StaffingPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Staffing</h1>
-        <p className="text-gray-600 mt-2">
+    <div className="p-3 sm:p-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-3xl font-bold text-gray-900">Staffing</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
           Your upcoming assignments and utilization
         </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* Stats - 2x2 grid on mobile, 4 cols on desktop */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-blue-600">{stats.total}</div>
-            <div className="text-sm text-gray-600 mt-1">Total Assignments</div>
+            <div className="text-xl sm:text-3xl font-bold text-blue-600">{stats.total}</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Total Assignments</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-green-600">{stats.active}</div>
-            <div className="text-sm text-gray-600 mt-1">Active</div>
+            <div className="text-xl sm:text-3xl font-bold text-green-600">{stats.active}</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Active</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600">{stats.pending}</div>
-            <div className="text-sm text-gray-600 mt-1">Pending Approval</div>
+            <div className="text-xl sm:text-3xl font-bold text-orange-600">{stats.pending}</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Pending Approval</div>
           </div>
         </Card>
         <Card padding="sm">
           <div className="text-center">
-            <div className="text-3xl font-bold text-purple-600">{stats.avgAllocation}%</div>
-            <div className="text-sm text-gray-600 mt-1">Avg Utilization</div>
+            <div className="text-xl sm:text-3xl font-bold text-purple-600">{stats.avgAllocation}%</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Avg Utilization</div>
           </div>
         </Card>
       </div>
 
       {/* View Selector */}
-      <Card className="mb-6">
+      <Card className="mb-4 sm:mb-6">
         <CardBody>
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="flex gap-2">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {/* Tab buttons - horizontal scroll on mobile */}
+            <div className="flex gap-1 sm:gap-2 overflow-x-auto pb-1 -mx-1 px-1">
               <Button
                 variant={selectedView === 'projectAssignments' ? 'primary' : 'ghost'}
                 onClick={() => setSelectedView('projectAssignments')}
+                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-4"
               >
-                Project Assignments
+                <span className="hidden sm:inline">Project Assignments</span>
+                <span className="sm:hidden">Projects</span>
               </Button>
               <Button
                 variant={selectedView === 'assignments' ? 'primary' : 'ghost'}
                 onClick={() => setSelectedView('assignments')}
+                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-4"
               >
-                WBS Assignments
+                <span className="hidden sm:inline">WBS Assignments</span>
+                <span className="sm:hidden">WBS</span>
               </Button>
               <Button
                 variant={selectedView === 'capacity' ? 'primary' : 'ghost'}
                 onClick={() => setSelectedView('capacity')}
+                className="whitespace-nowrap text-xs sm:text-sm px-2 sm:px-4"
               >
-                Capacity View
+                <span className="hidden sm:inline">Capacity View</span>
+                <span className="sm:hidden">Capacity</span>
               </Button>
             </div>
-            <div className="flex-1">
+
+            {/* Search input */}
+            <div className="w-full">
               <Input
                 placeholder="Search assignments..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={exportCsv}>
-                Export CSV
+
+            {/* Action buttons */}
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={exportCsv} className="text-xs sm:text-sm">
+                <span className="hidden sm:inline">Export CSV</span>
+                <span className="sm:hidden">Export</span>
               </Button>
               {selectedView === 'projectAssignments' && (
                 <Button
@@ -430,16 +442,20 @@ export function StaffingPage() {
                     setEditingProjectAssignment(null);
                     setShowProjectAssignmentModal(true);
                   }}
+                  className="text-xs sm:text-sm"
                 >
-                  + New Project Assignment
+                  <span className="hidden sm:inline">+ New Project Assignment</span>
+                  <span className="sm:hidden">+ Project</span>
                 </Button>
               )}
               {selectedView === 'assignments' && (
                 <Button
                   variant="primary"
                   onClick={() => setShowRequestModal(true)}
+                  className="text-xs sm:text-sm"
                 >
-                  + Request WBS Assignment
+                  <span className="hidden sm:inline">+ Request WBS Assignment</span>
+                  <span className="sm:hidden">+ Request WBS</span>
                 </Button>
               )}
             </div>
@@ -456,37 +472,45 @@ export function StaffingPage() {
           />
 
           {/* Timeline with range toggle */}
-          <div className="border-t border-gray-200 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Timeline</h3>
-              <div className="flex gap-2">
+          <div className="border-t border-gray-200 p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-4">
+              <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Timeline</h3>
+              <div className="flex gap-1 sm:gap-2 overflow-x-auto">
                 <Button
                   size="sm"
                   variant={timelineRange === '2months' ? 'primary' : 'ghost'}
                   onClick={() => setTimelineRange('2months')}
+                  className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap"
                 >
-                  2 Months
+                  <span className="hidden sm:inline">2 Months</span>
+                  <span className="sm:hidden">2M</span>
                 </Button>
                 <Button
                   size="sm"
                   variant={timelineRange === '6months' ? 'primary' : 'ghost'}
                   onClick={() => setTimelineRange('6months')}
+                  className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap"
                 >
-                  6 Months
+                  <span className="hidden sm:inline">6 Months</span>
+                  <span className="sm:hidden">6M</span>
                 </Button>
                 <Button
                   size="sm"
                   variant={timelineRange === '1year' ? 'primary' : 'ghost'}
                   onClick={() => setTimelineRange('1year')}
+                  className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap"
                 >
-                  1 Year
+                  <span className="hidden sm:inline">1 Year</span>
+                  <span className="sm:hidden">1Y</span>
                 </Button>
                 <Button
                   size="sm"
                   variant={timelineRange === '3years' ? 'primary' : 'ghost'}
                   onClick={() => setTimelineRange('3years')}
+                  className="text-xs sm:text-sm px-2 sm:px-3 whitespace-nowrap"
                 >
-                  3 Years
+                  <span className="hidden sm:inline">3 Years</span>
+                  <span className="sm:hidden">3Y</span>
                 </Button>
               </div>
             </div>
@@ -639,8 +663,8 @@ export function StaffingPage() {
           </div>
 
           {/* Assignments Table */}
-          <div className="border-t border-gray-200 p-4">
-            <h3 className="font-semibold text-gray-900 mb-4">All Assignments</h3>
+          <div className="border-t border-gray-200 p-3 sm:p-4">
+            <h3 className="font-semibold text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base">All Assignments</h3>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -779,34 +803,34 @@ export function StaffingPage() {
 
       {/* Capacity View */}
       {selectedView === 'capacity' && (
-        <div className="space-y-6">
-          {/* Capacity Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="space-y-4 sm:space-y-6">
+          {/* Capacity Summary Cards - 3 cols on mobile too, just smaller */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-4">
             <Card padding="sm">
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-lg sm:text-2xl font-bold text-green-600">
                   {assignments.filter(a => a.status === AssignmentStatus.Active && (a.allocation || 0) < 80).length}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">Under Allocated</div>
-                <div className="text-xs text-gray-500 mt-1">&lt;80% capacity</div>
+                <div className="text-[10px] sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Under Allocated</div>
+                <div className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">&lt;80%</div>
               </div>
             </Card>
             <Card padding="sm">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-lg sm:text-2xl font-bold text-blue-600">
                   {assignments.filter(a => a.status === AssignmentStatus.Active && (a.allocation || 0) >= 80 && (a.allocation || 0) <= 100).length}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">Optimally Allocated</div>
-                <div className="text-xs text-gray-500 mt-1">80-100% capacity</div>
+                <div className="text-[10px] sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Optimal</div>
+                <div className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">80-100%</div>
               </div>
             </Card>
             <Card padding="sm">
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-lg sm:text-2xl font-bold text-red-600">
                   {assignments.filter(a => a.status === AssignmentStatus.Active && (a.allocation || 0) > 100).length}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">Over Allocated</div>
-                <div className="text-xs text-gray-500 mt-1">&gt;100% capacity</div>
+                <div className="text-[10px] sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Over Allocated</div>
+                <div className="text-[9px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">&gt;100%</div>
               </div>
             </Card>
           </div>

@@ -146,6 +146,9 @@ builder.Services.AddScoped<IRuleInterpreter, RuleInterpreter>();
 // Register Facilities Excel Service
 builder.Services.AddScoped<IFacilitiesExcelService, FacilitiesExcelService>();
 
+// Register Resume Export Service
+builder.Services.AddScoped<ResumeExportService>();
+
 // Health Checks
 builder.Services.AddHealthChecks()
     .AddDbContextCheck<MySchedulingDbContext>("database");

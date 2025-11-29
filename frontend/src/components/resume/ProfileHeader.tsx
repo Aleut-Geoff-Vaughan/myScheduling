@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import {
   Mail, Phone, MapPin, Linkedin, Edit2, Download, Share2,
-  FileText, CheckCircle, Clock, AlertCircle, Archive
+  CheckCircle, Clock, AlertCircle, Archive
 } from 'lucide-react';
 import { ResumeStatus, type ResumeProfile, type User } from '../../types/api';
 
@@ -9,7 +8,7 @@ interface ProfileHeaderProps {
   resume: ResumeProfile;
   user: User | null;
   onEdit?: () => void;
-  onExport?: (format: 'word' | 'pdf') => void;
+  onExport?: () => void;
   onShare?: () => void;
   onRequestApproval?: () => void;
   isOwner?: boolean;
@@ -24,7 +23,6 @@ export function ProfileHeader({
   onRequestApproval,
   isOwner = false
 }: ProfileHeaderProps) {
-  const [showExportMenu, setShowExportMenu] = useState(false);
 
   const getStatusConfig = (status: ResumeStatus) => {
     const configs: Record<ResumeStatus, { icon: React.ReactNode; color: string; bg: string; label: string }> = {
@@ -142,40 +140,16 @@ export function ProfileHeader({
               </button>
             )}
 
-            {/* Export Dropdown */}
-            <div className="relative">
+            {/* Export Button */}
+            {onExport && (
               <button
-                onClick={() => setShowExportMenu(!showExportMenu)}
+                onClick={onExport}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
               >
                 <Download className="w-4 h-4" />
                 Export
               </button>
-              {showExportMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                  <button
-                    onClick={() => {
-                      onExport?.('word');
-                      setShowExportMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Download as Word
-                  </button>
-                  <button
-                    onClick={() => {
-                      onExport?.('pdf');
-                      setShowExportMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <FileText className="w-4 h-4" />
-                    Download as PDF
-                  </button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
 

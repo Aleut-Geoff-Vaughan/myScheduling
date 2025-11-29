@@ -25,6 +25,7 @@ public class MySchedulingDbContext : DbContext
     public DbSet<ResumeDocument> ResumeDocuments => Set<ResumeDocument>();
     public DbSet<ResumeApproval> ResumeApprovals => Set<ResumeApproval>();
     public DbSet<ResumeTemplate> ResumeTemplates => Set<ResumeTemplate>();
+    public DbSet<ResumeShareLink> ResumeShareLinks => Set<ResumeShareLink>();
     public DbSet<LinkedInImport> LinkedInImports => Set<LinkedInImport>();
     public DbSet<Skill> Skills => Set<Skill>();
     public DbSet<PersonSkill> PersonSkills => Set<PersonSkill>();
@@ -1002,6 +1003,36 @@ public class MySchedulingDbContext : DbContext
             entity.HasOne(e => e.ImportedBy)
                 .WithMany()
                 .HasForeignKey(e => e.ImportedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ResumeShareLink>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ShareToken).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.PasswordHash).HasMaxLength(100);
+            entity.Property(e => e.VisibleSections).HasMaxLength(500);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+            entity.Property(e => e.ViewCount).IsRequired().HasDefaultValue(0);
+            entity.Property(e => e.HideContactInfo).IsRequired().HasDefaultValue(false);
+
+            entity.HasIndex(e => e.ShareToken).IsUnique();
+            entity.HasIndex(e => new { e.ResumeProfileId, e.IsActive });
+            entity.HasIndex(e => e.CreatedByUserId);
+
+            entity.HasOne(e => e.ResumeProfile)
+                .WithMany(r => r.ShareLinks)
+                .HasForeignKey(e => e.ResumeProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ResumeVersion)
+                .WithMany()
+                .HasForeignKey(e => e.ResumeVersionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.CreatedBy)
+                .WithMany()
+                .HasForeignKey(e => e.CreatedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

@@ -22,6 +22,7 @@ public class ResumeProfile : BaseEntity
     public virtual ICollection<ResumeVersion> Versions { get; set; } = new List<ResumeVersion>();
     public virtual ICollection<ResumeDocument> Documents { get; set; } = new List<ResumeDocument>();
     public virtual ICollection<ResumeApproval> Approvals { get; set; } = new List<ResumeApproval>();
+    public virtual ICollection<ResumeShareLink> ShareLinks { get; set; } = new List<ResumeShareLink>();
     public virtual ResumeVersion? CurrentVersion { get; set; }
     public virtual User? LastReviewedBy { get; set; }
 }

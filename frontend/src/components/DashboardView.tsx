@@ -191,112 +191,115 @@ export function DashboardView({
 
   return (
     <ErrorBoundary>
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
+      <div className="p-3 sm:p-6">
+        <div className="mb-4 sm:mb-6">
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">
             {headlineOverride ?? (isSelf ? `Welcome back, ${displayName}!` : `${displayName}'s Dashboard`)}
           </h1>
-          <p className="text-gray-600 mt-2">
+          <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
             {selectedView === 'current-week' && 'Plan work location for this week.'}
             {selectedView === 'two-weeks' && 'Plan work location for the next two weeks.'}
             {selectedView === 'month' && 'View and manage work location for the entire month.'}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* Stats grid: 2 cols on mobile, 4 on desktop */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 mb-4 sm:mb-6">
           {stats.map((stat) => (
             <div
               key={stat.name}
-              className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition"
+              className="bg-white rounded-lg shadow-sm border border-gray-200 p-2 sm:p-4 hover:shadow-md transition"
             >
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{stat.name}</p>
+                  <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-0.5 sm:mt-1">{stat.value}</p>
                 </div>
-                <div className={`${stat.color} rounded-lg p-2`}>
-                  <div className="text-white">{stat.icon}</div>
+                <div className={`${stat.color} rounded-lg p-1.5 sm:p-2 flex-shrink-0`}>
+                  <div className="text-white w-4 h-4 sm:w-6 sm:h-6">{stat.icon}</div>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        <Card className="mb-6">
+        <Card className="mb-4 sm:mb-6">
           <CardHeader
             title={isSelf ? 'My Work Location Schedule' : `${displayName}'s Work Location`}
             subtitle={canEdit ? 'Click on any day to set or update work location' : 'Viewing schedule'}
           />
           <CardBody>
-            <div className="flex items-center justify-between mb-4">
+            {/* Mobile: Stack vertically, Desktop: Side by side */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
               <ViewSelector
                 selectedView={selectedView}
                 onViewChange={setSelectedView}
                 daysPerWeek={daysPerWeek}
                 onDaysPerWeekChange={setDaysPerWeek}
               />
-              <div className="flex items-center gap-2">
+              {/* Action buttons - compact on mobile */}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                 <button
                   type="button"
                   onClick={() => setShowShareModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100 hover:border-blue-400 transition"
+                  className="flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-md sm:rounded-lg hover:bg-blue-100 hover:border-blue-400 transition"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                   </svg>
-                  Share
+                  <span className="hidden sm:inline">Share</span>
                 </button>
                 {canEdit && (
                   <>
                     <button
                       type="button"
                       onClick={() => setShowTemplateModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-300 rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition"
+                      className="flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-300 rounded-md sm:rounded-lg hover:bg-indigo-100 hover:border-indigo-400 transition"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                       </svg>
-                      Apply Template
+                      <span className="hidden sm:inline">Template</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowPTOModal(true)}
-                      className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-300 rounded-lg hover:bg-amber-100 hover:border-amber-400 transition"
+                      className="flex items-center gap-1 px-2 py-1.5 sm:px-3 sm:py-2 text-xs sm:text-sm font-medium text-amber-700 bg-amber-50 border border-amber-300 rounded-md sm:rounded-lg hover:bg-amber-100 hover:border-amber-400 transition"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      Add PTO
+                      <span className="hidden sm:inline">PTO</span>
                     </button>
                   </>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center justify-between mb-4 bg-gray-50 rounded-lg p-3">
+            <div className="flex items-center justify-between mb-4 bg-gray-50 rounded-lg p-2 sm:p-3">
               <button
                 onClick={handlePreviousPeriod}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-                Previous
+                <span className="hidden sm:inline">Previous</span>
               </button>
 
               <button
                 onClick={handleToday}
-                className="px-4 py-2 text-sm font-semibold text-blue-600 bg-white border-2 border-blue-600 rounded-md hover:bg-blue-50 transition"
+                className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold text-blue-600 bg-white border-2 border-blue-600 rounded-md hover:bg-blue-50 transition"
               >
                 Today
               </button>
 
               <button
                 onClick={handleNextPeriod}
-                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 transition"
               >
-                Next
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="hidden sm:inline">Next</span>
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                 </svg>
               </button>

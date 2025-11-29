@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Award, Calendar, ExternalLink, AlertTriangle, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Award, Calendar, AlertTriangle, X } from 'lucide-react';
 import { format, parseISO, isPast, addMonths } from 'date-fns';
 import type { Certification, PersonCertification } from '../../services/certificationsService';
 

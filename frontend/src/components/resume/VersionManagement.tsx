@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Clock, GitBranch, Eye, Tag } from 'lucide-react';
+import { Clock, GitBranch, Eye, Tag, GitCompare, ArrowRight, Plus, Minus, RefreshCw } from 'lucide-react';
 import {
   getVersions,
   createVersion,
@@ -9,6 +9,7 @@ import {
 import { type ResumeVersion } from '../../types/api';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { useAuthStore } from '../../stores/authStore';
 
 interface VersionManagementProps {
   resumeId: string;
@@ -21,12 +22,18 @@ export function VersionManagement({
   currentVersionId,
   onVersionChange
 }: VersionManagementProps) {
+  const { user } = useAuthStore();
   const [versions, setVersions] = useState<ResumeVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<ResumeVersion | null>(null);
   const [showVersionDetails, setShowVersionDetails] = useState(false);
+  const [showCompareModal, setShowCompareModal] = useState(false);
+  const [compareVersions, setCompareVersions] = useState<{ left: ResumeVersion | null; right: ResumeVersion | null }>({
+    left: null,
+    right: null
+  });
 
   useEffect(() => {
     loadVersions();
@@ -47,13 +54,16 @@ export function VersionManagement({
   };
 
   const handleCreateVersion = async (versionNotes: string) => {
+    if (!user?.id) {
+      setError('You must be logged in to create a version');
+      return;
+    }
+
     try {
-      // TODO: Get current user ID from auth context
-      const currentUserId = 'temp-user-id';
       await createVersion(resumeId, {
         versionName: `Version ${versions.length + 1}`,
         description: versionNotes,
-        createdByUserId: currentUserId
+        createdByUserId: user.id
       });
       await loadVersions();
       setShowCreateModal(false);
@@ -90,6 +100,16 @@ export function VersionManagement({
     }
   };
 
+  const handleOpenCompare = () => {
+    // Default to comparing the two most recent versions
+    const sortedVersions = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
+    setCompareVersions({
+      left: sortedVersions[1] || null,
+      right: sortedVersions[0] || null
+    });
+    setShowCompareModal(true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -119,10 +139,18 @@ export function VersionManagement({
             {versions.length} version{versions.length !== 1 ? 's' : ''} created
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)} size="sm">
-          <Tag className="w-4 h-4 mr-2" />
-          Create Version
-        </Button>
+        <div className="flex gap-2">
+          {versions.length >= 2 && (
+            <Button onClick={handleOpenCompare} size="sm" variant="secondary">
+              <GitCompare className="w-4 h-4 mr-2" />
+              Compare
+            </Button>
+          )}
+          <Button onClick={() => setShowCreateModal(true)} size="sm">
+            <Tag className="w-4 h-4 mr-2" />
+            Create Version
+          </Button>
+        </div>
       </div>
 
       {/* Versions List */}
@@ -224,6 +252,19 @@ export function VersionManagement({
           }}
         />
       )}
+
+      {/* Version Compare Modal */}
+      {showCompareModal && (
+        <VersionCompareModal
+          versions={versions}
+          leftVersion={compareVersions.left}
+          rightVersion={compareVersions.right}
+          onSelectLeft={(v) => setCompareVersions({ ...compareVersions, left: v })}
+          onSelectRight={(v) => setCompareVersions({ ...compareVersions, right: v })}
+          onSwap={() => setCompareVersions({ left: compareVersions.right, right: compareVersions.left })}
+          onClose={() => setShowCompareModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -321,6 +362,288 @@ function VersionDetailsModal({ version, onClose }: VersionDetailsModalProps) {
                 </pre>
               </div>
             </div>
+          </div>
+        )}
+
+        <div className="mt-6 flex justify-end">
+          <Button onClick={onClose}>Close</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Version Compare Modal Component
+interface VersionCompareModalProps {
+  versions: ResumeVersion[];
+  leftVersion: ResumeVersion | null;
+  rightVersion: ResumeVersion | null;
+  onSelectLeft: (version: ResumeVersion) => void;
+  onSelectRight: (version: ResumeVersion) => void;
+  onSwap: () => void;
+  onClose: () => void;
+}
+
+interface ContentSnapshot {
+  displayName?: string;
+  jobTitle?: string;
+  email?: string;
+  summary?: string;
+  sections?: Array<{
+    type: string;
+    entries?: Array<{
+      title?: string;
+      organization?: string;
+      description?: string;
+    }>;
+  }>;
+  skills?: Array<{
+    name?: string;
+    proficiencyLevel?: number;
+  }>;
+  certifications?: Array<{
+    name?: string;
+    issuer?: string;
+  }>;
+}
+
+function VersionCompareModal({
+  versions,
+  leftVersion,
+  rightVersion,
+  onSelectLeft,
+  onSelectRight,
+  onSwap,
+  onClose
+}: VersionCompareModalProps) {
+  const parseSnapshot = (snapshot: string | undefined): ContentSnapshot | null => {
+    if (!snapshot) return null;
+    try {
+      return JSON.parse(snapshot);
+    } catch {
+      return null;
+    }
+  };
+
+  const leftData = parseSnapshot(leftVersion?.contentSnapshot);
+  const rightData = parseSnapshot(rightVersion?.contentSnapshot);
+
+  const compareField = (leftVal: string | undefined, rightVal: string | undefined, label: string) => {
+    const hasChanged = leftVal !== rightVal;
+    if (!leftVal && !rightVal) return null;
+
+    return (
+      <div className={`p-3 rounded-lg ${hasChanged ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-sm font-medium text-gray-700">{label}</span>
+          {hasChanged && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">Changed</span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className={`text-sm ${hasChanged && leftVal ? 'text-red-600' : 'text-gray-600'}`}>
+            {leftVal ? (
+              <span className="flex items-start gap-1">
+                {hasChanged && <Minus className="w-4 h-4 flex-shrink-0 mt-0.5" />}
+                {leftVal}
+              </span>
+            ) : (
+              <span className="text-gray-400 italic">Not set</span>
+            )}
+          </div>
+          <div className={`text-sm ${hasChanged && rightVal ? 'text-green-600' : 'text-gray-600'}`}>
+            {rightVal ? (
+              <span className="flex items-start gap-1">
+                {hasChanged && <Plus className="w-4 h-4 flex-shrink-0 mt-0.5" />}
+                {rightVal}
+              </span>
+            ) : (
+              <span className="text-gray-400 italic">Not set</span>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const sortedVersions = [...versions].sort((a, b) => b.versionNumber - a.versionNumber);
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <GitCompare className="w-6 h-6" />
+              Compare Versions
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Select two versions to compare their content snapshots
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+            title="Close"
+            aria-label="Close comparison modal"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Version Selectors */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div>
+            <label htmlFor="left-version-select" className="block text-sm font-medium text-gray-700 mb-2">
+              Older Version (Left)
+            </label>
+            <select
+              id="left-version-select"
+              value={leftVersion?.id || ''}
+              onChange={(e) => {
+                const v = versions.find(ver => ver.id === e.target.value);
+                if (v) onSelectLeft(v);
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              aria-label="Select older version for comparison"
+            >
+              <option value="">Select version...</option>
+              {sortedVersions.map((v) => (
+                <option key={v.id} value={v.id} disabled={v.id === rightVersion?.id}>
+                  Version {v.versionNumber} - {new Date(v.createdAt).toLocaleDateString()}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <label htmlFor="right-version-select" className="block text-sm font-medium text-gray-700 mb-2">
+                Newer Version (Right)
+              </label>
+              <select
+                id="right-version-select"
+                value={rightVersion?.id || ''}
+                onChange={(e) => {
+                  const v = versions.find(ver => ver.id === e.target.value);
+                  if (v) onSelectRight(v);
+                }}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                aria-label="Select newer version for comparison"
+              >
+                <option value="">Select version...</option>
+                {sortedVersions.map((v) => (
+                  <option key={v.id} value={v.id} disabled={v.id === leftVersion?.id}>
+                    Version {v.versionNumber} - {new Date(v.createdAt).toLocaleDateString()}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              type="button"
+              onClick={onSwap}
+              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+              title="Swap versions"
+              aria-label="Swap left and right versions"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Comparison Content */}
+        {leftVersion && rightVersion ? (
+          <div className="space-y-4">
+            {/* Header Row */}
+            <div className="grid grid-cols-2 gap-4 border-b pb-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                <Clock className="w-4 h-4" />
+                Version {leftVersion.versionNumber}
+                <span className="text-gray-500 font-normal">
+                  ({new Date(leftVersion.createdAt).toLocaleDateString()})
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                <ArrowRight className="w-4 h-4 text-blue-600" />
+                Version {rightVersion.versionNumber}
+                <span className="text-gray-500 font-normal">
+                  ({new Date(rightVersion.createdAt).toLocaleDateString()})
+                </span>
+              </div>
+            </div>
+
+            {/* Basic Info Comparison */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Basic Information</h4>
+              {compareField(leftData?.displayName, rightData?.displayName, 'Display Name')}
+              {compareField(leftData?.jobTitle, rightData?.jobTitle, 'Job Title')}
+              {compareField(leftData?.email, rightData?.email, 'Email')}
+              {compareField(leftData?.summary, rightData?.summary, 'Summary')}
+            </div>
+
+            {/* Skills Comparison */}
+            {(leftData?.skills?.length || rightData?.skills?.length) && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Skills</h4>
+                <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="space-y-1">
+                    {leftData?.skills?.map((skill, idx) => (
+                      <div key={idx} className="text-sm text-gray-600">
+                        {skill.name} (Level {skill.proficiencyLevel})
+                      </div>
+                    )) || <span className="text-gray-400 italic text-sm">No skills</span>}
+                  </div>
+                  <div className="space-y-1">
+                    {rightData?.skills?.map((skill, idx) => (
+                      <div key={idx} className="text-sm text-gray-600">
+                        {skill.name} (Level {skill.proficiencyLevel})
+                      </div>
+                    )) || <span className="text-gray-400 italic text-sm">No skills</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Certifications Comparison */}
+            {(leftData?.certifications?.length || rightData?.certifications?.length) && (
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Certifications</h4>
+                <div className="grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
+                  <div className="space-y-1">
+                    {leftData?.certifications?.map((cert, idx) => (
+                      <div key={idx} className="text-sm text-gray-600">
+                        {cert.name} ({cert.issuer})
+                      </div>
+                    )) || <span className="text-gray-400 italic text-sm">No certifications</span>}
+                  </div>
+                  <div className="space-y-1">
+                    {rightData?.certifications?.map((cert, idx) => (
+                      <div key={idx} className="text-sm text-gray-600">
+                        {cert.name} ({cert.issuer})
+                      </div>
+                    )) || <span className="text-gray-400 italic text-sm">No certifications</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No Data State */}
+            {!leftData && !rightData && (
+              <div className="text-center py-8 text-gray-500">
+                <GitCompare className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                <p>No content snapshots available for comparison.</p>
+                <p className="text-sm">Snapshots are captured when versions are created.</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-gray-500">
+            <GitCompare className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+            <p className="text-lg font-medium">Select two versions to compare</p>
+            <p className="text-sm mt-1">Choose versions from the dropdowns above</p>
           </div>
         )}
 

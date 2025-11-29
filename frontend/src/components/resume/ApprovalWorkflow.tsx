@@ -9,6 +9,7 @@ import {
 import { type ResumeApproval, ApprovalStatus } from '../../types/api';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
+import { useAuthStore } from '../../stores/authStore';
 
 interface ApprovalWorkflowProps {
   resumeId: string;
@@ -16,6 +17,7 @@ interface ApprovalWorkflowProps {
 }
 
 export function ApprovalWorkflow({ resumeId, onApprovalChange }: ApprovalWorkflowProps) {
+  const { user } = useAuthStore();
   const [approvals, setApprovals] = useState<ResumeApproval[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,11 +47,14 @@ export function ApprovalWorkflow({ resumeId, onApprovalChange }: ApprovalWorkflo
   };
 
   const handleApprove = async (approvalId: string, reviewNotes: string) => {
+    if (!user?.id) {
+      setError('You must be logged in to approve resumes');
+      return;
+    }
+
     try {
-      // TODO: Get current user ID from auth context
-      const reviewedByUserId = 'temp-user-id';
       await approveResume(approvalId, {
-        reviewedByUserId,
+        reviewedByUserId: user.id,
         reviewNotes
       });
       await loadApprovals();
@@ -63,10 +68,14 @@ export function ApprovalWorkflow({ resumeId, onApprovalChange }: ApprovalWorkflo
   };
 
   const handleReject = async (approvalId: string, reviewNotes: string) => {
+    if (!user?.id) {
+      setError('You must be logged in to reject resumes');
+      return;
+    }
+
     try {
-      const reviewedByUserId = 'temp-user-id';
       await rejectResume(approvalId, {
-        reviewedByUserId,
+        reviewedByUserId: user.id,
         reviewNotes
       });
       await loadApprovals();
@@ -80,10 +89,14 @@ export function ApprovalWorkflow({ resumeId, onApprovalChange }: ApprovalWorkflo
   };
 
   const handleRequestChanges = async (approvalId: string, reviewNotes: string) => {
+    if (!user?.id) {
+      setError('You must be logged in to request changes');
+      return;
+    }
+
     try {
-      const reviewedByUserId = 'temp-user-id';
       await requestChanges(approvalId, {
-        reviewedByUserId,
+        reviewedByUserId: user.id,
         reviewNotes
       });
       await loadApprovals();

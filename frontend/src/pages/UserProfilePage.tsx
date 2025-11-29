@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import type { UserProfile, UpdateUserProfileRequest, ChangePasswordRequest } from '../types/user';
 import { useAuthStore } from '../stores/authStore';
 import { usePeople } from '../hooks/usePeople';
+import { useOffices } from '../hooks/useOffices';
 import Cropper from 'react-easy-crop';
 import { getCroppedImage } from '../utils/cropImage';
 
@@ -23,6 +24,9 @@ export function UserProfilePage() {
     department: '',
     jobTitle: '',
     phoneNumber: '',
+    homeOfficeId: '',
+    executiveAssistantId: '',
+    standardDelegateIds: [],
   });
 
   // Password form state
@@ -47,6 +51,10 @@ export function UserProfilePage() {
     tenantId: currentWorkspace?.tenantId,
   });
 
+  const { data: offices = [] } = useOffices({
+    tenantId: currentWorkspace?.tenantId,
+  });
+
   const fetchProfile = async () => {
     setIsLoading(true);
     try {
@@ -58,6 +66,9 @@ export function UserProfilePage() {
         department: data.department || '',
         jobTitle: data.jobTitle || '',
         phoneNumber: data.phoneNumber || '',
+        homeOfficeId: data.homeOfficeId || '',
+        executiveAssistantId: data.executiveAssistantId || '',
+        standardDelegateIds: data.standardDelegateIds || [],
       });
     } catch (error: any) {
       toast.error(error.message || 'Failed to load profile');
@@ -469,6 +480,123 @@ export function UserProfilePage() {
                 />
               </div>
 
+              {/* Work Location Settings */}
+              <div className="pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Work Location Settings</h3>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Home Office
+                  </label>
+                  <select
+                    value={profileForm.homeOfficeId || ''}
+                    onChange={(e) => setProfileForm({ ...profileForm, homeOfficeId: e.target.value || undefined })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Select home office"
+                  >
+                    <option value="">No home office</option>
+                    {offices.map((office) => (
+                      <option key={office.id} value={office.id}>
+                        {office.name} {office.city ? `— ${office.city}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Your default office location when working in-office.
+                  </p>
+                </div>
+              </div>
+
+              {/* Delegation Settings */}
+              <div className="pt-4 border-t border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Delegation Settings</h3>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Executive Assistant (EA)
+                  </label>
+                  <select
+                    value={profileForm.executiveAssistantId || ''}
+                    onChange={(e) => setProfileForm({ ...profileForm, executiveAssistantId: e.target.value || undefined })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    aria-label="Select executive assistant"
+                  >
+                    <option value="">No EA assigned</option>
+                    {peopleOptions.filter(p => p.id !== user?.id).map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.displayName} {p.jobTitle ? `— ${p.jobTitle}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Your EA can manage your calendar and schedule on your behalf.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Standard Delegates
+                  </label>
+                  <div className="border border-gray-300 rounded-lg p-3 min-h-[100px] bg-gray-50">
+                    {/* Selected delegates */}
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {(profileForm.standardDelegateIds || []).map((delegateId) => {
+                        const delegate = peopleOptions.find(p => p.id === delegateId);
+                        return delegate ? (
+                          <span
+                            key={delegateId}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                          >
+                            {delegate.displayName}
+                            <button
+                              type="button"
+                              onClick={() => setProfileForm({
+                                ...profileForm,
+                                standardDelegateIds: (profileForm.standardDelegateIds || []).filter(id => id !== delegateId)
+                              })}
+                              className="ml-1 hover:text-blue-600"
+                              title={`Remove ${delegate.displayName}`}
+                              aria-label={`Remove ${delegate.displayName} from delegates`}
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </span>
+                        ) : null;
+                      })}
+                    </div>
+                    {/* Add delegate dropdown */}
+                    <select
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value && !(profileForm.standardDelegateIds || []).includes(e.target.value)) {
+                          setProfileForm({
+                            ...profileForm,
+                            standardDelegateIds: [...(profileForm.standardDelegateIds || []), e.target.value]
+                          });
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                      title="Add standard delegate"
+                      aria-label="Add standard delegate"
+                    >
+                      <option value="">+ Add delegate...</option>
+                      {peopleOptions
+                        .filter(p => p.id !== user?.id && !(profileForm.standardDelegateIds || []).includes(p.id))
+                        .map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.displayName} {p.jobTitle ? `— ${p.jobTitle}` : ''}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Standard delegates can view your schedule and make limited changes.
+                  </p>
+                </div>
+              </div>
+
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
                 <button
                   type="button"
@@ -511,10 +639,11 @@ export function UserProfilePage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 mb-1">
                   Current Password *
                 </label>
                 <input
+                  id="current-password"
                   type="password"
                   value={passwordForm.currentPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
@@ -524,10 +653,11 @@ export function UserProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
                   New Password *
                 </label>
                 <input
+                  id="new-password"
                   type="password"
                   value={passwordForm.newPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
@@ -540,10 +670,11 @@ export function UserProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
                   Confirm New Password *
                 </label>
                 <input
+                  id="confirm-password"
                   type="password"
                   value={passwordForm.confirmPassword}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
@@ -620,6 +751,23 @@ export function UserProfilePage() {
                 </p>
               </div>
             )}
+            <div>
+              <p className="text-gray-600">Roles</p>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {currentWorkspace?.roles && currentWorkspace.roles.length > 0 ? (
+                  currentWorkspace.roles.map((role, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                    >
+                      {role}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-gray-500">No roles assigned</span>
+                )}
+              </div>
+            </div>
           </div>
         </CardBody>
       </Card>

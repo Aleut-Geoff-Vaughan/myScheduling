@@ -41,7 +41,9 @@ import { AdminFacilitiesPage } from './pages/AdminFacilitiesPage';
 import { AdminOfficeDetailPage } from './pages/AdminOfficeDetailPage';
 import { AdminSpaceDetailPage } from './pages/AdminSpaceDetailPage';
 import { AdminResumesPage } from './pages/AdminResumesPage';
+import { AdminResumeTemplatesPage } from './pages/AdminResumeTemplatesPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
+import { ResumeSharePage } from './pages/ResumeSharePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -107,6 +109,9 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/select-workspace" element={<WorkspaceSelectorPage />} />
 
+            {/* Public shared resume view (no auth required) */}
+            <Route path="/resume/share/:token" element={<ResumeSharePage />} />
+
             {/* Admin Portal Routes */}
             <Route
               path="/admin"
@@ -133,6 +138,7 @@ function App() {
               <Route path="facilities/office/:officeId" element={<AdminOfficeDetailPage />} />
               <Route path="facilities/space/:spaceId" element={<AdminSpaceDetailPage />} />
               <Route path="resumes" element={<AdminResumesPage />} />
+              <Route path="resume-templates" element={<AdminResumeTemplatesPage />} />
             </Route>
 
             {/* Me Portal Routes (mobile-friendly top nav) */}

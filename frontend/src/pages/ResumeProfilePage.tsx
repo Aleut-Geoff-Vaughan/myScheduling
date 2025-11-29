@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, History, Settings } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
+import { ArrowLeft, History, Shield, ChevronDown, ChevronUp } from 'lucide-react';
+import { useAuthStore, AppRole } from '../stores/authStore';
 import {
   getResume,
   getResumes,
@@ -31,7 +31,6 @@ import {
 import {
   ResumeStatus,
   ResumeSectionType,
-  ProficiencyLevel,
   type ResumeProfile,
   type ResumeSection,
   type ResumeEntry,
@@ -46,6 +45,10 @@ import { ExperienceSection } from '../components/resume/ExperienceSection';
 import { EducationSection } from '../components/resume/EducationSection';
 import { SkillsSection } from '../components/resume/SkillsSection';
 import { CertificationsSection } from '../components/resume/CertificationsSection';
+import { ExportModal } from '../components/resume/ExportModal';
+import { ShareModal } from '../components/resume/ShareModal';
+import { VersionManagement } from '../components/resume/VersionManagement';
+import { ApprovalWorkflow } from '../components/resume/ApprovalWorkflow';
 
 export function ResumeProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -65,8 +68,20 @@ export function ResumeProfilePage() {
   const [userCertifications, setUserCertifications] = useState<PersonCertification[]>([]);
   const [availableCertifications, setAvailableCertifications] = useState<Certification[]>([]);
 
+  // Modal state
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+
+  // Panel visibility state
+  const [showVersionPanel, setShowVersionPanel] = useState(false);
+  const [showApprovalPanel, setShowApprovalPanel] = useState(false);
+
   // Determine if current user owns this resume
   const isOwner = resume?.userId === user?.id;
+
+  // Check if user can approve resumes (managers and admins)
+  const { hasRole } = useAuthStore();
+  const canApprove = hasRole(AppRole.ResourceManager) || hasRole(AppRole.TenantAdmin) || hasRole(AppRole.SysAdmin);
 
   useEffect(() => {
     if (id) {
@@ -248,18 +263,14 @@ export function ResumeProfilePage() {
     await loadResume(resume.id);
   };
 
-  // Handler for export (placeholder for now)
-  const handleExport = (format: 'word' | 'pdf') => {
-    console.log(`Exporting as ${format}...`);
-    // TODO: Implement export functionality
-    alert(`Export to ${format.toUpperCase()} coming soon!`);
+  // Handler for export - opens export modal
+  const handleExport = () => {
+    setShowExportModal(true);
   };
 
-  // Handler for share (placeholder for now)
+  // Handler for share - opens share modal
   const handleShare = () => {
-    console.log('Opening share dialog...');
-    // TODO: Implement share functionality
-    alert('Share functionality coming soon!');
+    setShowShareModal(true);
   };
 
   if (loading) {
@@ -313,27 +324,97 @@ export function ResumeProfilePage() {
 
             <div className="flex items-center gap-2">
               {isOwner && resume && (
-                <>
-                  <button
-                    onClick={() => navigate(`/resumes/${resume.id}/versions`)}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Version History"
-                  >
-                    <History className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => navigate(`/resumes/${resume.id}/settings`)}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                    title="Resume Settings"
-                  >
-                    <Settings className="w-5 h-5" />
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={() => setShowVersionPanel(!showVersionPanel)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    showVersionPanel
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                  title="Version History"
+                >
+                  <History className="w-5 h-5" />
+                </button>
+              )}
+              {canApprove && resume && (
+                <button
+                  type="button"
+                  onClick={() => setShowApprovalPanel(!showApprovalPanel)}
+                  className={`p-2 rounded-lg transition-colors ${
+                    showApprovalPanel
+                      ? 'text-blue-600 bg-blue-50'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                  title="Approval Workflow"
+                >
+                  <Shield className="w-5 h-5" />
+                </button>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Collapsible Panels */}
+      {(showVersionPanel || showApprovalPanel) && (
+        <div className="bg-gray-100 border-b border-gray-200">
+          <div className="max-w-5xl mx-auto px-4 py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Version Management Panel */}
+              {showVersionPanel && isOwner && resume && (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <History className="w-5 h-5" />
+                      Version History
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setShowVersionPanel(false)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                      title="Close version panel"
+                      aria-label="Close version panel"
+                    >
+                      <ChevronUp className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <VersionManagement
+                    resumeId={resume.id}
+                    currentVersionId={resume.versions?.[0]?.id}
+                    onVersionChange={() => loadResume(resume.id)}
+                  />
+                </div>
+              )}
+
+              {/* Approval Workflow Panel */}
+              {showApprovalPanel && canApprove && resume && (
+                <div className="bg-white rounded-xl shadow-sm p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <Shield className="w-5 h-5" />
+                      Approval Workflow
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setShowApprovalPanel(false)}
+                      className="p-1 text-gray-400 hover:text-gray-600"
+                      title="Close approval panel"
+                      aria-label="Close approval panel"
+                    >
+                      <ChevronUp className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <ApprovalWorkflow
+                    resumeId={resume.id}
+                    onApprovalChange={() => loadResume(resume.id)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 py-8">
@@ -445,6 +526,24 @@ export function ResumeProfilePage() {
           */}
         </div>
       </div>
+
+      {/* Export Modal */}
+      {resume && (
+        <ExportModal
+          resumeId={resume.id}
+          isOpen={showExportModal}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
+
+      {/* Share Modal */}
+      {resume && (
+        <ShareModal
+          resumeId={resume.id}
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+        />
+      )}
     </div>
   );
 }

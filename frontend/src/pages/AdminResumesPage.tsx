@@ -5,7 +5,6 @@ import {
   Users,
   Clock,
   CheckCircle,
-  XCircle,
   AlertCircle,
   ChevronDown,
   ChevronRight,
@@ -121,6 +120,7 @@ const STATUS_LABELS: Record<ResumeStatus, string> = {
   [ResumeStatus.PendingReview]: 'Pending Review',
   [ResumeStatus.ChangesRequested]: 'Changes Requested',
   [ResumeStatus.Approved]: 'Approved',
+  [ResumeStatus.Active]: 'Active',
   [ResumeStatus.Archived]: 'Archived',
 };
 
@@ -147,7 +147,7 @@ export function AdminResumesPage() {
   const [issuerFilter, setIssuerFilter] = useState('');
   const [showAddCertificationModal, setShowAddCertificationModal] = useState(false);
   const [editingCertification, setEditingCertification] = useState<Certification | null>(null);
-  const [certificationsStats, setCertificationsStats] = useState<CertificationsAdminStats | null>(null);
+  const [_certificationsStats, setCertificationsStats] = useState<CertificationsAdminStats | null>(null);
 
   // Skills review state
   const [pendingSkills, setPendingSkills] = useState<SkillWithUsers[]>([]);
@@ -714,11 +714,11 @@ function SkillsCatalogTab({
 }) {
   // Group skills by category
   const groupedSkills = skills.reduce((acc, skill) => {
-    const category = skill.category;
+    const category = skill.category as SkillCategory;
     if (!acc[category]) acc[category] = [];
     acc[category].push(skill);
     return acc;
-  }, {} as Record<SkillCategory, Skill[]>);
+  }, {} as Partial<Record<SkillCategory, Skill[]>>);
 
   return (
     <div className="space-y-4">
@@ -766,7 +766,7 @@ function SkillsCatalogTab({
 
       {/* Skills List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-        {Object.entries(groupedSkills).map(([category, categorySkills]) => (
+        {Object.entries(groupedSkills).map(([category, categorySkills]) => categorySkills && (
           <div key={category} className="border-b border-gray-200 last:border-b-0">
             <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
               <h3 className="font-semibold text-gray-700">
@@ -778,11 +778,6 @@ function SkillsCatalogTab({
                 <div key={skill.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
                   <div className="flex items-center gap-3">
                     <span className="text-gray-900">{skill.name}</span>
-                    {skill.isApproved === false && (
-                      <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-800 rounded">
-                        Pending
-                      </span>
-                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -822,7 +817,7 @@ function SkillsReviewTab({
   onApprove,
   onReject,
   onBulkApprove,
-  approvedSkills
+  approvedSkills: _approvedSkills
 }: {
   pendingSkills: SkillWithUsers[];
   selectedIds: Set<string>;
@@ -1082,7 +1077,7 @@ function SkillModal({
   onClose: () => void;
 }) {
   const [name, setName] = useState(skill?.name || '');
-  const [category, setCategory] = useState<SkillCategory>(skill?.category || SkillCategory.Technical);
+  const [category, setCategory] = useState<SkillCategory>((skill?.category as SkillCategory) || SkillCategory.ProgrammingLanguage);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

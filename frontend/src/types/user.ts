@@ -11,6 +11,9 @@ export interface UserProfile {
   jobTitle?: string;
   phoneNumber?: string;
   profilePhotoUrl?: string;
+  homeOfficeId?: string;
+  executiveAssistantId?: string;
+  standardDelegateIds?: string[];
   isActive: boolean;
   createdAt: string;
   lastLoginAt?: string;
@@ -23,6 +26,9 @@ export interface UpdateUserProfileRequest {
   department?: string;
   jobTitle?: string;
   phoneNumber?: string;
+  homeOfficeId?: string;
+  executiveAssistantId?: string;
+  standardDelegateIds?: string[];
 }
 
 export interface ChangePasswordRequest {

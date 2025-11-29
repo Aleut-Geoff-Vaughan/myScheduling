@@ -83,3 +83,25 @@ public class LinkedInImport : BaseEntity
     public virtual ResumeProfile ResumeProfile { get; set; } = null!;
     public virtual User ImportedBy { get; set; } = null!;
 }
+
+/// <summary>
+/// Represents a shareable link to a resume for external viewing
+/// </summary>
+public class ResumeShareLink : BaseEntity
+{
+    public Guid ResumeProfileId { get; set; }
+    public Guid? ResumeVersionId { get; set; }  // Null = current version
+    public string ShareToken { get; set; } = string.Empty;  // Unique URL token (e.g., "abc123xyz")
+    public DateTime? ExpiresAt { get; set; }
+    public string? PasswordHash { get; set; }  // BCrypt hash if password protected
+    public string? VisibleSections { get; set; }  // JSON array of section types to show
+    public bool HideContactInfo { get; set; } = false;
+    public int ViewCount { get; set; } = 0;
+    public bool IsActive { get; set; } = true;
+    public Guid CreatedByUserId { get; set; }
+
+    // Navigation properties
+    public virtual ResumeProfile ResumeProfile { get; set; } = null!;
+    public virtual ResumeVersion? ResumeVersion { get; set; }
+    public virtual User CreatedBy { get; set; } = null!;
+}
