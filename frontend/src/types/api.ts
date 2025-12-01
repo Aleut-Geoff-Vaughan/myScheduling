@@ -542,12 +542,19 @@ export enum WorkLocationType {
   Travel = 6,
 }
 
+export enum DayPortion {
+  FullDay = 0,
+  AM = 1,
+  PM = 2,
+}
+
 export interface WorkLocationPreference {
   id: string;
   tenantId: string;
   userId: string;
   workDate: string; // ISO date string (YYYY-MM-DD)
   locationType: WorkLocationType;
+  dayPortion: DayPortion; // Full day, AM only, or PM only
   officeId?: string;
   bookingId?: string;
   remoteLocation?: string;
@@ -975,4 +982,87 @@ export interface ImportResult {
   totalRows: number;
   importedRows: number;
   errors: string[];
+}
+
+// ==================== COMPANY HOLIDAYS ====================
+
+export enum HolidayType {
+  Federal = 0,
+  Company = 1,
+  Religious = 2,
+  Cultural = 3,
+  Regional = 4,
+}
+
+export enum HolidayRecurrenceRule {
+  FixedDate = 0,
+  FirstMondayOf = 1,
+  SecondMondayOf = 2,
+  ThirdMondayOf = 3,
+  FourthMondayOf = 4,
+  LastMondayOf = 5,
+  FourthThursdayOf = 6,
+  DayAfterThanksgiving = 7,
+}
+
+export interface CompanyHoliday {
+  id: string;
+  tenantId: string;
+  name: string;
+  holidayDate: string; // ISO date string (YYYY-MM-DD)
+  type: HolidayType;
+  isRecurring: boolean;
+  description?: string;
+  isObserved: boolean;
+  recurringMonth?: number;
+  recurringDay?: number;
+  recurrenceRule?: HolidayRecurrenceRule;
+  autoApplyToSchedule: boolean;
+  autoApplyToForecast: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface SeedUSHolidaysRequest {
+  tenantId: string;
+  startYear: number;
+  endYear: number;
+  includeDayAfterThanksgiving?: boolean;
+  markAsActive?: boolean;
+  autoApplyToSchedule?: boolean;
+  autoApplyToForecast?: boolean;
+}
+
+export interface SeedHolidaysResponse {
+  createdCount: number;
+  skippedCount: number;
+  holidays: CompanyHoliday[];
+}
+
+export interface ApplyHolidaysRequest {
+  tenantId: string;
+  year: number;
+  holidayIds?: string[];
+  overwriteExisting?: boolean;
+}
+
+export interface HolidayApplyResult {
+  holidayId: string;
+  holidayName: string;
+  holidayDate: string;
+  affectedUsers: number;
+  skippedUsers: number;
+}
+
+export interface ApplyHolidaysResponse {
+  totalUsersAffected: number;
+  entriesCreated: number;
+  entriesSkipped: number;
+  holidayResults: HolidayApplyResult[];
+}
+
+export interface HolidayCheckResponse {
+  isHoliday: boolean;
+  holiday?: CompanyHoliday;
 }

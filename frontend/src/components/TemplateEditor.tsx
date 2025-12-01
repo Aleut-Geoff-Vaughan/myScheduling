@@ -6,7 +6,7 @@ import type {
   WorkLocationTemplateItem,
 } from '../types/template';
 import { TemplateType } from '../types/template';
-import { WorkLocationType } from '../types/api';
+import { WorkLocationType, DayPortion } from '../types/api';
 import { useAuthStore } from '../stores/authStore';
 import { useOffices } from '../hooks/useBookings';
 
@@ -38,6 +38,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClos
       dayOffset: item.dayOffset,
       dayOfWeek: item.dayOfWeek,
       locationType: item.locationType,
+      dayPortion: item.dayPortion ?? DayPortion.FullDay,
       officeId: item.officeId ?? undefined,
       remoteLocation: item.remoteLocation ?? undefined,
       city: item.city ?? undefined,
@@ -53,6 +54,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClos
         dayOffset: index,
         dayOfWeek: index + 1,
         locationType: WorkLocationType.Remote,
+        dayPortion: DayPortion.FullDay,
         officeId: undefined,
         remoteLocation: undefined,
         city: undefined,
@@ -67,6 +69,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClos
           dayOffset: 0,
           dayOfWeek: undefined,
           locationType: WorkLocationType.Remote,
+          dayPortion: DayPortion.FullDay,
           officeId: undefined,
           remoteLocation: undefined,
           city: undefined,
@@ -85,6 +88,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClos
         dayOffset: items.length,
         dayOfWeek: undefined,
         locationType: WorkLocationType.Remote,
+        dayPortion: DayPortion.FullDay,
         officeId: undefined,
         remoteLocation: undefined,
         city: undefined,
@@ -293,7 +297,22 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClos
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Day Portion
+                        </label>
+                        <select
+                          value={item.dayPortion}
+                          onChange={(e) => handleItemChange(index, 'dayPortion', Number(e.target.value) as DayPortion)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                        >
+                          <option value={DayPortion.FullDay}>Full Day</option>
+                          <option value={DayPortion.AM}>AM Only</option>
+                          <option value={DayPortion.PM}>PM Only</option>
+                        </select>
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Location Type *

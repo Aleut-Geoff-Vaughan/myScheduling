@@ -1,17 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup, TextArea } from './ui';
-import { WorkLocationType, type WorkLocationPreference } from '../types/api';
+import { WorkLocationType, DayPortion, type WorkLocationPreference } from '../types/api';
 import { useOffices } from '../hooks/useBookings';
 import { useTenants } from '../hooks/useTenants';
 import { useCreateWorkLocationPreference, useUpdateWorkLocationPreference } from '../hooks/useWorkLocation';
 import { workLocationService } from '../services/workLocationService';
+
+type ScheduleMode = 'fullDay' | 'splitDay';
 
 interface WorkLocationSelectorProps {
   isOpen: boolean;
   onClose: () => void;
   selectedDate: Date;
   existingPreference?: WorkLocationPreference;
+  existingPmPreference?: WorkLocationPreference; // For split day mode
   userId: string;
 }
 
@@ -20,6 +23,7 @@ export function WorkLocationSelector({
   onClose,
   selectedDate,
   existingPreference,
+  existingPmPreference,
   userId,
 }: WorkLocationSelectorProps) {
   const queryClient = useQueryClient();
@@ -28,6 +32,10 @@ export function WorkLocationSelector({
   const createMutation = useCreateWorkLocationPreference();
   const updateMutation = useUpdateWorkLocationPreference();
 
+  // Schedule mode: fullDay or splitDay
+  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>('fullDay');
+
+  // AM (or full day) location state
   const [locationType, setLocationType] = useState<WorkLocationType>(
     existingPreference?.locationType ?? WorkLocationType.Remote
   );
@@ -41,10 +49,35 @@ export function WorkLocationSelector({
   const [state, setState] = useState(existingPreference?.state ?? '');
   const [country, setCountry] = useState(existingPreference?.country ?? '');
   const [notes, setNotes] = useState(existingPreference?.notes ?? '');
-  // const [showBookingModal, setShowBookingModal] = useState(false);
+
+  // PM location state (for split day mode)
+  const [pmLocationType, setPmLocationType] = useState<WorkLocationType>(
+    existingPmPreference?.locationType ?? WorkLocationType.Remote
+  );
+  const [pmSelectedOfficeId, setPmSelectedOfficeId] = useState<string>(
+    existingPmPreference?.officeId ?? ''
+  );
+  const [pmRemoteLocation, setPmRemoteLocation] = useState(
+    existingPmPreference?.remoteLocation ?? ''
+  );
+  const [pmCity, setPmCity] = useState(existingPmPreference?.city ?? '');
+  const [pmState, setPmState] = useState(existingPmPreference?.state ?? '');
+  const [pmCountry, setPmCountry] = useState(existingPmPreference?.country ?? '');
+  const [pmNotes, setPmNotes] = useState(existingPmPreference?.notes ?? '');
 
   useEffect(() => {
     if (existingPreference) {
+      // Determine schedule mode based on existing preferences
+      const isAmPreference = existingPreference.dayPortion === DayPortion.AM;
+      const isPmPreference = existingPreference.dayPortion === DayPortion.PM;
+
+      if ((isAmPreference || isPmPreference) || existingPmPreference) {
+        setScheduleMode('splitDay');
+      } else {
+        setScheduleMode('fullDay');
+      }
+
+      // Set AM/full day location state
       setLocationType(existingPreference.locationType);
       setSelectedOfficeId(existingPreference.officeId ?? '');
       setRemoteLocation(existingPreference.remoteLocation ?? '');
@@ -52,8 +85,29 @@ export function WorkLocationSelector({
       setState(existingPreference.state ?? '');
       setCountry(existingPreference.country ?? '');
       setNotes(existingPreference.notes ?? '');
+
+      // Set PM location state if exists
+      if (existingPmPreference) {
+        setPmLocationType(existingPmPreference.locationType);
+        setPmSelectedOfficeId(existingPmPreference.officeId ?? '');
+        setPmRemoteLocation(existingPmPreference.remoteLocation ?? '');
+        setPmCity(existingPmPreference.city ?? '');
+        setPmState(existingPmPreference.state ?? '');
+        setPmCountry(existingPmPreference.country ?? '');
+        setPmNotes(existingPmPreference.notes ?? '');
+      } else {
+        // Reset PM fields
+        setPmLocationType(WorkLocationType.Remote);
+        setPmSelectedOfficeId('');
+        setPmRemoteLocation('');
+        setPmCity('');
+        setPmState('');
+        setPmCountry('');
+        setPmNotes('');
+      }
     } else {
       // Reset form for new preference
+      setScheduleMode('fullDay');
       setLocationType(WorkLocationType.Remote);
       setSelectedOfficeId('');
       setRemoteLocation('');
@@ -61,8 +115,16 @@ export function WorkLocationSelector({
       setState('');
       setCountry('');
       setNotes('');
+      // Reset PM fields
+      setPmLocationType(WorkLocationType.Remote);
+      setPmSelectedOfficeId('');
+      setPmRemoteLocation('');
+      setPmCity('');
+      setPmState('');
+      setPmCountry('');
+      setPmNotes('');
     }
-  }, [existingPreference, isOpen]);
+  }, [existingPreference, existingPmPreference, isOpen]);
 
   const companyOffices = allOffices.filter(o => !o.isClientSite);
   const clientSites = allOffices.filter(o => o.isClientSite);
@@ -76,70 +138,61 @@ export function WorkLocationSelector({
 
     const workDate = selectedDate.toISOString().split('T')[0];
 
-    const preferenceData = {
+    // Helper function to build preference data
+    const buildPreferenceData = (
+      lt: WorkLocationType,
+      dp: DayPortion,
+      officeId: string,
+      remoteLoc: string,
+      c: string,
+      s: string,
+      co: string,
+      n: string
+    ) => ({
       tenantId,
       userId,
       workDate,
-      locationType,
-      officeId: (locationType === WorkLocationType.OfficeNoReservation ||
-                 locationType === WorkLocationType.ClientSite)
-        ? selectedOfficeId
+      locationType: lt,
+      dayPortion: dp,
+      officeId: (lt === WorkLocationType.OfficeNoReservation || lt === WorkLocationType.ClientSite)
+        ? officeId
         : undefined,
-      bookingId: locationType === WorkLocationType.OfficeWithReservation
-        ? undefined // TODO: Get from booking modal
-        : undefined,
-      remoteLocation: locationType === WorkLocationType.RemotePlus ? remoteLocation : undefined,
-      city: locationType === WorkLocationType.RemotePlus ? city : undefined,
-      state: locationType === WorkLocationType.RemotePlus ? state : undefined,
-      country: locationType === WorkLocationType.RemotePlus ? country : undefined,
-      notes,
-    };
+      bookingId: lt === WorkLocationType.OfficeWithReservation ? undefined : undefined,
+      remoteLocation: lt === WorkLocationType.RemotePlus ? remoteLoc : undefined,
+      city: lt === WorkLocationType.RemotePlus ? c : undefined,
+      state: lt === WorkLocationType.RemotePlus ? s : undefined,
+      country: lt === WorkLocationType.RemotePlus ? co : undefined,
+      notes: n,
+    });
 
-    try {
-      if (existingPreference) {
-        // Strip navigation properties to avoid model binding issues on the backend
-        const { user, office, booking, ...cleanPreference } = existingPreference;
+    // Helper function to save a single preference (create or update)
+    const savePreference = async (
+      preferenceData: ReturnType<typeof buildPreferenceData>,
+      existingPref?: WorkLocationPreference
+    ) => {
+      if (existingPref) {
+        const { user, office, booking, ...cleanPreference } = existingPref;
         await updateMutation.mutateAsync({
-          id: existingPreference.id,
+          id: existingPref.id,
           preference: { ...cleanPreference, ...preferenceData },
         });
       } else {
         try {
           await createMutation.mutateAsync(preferenceData);
         } catch (createError: any) {
-          // If we get a 409 Conflict, it means a preference was created (e.g., by template)
-          // but our local cache is stale. Fetch the existing preference and update it instead.
           if (createError?.status === 409 || createError?.message?.includes('409')) {
             console.log('Preference already exists, fetching and updating instead');
-            try {
-              // Fetch all preferences for this person and date using the proper API service
-              const preferences = await workLocationService.getAll({
-                userId: preferenceData.userId,
+            const preferences = await workLocationService.getAll({ userId: preferenceData.userId });
+            const existing = preferences.find(
+              (p) => p.workDate === preferenceData.workDate && p.dayPortion === preferenceData.dayPortion
+            );
+            if (existing) {
+              const { user, office, booking, ...cleanExisting } = existing;
+              await updateMutation.mutateAsync({
+                id: existing.id,
+                preference: { ...cleanExisting, ...preferenceData },
               });
-
-              // Find the one for this specific date
-              const existing = preferences.find((p) => p.workDate === preferenceData.workDate);
-
-              if (existing) {
-                // Strip navigation properties to avoid model binding issues on the backend
-                const { user, office, booking, ...cleanExisting } = existing;
-                // Update the existing preference with new data
-                await updateMutation.mutateAsync({
-                  id: existing.id,
-                  preference: { ...cleanExisting, ...preferenceData },
-                });
-
-                // Wait for dashboard refetch to complete before closing modal
-                console.log('Waiting for dashboard refetch...');
-                await queryClient.refetchQueries({
-                  predicate: (query) => query.queryKey[0] === 'dashboard'
-                });
-                console.log('Dashboard refetch completed');
-              } else {
-                throw createError;
-              }
-            } catch (fetchError) {
-              console.error('Failed to fetch existing preference:', fetchError);
+            } else {
               throw createError;
             }
           } else {
@@ -147,6 +200,60 @@ export function WorkLocationSelector({
           }
         }
       }
+    };
+
+    try {
+      if (scheduleMode === 'fullDay') {
+        // Single full-day preference
+        const preferenceData = buildPreferenceData(
+          locationType,
+          DayPortion.FullDay,
+          selectedOfficeId,
+          remoteLocation,
+          city,
+          state,
+          country,
+          notes
+        );
+        await savePreference(preferenceData, existingPreference);
+      } else {
+        // Split day: save both AM and PM preferences
+        const amPreferenceData = buildPreferenceData(
+          locationType,
+          DayPortion.AM,
+          selectedOfficeId,
+          remoteLocation,
+          city,
+          state,
+          country,
+          notes
+        );
+        const pmPreferenceData = buildPreferenceData(
+          pmLocationType,
+          DayPortion.PM,
+          pmSelectedOfficeId,
+          pmRemoteLocation,
+          pmCity,
+          pmState,
+          pmCountry,
+          pmNotes
+        );
+
+        // Save AM preference (use existingPreference if it's an AM preference)
+        const amExisting = existingPreference?.dayPortion === DayPortion.AM ? existingPreference : undefined;
+        await savePreference(amPreferenceData, amExisting);
+
+        // Save PM preference
+        await savePreference(pmPreferenceData, existingPmPreference);
+      }
+
+      // Wait for dashboard refetch to complete before closing modal
+      console.log('Waiting for dashboard refetch...');
+      await queryClient.refetchQueries({
+        predicate: (query) => query.queryKey[0] === 'dashboard'
+      });
+      console.log('Dashboard refetch completed');
+
       onClose();
     } catch (error) {
       console.error('Error saving work location preference:', error);
@@ -174,6 +281,93 @@ export function WorkLocationSelector({
     label: `${o.name}${o.address ? ` - ${o.address}` : ''}`,
   }));
 
+  // Helper component for location type fields
+  const renderLocationFields = (
+    lt: WorkLocationType,
+    officeId: string,
+    setOfficeId: (v: string) => void,
+    remoteLoc: string,
+    setRemoteLoc: (v: string) => void,
+    c: string,
+    setC: (v: string) => void,
+    s: string,
+    setS: (v: string) => void,
+    co: string,
+    setCo: (v: string) => void
+  ) => (
+    <>
+      {/* Remote Plus Fields */}
+      {lt === WorkLocationType.RemotePlus && (
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 space-y-2">
+          <FormGroup columns={1}>
+            <Input
+              label="Location Description"
+              placeholder="e.g., Home, Coffee Shop, Co-working Space"
+              value={remoteLoc}
+              onChange={(e) => setRemoteLoc(e.target.value)}
+            />
+          </FormGroup>
+          <FormGroup columns={3}>
+            <Input
+              label="City"
+              placeholder="City"
+              value={c}
+              onChange={(e) => setC(e.target.value)}
+            />
+            <Input
+              label="State/Province"
+              placeholder="State"
+              value={s}
+              onChange={(e) => setS(e.target.value)}
+            />
+            <Input
+              label="Country"
+              placeholder="Country"
+              value={co}
+              onChange={(e) => setCo(e.target.value)}
+            />
+          </FormGroup>
+        </div>
+      )}
+
+      {/* Client Site Selection */}
+      {lt === WorkLocationType.ClientSite && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+          <Select
+            label="Client Site"
+            options={clientSiteOptions}
+            value={officeId}
+            onChange={(e) => setOfficeId(e.target.value)}
+            required
+            helper={clientSiteOptions.length === 0 ? 'No client sites configured' : ''}
+          />
+        </div>
+      )}
+
+      {/* Office Selection (No Reservation) */}
+      {lt === WorkLocationType.OfficeNoReservation && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <Select
+            label="Office Location"
+            options={officeOptions}
+            value={officeId}
+            onChange={(e) => setOfficeId(e.target.value)}
+            required
+          />
+        </div>
+      )}
+
+      {/* Office with Reservation */}
+      {lt === WorkLocationType.OfficeWithReservation && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+          <p className="text-sm text-emerald-700">
+            Booking flow not yet implemented.
+          </p>
+        </div>
+      )}
+    </>
+  );
+
   return (
     <Modal
       isOpen={isOpen}
@@ -187,108 +381,144 @@ export function WorkLocationSelector({
       size="lg"
     >
       <div className="space-y-4">
-        {/* Location Type Selection */}
-        <FormGroup columns={1}>
-          <Select
-            label="Location Type"
-            options={locationTypeOptions}
-            value={locationType.toString()}
-            onChange={(e) => setLocationType(parseInt(e.target.value) as WorkLocationType)}
-            required
-          />
-        </FormGroup>
-
-        {/* Remote Plus Fields */}
-        {locationType === WorkLocationType.RemotePlus && (
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-purple-900">Remote Plus Location Details</h4>
-            <FormGroup columns={1}>
-              <Input
-                label="Location Description"
-                placeholder="e.g., Home, Coffee Shop, Co-working Space"
-                value={remoteLocation}
-                onChange={(e) => setRemoteLocation(e.target.value)}
-              />
-            </FormGroup>
-            <FormGroup columns={3}>
-              <Input
-                label="City"
-                placeholder="City"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-              />
-              <Input
-                label="State/Province"
-                placeholder="State"
-                value={state}
-                onChange={(e) => setState(e.target.value)}
-              />
-              <Input
-                label="Country"
-                placeholder="Country"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-              />
-            </FormGroup>
+        {/* Schedule Mode Toggle */}
+        <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+          <span className="text-sm font-medium text-gray-700">Schedule Type:</span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setScheduleMode('fullDay')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                scheduleMode === 'fullDay'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Full Day
+            </button>
+            <button
+              type="button"
+              onClick={() => setScheduleMode('splitDay')}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                scheduleMode === 'splitDay'
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              Split Day (AM/PM)
+            </button>
           </div>
-        )}
+        </div>
 
-        {/* Client Site Selection */}
-        {locationType === WorkLocationType.ClientSite && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-orange-900">Select Client Site</h4>
+        {scheduleMode === 'fullDay' ? (
+          /* Full Day Mode */
+          <>
             <FormGroup columns={1}>
               <Select
-                label="Client Site"
-                options={clientSiteOptions}
-                value={selectedOfficeId}
-                onChange={(e) => setSelectedOfficeId(e.target.value)}
-                required
-                helper={clientSiteOptions.length === 0 ? 'No client sites configured' : ''}
-              />
-            </FormGroup>
-          </div>
-        )}
-
-        {/* Office Selection (No Reservation) */}
-        {locationType === WorkLocationType.OfficeNoReservation && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-green-900">Select Office</h4>
-            <FormGroup columns={1}>
-              <Select
-                label="Office Location"
-                options={officeOptions}
-                value={selectedOfficeId}
-                onChange={(e) => setSelectedOfficeId(e.target.value)}
+                label="Location Type"
+                options={locationTypeOptions}
+                value={locationType.toString()}
+                onChange={(e) => setLocationType(parseInt(e.target.value) as WorkLocationType)}
                 required
               />
             </FormGroup>
+            {renderLocationFields(
+              locationType,
+              selectedOfficeId,
+              setSelectedOfficeId,
+              remoteLocation,
+              setRemoteLocation,
+              city,
+              setCity,
+              state,
+              setState,
+              country,
+              setCountry
+            )}
+            <FormGroup columns={1}>
+              <TextArea
+                label="Notes (Optional)"
+                placeholder="Any additional notes about this day..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+              />
+            </FormGroup>
+          </>
+        ) : (
+          /* Split Day Mode */
+          <div className="space-y-4">
+            {/* AM Section */}
+            <div className="border border-blue-200 rounded-lg overflow-hidden">
+              <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
+                <h4 className="font-semibold text-blue-900">Morning (AM)</h4>
+              </div>
+              <div className="p-4 space-y-3">
+                <Select
+                  label="Location Type"
+                  options={locationTypeOptions}
+                  value={locationType.toString()}
+                  onChange={(e) => setLocationType(parseInt(e.target.value) as WorkLocationType)}
+                  required
+                />
+                {renderLocationFields(
+                  locationType,
+                  selectedOfficeId,
+                  setSelectedOfficeId,
+                  remoteLocation,
+                  setRemoteLocation,
+                  city,
+                  setCity,
+                  state,
+                  setState,
+                  country,
+                  setCountry
+                )}
+                <Input
+                  label="AM Notes (Optional)"
+                  placeholder="Notes for morning..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* PM Section */}
+            <div className="border border-amber-200 rounded-lg overflow-hidden">
+              <div className="bg-amber-50 px-4 py-2 border-b border-amber-200">
+                <h4 className="font-semibold text-amber-900">Afternoon (PM)</h4>
+              </div>
+              <div className="p-4 space-y-3">
+                <Select
+                  label="Location Type"
+                  options={locationTypeOptions}
+                  value={pmLocationType.toString()}
+                  onChange={(e) => setPmLocationType(parseInt(e.target.value) as WorkLocationType)}
+                  required
+                />
+                {renderLocationFields(
+                  pmLocationType,
+                  pmSelectedOfficeId,
+                  setPmSelectedOfficeId,
+                  pmRemoteLocation,
+                  setPmRemoteLocation,
+                  pmCity,
+                  setPmCity,
+                  pmState,
+                  setPmState,
+                  pmCountry,
+                  setPmCountry
+                )}
+                <Input
+                  label="PM Notes (Optional)"
+                  placeholder="Notes for afternoon..."
+                  value={pmNotes}
+                  onChange={(e) => setPmNotes(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
         )}
-
-        {/* Office with Reservation */}
-        {locationType === WorkLocationType.OfficeWithReservation && (
-          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-emerald-900">Office with Desk/Room Reservation</h4>
-            <p className="text-sm text-emerald-700">
-              You'll need to make a desk or room reservation for this day.
-            </p>
-            <p className="text-xs text-emerald-700">
-              Booking flow not yet implemented in this modal.
-            </p>
-          </div>
-        )}
-
-        {/* Notes */}
-        <FormGroup columns={1}>
-          <TextArea
-            label="Notes (Optional)"
-            placeholder="Any additional notes about this day..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={2}
-          />
-        </FormGroup>
       </div>
 
       {/* Footer Buttons */}
@@ -302,13 +532,17 @@ export function WorkLocationSelector({
           disabled={
             createMutation.isPending ||
             updateMutation.isPending ||
+            // AM/Full day validation
             (locationType === WorkLocationType.ClientSite && !selectedOfficeId) ||
-            (locationType === WorkLocationType.OfficeNoReservation && !selectedOfficeId)
+            (locationType === WorkLocationType.OfficeNoReservation && !selectedOfficeId) ||
+            // PM validation (only in split day mode)
+            (scheduleMode === 'splitDay' && pmLocationType === WorkLocationType.ClientSite && !pmSelectedOfficeId) ||
+            (scheduleMode === 'splitDay' && pmLocationType === WorkLocationType.OfficeNoReservation && !pmSelectedOfficeId)
           }
         >
           {createMutation.isPending || updateMutation.isPending
             ? 'Saving...'
-            : existingPreference
+            : existingPreference || existingPmPreference
             ? 'Update'
             : 'Save'}
         </Button>

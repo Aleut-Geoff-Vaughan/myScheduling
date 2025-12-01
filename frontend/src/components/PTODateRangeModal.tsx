@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Modal, Button, FormGroup } from './ui';
-import { WorkLocationType } from '../types/api';
+import { WorkLocationType, DayPortion } from '../types/api';
 import { useTenants } from '../hooks/useTenants';
 import { useCreateWorkLocationPreference, useUpdateWorkLocationPreference } from '../hooks/useWorkLocation';
 import { workLocationService } from '../services/workLocationService';
@@ -92,6 +92,7 @@ export function PTODateRangeModal({
           userId,
           workDate,
           locationType: WorkLocationType.PTO,
+          dayPortion: DayPortion.FullDay,
           notes: notes || 'PTO',
         };
 

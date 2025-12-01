@@ -51,6 +51,18 @@ public class MySchedulingDbContext : DbContext
     public DbSet<Group> Groups => Set<Group>();
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
 
+    // Enhanced Staffing & Forecasting
+    public DbSet<CareerJobFamily> CareerJobFamilies => Set<CareerJobFamily>();
+    public DbSet<SubcontractorCompany> SubcontractorCompanies => Set<SubcontractorCompany>();
+    public DbSet<Subcontractor> Subcontractors => Set<Subcontractor>();
+    public DbSet<LaborCategory> LaborCategories => Set<LaborCategory>();
+    public DbSet<ProjectRoleAssignment> ProjectRoleAssignments => Set<ProjectRoleAssignment>();
+    public DbSet<ForecastVersion> ForecastVersions => Set<ForecastVersion>();
+    public DbSet<Forecast> Forecasts => Set<Forecast>();
+    public DbSet<ForecastHistory> ForecastHistories => Set<ForecastHistory>();
+    public DbSet<ForecastApprovalSchedule> ForecastApprovalSchedules => Set<ForecastApprovalSchedule>();
+    public DbSet<ForecastImportExport> ForecastImportExports => Set<ForecastImportExport>();
+
     // Hoteling & Facilities
     public DbSet<Office> Offices => Set<Office>();
     public DbSet<Floor> Floors => Set<Floor>();
@@ -105,6 +117,7 @@ public class MySchedulingDbContext : DbContext
         ConfigureFileStorage(modelBuilder);
         ConfigureProjects(modelBuilder);
         ConfigureStaffing(modelBuilder);
+        ConfigureEnhancedStaffing(modelBuilder);
         ConfigureHoteling(modelBuilder);
         ConfigureWorkLocationTemplates(modelBuilder);
         ConfigureTeamCalendars(modelBuilder);
@@ -435,6 +448,297 @@ public class MySchedulingDbContext : DbContext
         });
     }
 
+    private void ConfigureEnhancedStaffing(ModelBuilder modelBuilder)
+    {
+        // CareerJobFamily
+        modelBuilder.Entity<CareerJobFamily>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Code).HasMaxLength(50);
+            entity.Property(e => e.Description).HasMaxLength(500);
+
+            entity.HasIndex(e => new { e.TenantId, e.IsActive });
+            entity.HasIndex(e => new { e.TenantId, e.Code }).IsUnique();
+        });
+
+        // SubcontractorCompany
+        modelBuilder.Entity<SubcontractorCompany>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Code).HasMaxLength(50);
+            entity.Property(e => e.Address).HasMaxLength(500);
+            entity.Property(e => e.City).HasMaxLength(100);
+            entity.Property(e => e.State).HasMaxLength(100);
+            entity.Property(e => e.Country).HasMaxLength(100);
+            entity.Property(e => e.PostalCode).HasMaxLength(20);
+            entity.Property(e => e.Phone).HasMaxLength(50);
+            entity.Property(e => e.Website).HasMaxLength(500);
+            entity.Property(e => e.ForecastContactName).HasMaxLength(200);
+            entity.Property(e => e.ForecastContactEmail).HasMaxLength(255);
+            entity.Property(e => e.ForecastContactPhone).HasMaxLength(50);
+            entity.Property(e => e.ContractNumber).HasMaxLength(100);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasIndex(e => new { e.TenantId, e.Status });
+            entity.HasIndex(e => new { e.TenantId, e.Code });
+
+            entity.HasOne(e => e.PrimaryContactUser)
+                .WithMany()
+                .HasForeignKey(e => e.PrimaryContactUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Subcontractor
+        modelBuilder.Entity<Subcontractor>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Email).HasMaxLength(255);
+            entity.Property(e => e.Phone).HasMaxLength(50);
+            entity.Property(e => e.PositionTitle).HasMaxLength(200);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasIndex(e => new { e.TenantId, e.SubcontractorCompanyId, e.Status });
+            entity.HasIndex(e => new { e.TenantId, e.Email });
+
+            entity.HasOne(e => e.SubcontractorCompany)
+                .WithMany(c => c.Subcontractors)
+                .HasForeignKey(e => e.SubcontractorCompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.CareerJobFamily)
+                .WithMany(c => c.Subcontractors)
+                .HasForeignKey(e => e.CareerJobFamilyId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Ignore computed property
+            entity.Ignore(e => e.FullName);
+        });
+
+        // LaborCategory
+        modelBuilder.Entity<LaborCategory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Code).HasMaxLength(50);
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.BillRate).HasPrecision(18, 2);
+            entity.Property(e => e.CostRate).HasPrecision(18, 2);
+
+            entity.HasIndex(e => new { e.TenantId, e.ProjectId, e.IsActive });
+
+            entity.HasOne(e => e.Project)
+                .WithMany(p => p.LaborCategories)
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ProjectRoleAssignment
+        modelBuilder.Entity<ProjectRoleAssignment>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.PositionTitle).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.TbdDescription).HasMaxLength(500);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasIndex(e => new { e.TenantId, e.ProjectId, e.Status });
+            entity.HasIndex(e => new { e.TenantId, e.UserId, e.Status });
+            entity.HasIndex(e => new { e.TenantId, e.SubcontractorId, e.Status });
+            entity.HasIndex(e => new { e.TenantId, e.IsTbd, e.Status });
+            entity.HasIndex(e => new { e.StartDate, e.EndDate });
+
+            entity.HasOne(e => e.Project)
+                .WithMany(p => p.ProjectRoleAssignments)
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.WbsElement)
+                .WithMany(w => w.ProjectRoleAssignments)
+                .HasForeignKey(e => e.WbsElementId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.ProjectRoleAssignments)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.Subcontractor)
+                .WithMany(s => s.ProjectRoleAssignments)
+                .HasForeignKey(e => e.SubcontractorId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.CareerJobFamily)
+                .WithMany(c => c.ProjectRoleAssignments)
+                .HasForeignKey(e => e.CareerJobFamilyId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.LaborCategory)
+                .WithMany(l => l.ProjectRoleAssignments)
+                .HasForeignKey(e => e.LaborCategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Ignore computed property
+            entity.Ignore(e => e.AssigneeName);
+        });
+
+        // ForecastVersion
+        modelBuilder.Entity<ForecastVersion>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.ArchiveReason).HasMaxLength(500);
+
+            entity.HasIndex(e => new { e.TenantId, e.Type, e.IsCurrent });
+            entity.HasIndex(e => new { e.TenantId, e.ProjectId, e.IsCurrent });
+            entity.HasIndex(e => new { e.TenantId, e.UserId, e.Type });
+
+            entity.HasOne(e => e.Project)
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.PromotedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.PromotedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.BasedOnVersion)
+                .WithMany()
+                .HasForeignKey(e => e.BasedOnVersionId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Forecast
+        modelBuilder.Entity<Forecast>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ForecastedHours).HasPrecision(10, 2);
+            entity.Property(e => e.RecommendedHours).HasPrecision(10, 2);
+            entity.Property(e => e.OriginalForecastedHours).HasPrecision(10, 2);
+            entity.Property(e => e.ApprovalNotes).HasMaxLength(1000);
+            entity.Property(e => e.OverrideReason).HasMaxLength(500);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasIndex(e => new { e.TenantId, e.ForecastVersionId, e.Year, e.Month });
+            entity.HasIndex(e => new { e.ProjectRoleAssignmentId, e.Year, e.Month, e.Week });
+            entity.HasIndex(e => new { e.TenantId, e.Status });
+
+            entity.HasOne(e => e.ProjectRoleAssignment)
+                .WithMany(p => p.Forecasts)
+                .HasForeignKey(e => e.ProjectRoleAssignmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ForecastVersion)
+                .WithMany(v => v.Forecasts)
+                .HasForeignKey(e => e.ForecastVersionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.SubmittedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.SubmittedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ApprovedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ApprovedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.OverriddenByUser)
+                .WithMany()
+                .HasForeignKey(e => e.OverriddenByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ForecastHistory
+        modelBuilder.Entity<ForecastHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OldHours).HasPrecision(10, 2);
+            entity.Property(e => e.NewHours).HasPrecision(10, 2);
+            entity.Property(e => e.ChangeReason).HasMaxLength(500);
+
+            entity.HasIndex(e => new { e.ForecastId, e.ChangedAt });
+            entity.HasIndex(e => e.ChangedByUserId);
+
+            entity.HasOne(e => e.Forecast)
+                .WithMany(f => f.History)
+                .HasForeignKey(e => e.ForecastId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ChangedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ChangedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ForecastApprovalSchedule
+        modelBuilder.Entity<ForecastApprovalSchedule>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+
+            entity.HasIndex(e => new { e.TenantId, e.IsActive });
+            entity.HasIndex(e => new { e.TenantId, e.IsDefault });
+        });
+
+        // ForecastImportExport
+        modelBuilder.Entity<ForecastImportExport>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(500);
+            entity.Property(e => e.FileFormat).IsRequired().HasMaxLength(10);
+            entity.Property(e => e.FileHash).HasMaxLength(64);
+            entity.Property(e => e.ErrorDetails).HasColumnType("jsonb");
+
+            entity.HasIndex(e => new { e.TenantId, e.Type, e.OperationAt });
+            entity.HasIndex(e => e.ForecastVersionId);
+            entity.HasIndex(e => e.FileHash);
+
+            entity.HasOne(e => e.Project)
+                .WithMany()
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ForecastVersion)
+                .WithMany(v => v.ImportExportOperations)
+                .HasForeignKey(e => e.ForecastVersionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ResultingVersion)
+                .WithMany()
+                .HasForeignKey(e => e.ResultingVersionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.OperationByUser)
+                .WithMany()
+                .HasForeignKey(e => e.OperationByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // User CareerJobFamily relationship
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.Property(e => e.PositionTitle).HasMaxLength(200);
+            entity.Property(e => e.StandardHoursPerWeek).HasPrecision(5, 2);
+
+            entity.HasIndex(e => e.CareerJobFamilyId);
+
+            entity.HasOne(e => e.CareerJobFamily)
+                .WithMany(c => c.Users)
+                .HasForeignKey(e => e.CareerJobFamilyId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+    }
+
     private void ConfigureHoteling(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Office>(entity =>
@@ -658,8 +962,8 @@ public class MySchedulingDbContext : DbContext
             entity.Property(e => e.Country).HasMaxLength(100);
             entity.Property(e => e.Notes).HasMaxLength(500);
 
-            // One preference per person per day
-            entity.HasIndex(e => new { e.TenantId, e.UserId, e.WorkDate }).IsUnique();
+            // One preference per person per day per day portion (allows AM + PM)
+            entity.HasIndex(e => new { e.TenantId, e.UserId, e.WorkDate, e.DayPortion }).IsUnique();
             entity.HasIndex(e => new { e.WorkDate, e.LocationType });
 
             entity.HasOne(e => e.User)

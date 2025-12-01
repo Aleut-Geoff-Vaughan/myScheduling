@@ -301,12 +301,48 @@ public class WorkLocationTemplatesController : AuthorizedControllerBase
                 {
                     var workDate = startDate.AddDays(week * 7 + item.DayOffset);
 
-                    // Check if preference already exists
+                    // Handle day portion conflicts:
+                    // If applying AM or PM, remove any FullDay preference for that date
+                    // If applying FullDay, remove any AM/PM preferences for that date
+                    if (item.DayPortion != DayPortion.FullDay)
+                    {
+                        // Remove FullDay preference if exists
+                        var fullDayPreference = await _context.WorkLocationPreferences
+                            .FirstOrDefaultAsync(w =>
+                                w.UserId == userId &&
+                                w.WorkDate == workDate &&
+                                w.TenantId == template.TenantId &&
+                                w.DayPortion == DayPortion.FullDay);
+
+                        if (fullDayPreference != null)
+                        {
+                            _context.WorkLocationPreferences.Remove(fullDayPreference);
+                        }
+                    }
+                    else
+                    {
+                        // Remove any AM/PM preferences if applying FullDay
+                        var partialDayPreferences = await _context.WorkLocationPreferences
+                            .Where(w =>
+                                w.UserId == userId &&
+                                w.WorkDate == workDate &&
+                                w.TenantId == template.TenantId &&
+                                w.DayPortion != DayPortion.FullDay)
+                            .ToListAsync();
+
+                        if (partialDayPreferences.Any())
+                        {
+                            _context.WorkLocationPreferences.RemoveRange(partialDayPreferences);
+                        }
+                    }
+
+                    // Check if preference already exists for this specific day portion
                     var existing = await _context.WorkLocationPreferences
                         .FirstOrDefaultAsync(w =>
                             w.UserId == userId &&
                             w.WorkDate == workDate &&
-                            w.TenantId == template.TenantId);
+                            w.TenantId == template.TenantId &&
+                            w.DayPortion == item.DayPortion);
 
                     if (existing != null)
                     {
@@ -331,6 +367,7 @@ public class WorkLocationTemplatesController : AuthorizedControllerBase
                             TenantId = template.TenantId,
                             WorkDate = workDate,
                             LocationType = item.LocationType,
+                            DayPortion = item.DayPortion,
                             OfficeId = item.OfficeId,
                             RemoteLocation = item.RemoteLocation,
                             City = item.City,

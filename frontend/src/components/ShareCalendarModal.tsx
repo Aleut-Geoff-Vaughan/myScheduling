@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Modal, Button } from './ui';
-import { WorkLocationType, type WorkLocationPreference, type User } from '../types/api';
+import { WorkLocationType, DayPortion, type WorkLocationPreference, type User } from '../types/api';
 
 interface ShareCalendarModalProps {
   isOpen: boolean;
@@ -62,6 +62,39 @@ export function ShareCalendarModal({
     }
   };
 
+  const getDayPortionLabel = (portion: DayPortion): string => {
+    switch (portion) {
+      case DayPortion.AM:
+        return 'AM';
+      case DayPortion.PM:
+        return 'PM';
+      default:
+        return '';
+    }
+  };
+
+  // Group preferences by date for handling split days
+  const groupPreferencesByDate = (prefs: WorkLocationPreference[]): Map<string, { am?: WorkLocationPreference; pm?: WorkLocationPreference; fullDay?: WorkLocationPreference }> => {
+    const grouped = new Map<string, { am?: WorkLocationPreference; pm?: WorkLocationPreference; fullDay?: WorkLocationPreference }>();
+
+    prefs.forEach(pref => {
+      if (!grouped.has(pref.workDate)) {
+        grouped.set(pref.workDate, {});
+      }
+      const dayGroup = grouped.get(pref.workDate)!;
+
+      if (pref.dayPortion === DayPortion.AM) {
+        dayGroup.am = pref;
+      } else if (pref.dayPortion === DayPortion.PM) {
+        dayGroup.pm = pref;
+      } else {
+        dayGroup.fullDay = pref;
+      }
+    });
+
+    return grouped;
+  };
+
   const formatDate = (dateStr: string): string => {
     const date = new Date(dateStr + 'T00:00:00');
     return date.toLocaleDateString('en-US', {
@@ -81,11 +114,40 @@ export function ShareCalendarModal({
     });
   };
 
+  // Helper to format a single preference entry
+  const formatPreferenceEntry = (pref: WorkLocationPreference, showPortionLabel: boolean = false): string => {
+    const emoji = getLocationEmoji(pref.locationType);
+    const label = getLocationTypeLabel(pref.locationType);
+    const portionLabel = showPortionLabel && pref.dayPortion !== DayPortion.FullDay
+      ? ` [${getDayPortionLabel(pref.dayPortion)}]`
+      : '';
+
+    let entry = `${emoji} ${label}${portionLabel}`;
+
+    if (pref.office?.name) {
+      entry += ` - ${pref.office.name}`;
+      if (pref.office.city && pref.office.stateCode) {
+        entry += ` (${pref.office.city}, ${pref.office.stateCode})`;
+      }
+    }
+    if (pref.remoteLocation) {
+      entry += ` - ${pref.remoteLocation}`;
+      if (pref.city || pref.state) {
+        const location = [pref.city, pref.state].filter(Boolean).join(', ');
+        entry += ` (${location})`;
+      }
+    }
+
+    return entry;
+  };
+
   const generatedContent = useMemo(() => {
-    // Sort preferences by date
-    const sortedPrefs = [...preferences]
-      .filter(p => p.userId === user.id)
-      .sort((a, b) => a.workDate.localeCompare(b.workDate));
+    // Filter and group preferences by date
+    const userPrefs = preferences.filter(p => p.userId === user.id);
+    const groupedByDate = groupPreferencesByDate(userPrefs);
+
+    // Sort dates
+    const sortedDates = Array.from(groupedByDate.keys()).sort();
 
     const displayName = user.displayName || user.name || user.email;
     const formattedStartDate = formatDate(startDate);
@@ -96,14 +158,15 @@ export function ShareCalendarModal({
       content += `═══════════════════════════════════════════════════\n`;
       content += `Period: ${formattedStartDate} - ${formattedEndDate}\n\n`;
 
-      if (sortedPrefs.length === 0) {
+      if (sortedDates.length === 0) {
         content += `No work locations have been set for this period.\n`;
       } else {
         // Group by week
         let currentWeek = -1;
-        sortedPrefs.forEach((pref) => {
-          const date = new Date(pref.workDate + 'T00:00:00');
+        sortedDates.forEach((dateStr) => {
+          const date = new Date(dateStr + 'T00:00:00');
           const weekNumber = getWeekNumber(date);
+          const dayGroup = groupedByDate.get(dateStr)!;
 
           if (weekNumber !== currentWeek) {
             currentWeek = weekNumber;
@@ -111,31 +174,34 @@ export function ShareCalendarModal({
             content += `───────────────────────────────────────────────────\n`;
           }
 
-          const emoji = getLocationEmoji(pref.locationType);
-          const label = getLocationTypeLabel(pref.locationType);
           const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-          const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
-          content += `${emoji} ${dayName}, ${dateStr}: ${label}`;
-
-          // Add additional details
-          if (pref.office?.name) {
-            content += ` - ${pref.office.name}`;
-            if (pref.office.city && pref.office.stateCode) {
-              content += ` (${pref.office.city}, ${pref.office.stateCode})`;
+          if (dayGroup.fullDay) {
+            // Full day entry
+            content += `${dayName}, ${formattedDate}: ${formatPreferenceEntry(dayGroup.fullDay)}`;
+            if (dayGroup.fullDay.notes) {
+              content += `\n   📝 Note: ${dayGroup.fullDay.notes}`;
+            }
+            content += '\n';
+          } else {
+            // Split day - AM and/or PM
+            content += `${dayName}, ${formattedDate}:\n`;
+            if (dayGroup.am) {
+              content += `   🌅 AM: ${formatPreferenceEntry(dayGroup.am)}`;
+              if (dayGroup.am.notes) {
+                content += `\n      📝 ${dayGroup.am.notes}`;
+              }
+              content += '\n';
+            }
+            if (dayGroup.pm) {
+              content += `   🌆 PM: ${formatPreferenceEntry(dayGroup.pm)}`;
+              if (dayGroup.pm.notes) {
+                content += `\n      📝 ${dayGroup.pm.notes}`;
+              }
+              content += '\n';
             }
           }
-          if (pref.remoteLocation) {
-            content += ` - ${pref.remoteLocation}`;
-            if (pref.city || pref.state) {
-              const location = [pref.city, pref.state].filter(Boolean).join(', ');
-              content += ` (${location})`;
-            }
-          }
-          if (pref.notes) {
-            content += `\n   📝 Note: ${pref.notes}`;
-          }
-          content += '\n';
         });
       }
 
@@ -154,22 +220,43 @@ export function ShareCalendarModal({
       let content = `📆 ${displayName}'s Work Schedule\n`;
       content += `${formatShortDate(startDate)} - ${formatShortDate(endDate)}\n\n`;
 
-      if (sortedPrefs.length === 0) {
+      if (sortedDates.length === 0) {
         content += `No locations set.\n`;
       } else {
-        sortedPrefs.forEach((pref) => {
-          const emoji = getLocationEmoji(pref.locationType);
-          const label = getLocationTypeLabel(pref.locationType);
-          const dateStr = formatShortDate(pref.workDate);
+        sortedDates.forEach((dateStr) => {
+          const dayGroup = groupedByDate.get(dateStr)!;
+          const formattedDate = formatShortDate(dateStr);
 
-          let line = `${emoji} ${dateStr}: ${label}`;
-          if (pref.office?.name) {
-            line += ` @ ${pref.office.name}`;
+          if (dayGroup.fullDay) {
+            const emoji = getLocationEmoji(dayGroup.fullDay.locationType);
+            const label = getLocationTypeLabel(dayGroup.fullDay.locationType);
+            let line = `${emoji} ${formattedDate}: ${label}`;
+            if (dayGroup.fullDay.office?.name) {
+              line += ` @ ${dayGroup.fullDay.office.name}`;
+            }
+            if (dayGroup.fullDay.remoteLocation) {
+              line += ` @ ${dayGroup.fullDay.remoteLocation}`;
+            }
+            content += line + '\n';
+          } else {
+            // Split day
+            if (dayGroup.am && dayGroup.pm) {
+              // Both AM and PM
+              const amEmoji = getLocationEmoji(dayGroup.am.locationType);
+              const pmEmoji = getLocationEmoji(dayGroup.pm.locationType);
+              const amLabel = getLocationTypeLabel(dayGroup.am.locationType);
+              const pmLabel = getLocationTypeLabel(dayGroup.pm.locationType);
+              content += `${formattedDate}: ${amEmoji} AM: ${amLabel} | ${pmEmoji} PM: ${pmLabel}\n`;
+            } else if (dayGroup.am) {
+              const emoji = getLocationEmoji(dayGroup.am.locationType);
+              const label = getLocationTypeLabel(dayGroup.am.locationType);
+              content += `${emoji} ${formattedDate} (AM): ${label}\n`;
+            } else if (dayGroup.pm) {
+              const emoji = getLocationEmoji(dayGroup.pm.locationType);
+              const label = getLocationTypeLabel(dayGroup.pm.locationType);
+              content += `${emoji} ${formattedDate} (PM): ${label}\n`;
+            }
           }
-          if (pref.remoteLocation) {
-            line += ` @ ${pref.remoteLocation}`;
-          }
-          content += line + '\n';
         });
       }
 

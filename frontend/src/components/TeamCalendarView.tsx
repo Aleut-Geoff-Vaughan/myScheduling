@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { TeamMemberSchedule, WorkLocationPreferenceResponse } from '../types/teamCalendar';
-import { WorkLocationType } from '../types/api';
+import { WorkLocationType, DayPortion } from '../types/api';
 import { getWeekdays } from '../utils/dateUtils';
 
 interface TeamCalendarViewProps {
@@ -27,9 +27,16 @@ export function TeamCalendarView({ memberSchedules, startDate, weeksToShow = 2 }
     });
   };
 
-  const getPreferenceForDate = (preferences: WorkLocationPreferenceResponse[], date: Date) => {
+  // Get all preferences for a date (could be 1 FullDay, or 2 AM/PM, or just 1 AM or PM)
+  const getPreferencesForDate = (preferences: WorkLocationPreferenceResponse[], date: Date) => {
     const dateStr = date.toISOString().split('T')[0];
-    return preferences.find(p => p.workDate === dateStr);
+    const dayPrefs = preferences.filter(p => p.workDate === dateStr);
+
+    const fullDay = dayPrefs.find(p => p.dayPortion === DayPortion.FullDay);
+    const am = dayPrefs.find(p => p.dayPortion === DayPortion.AM);
+    const pm = dayPrefs.find(p => p.dayPortion === DayPortion.PM);
+
+    return { am, pm, fullDay };
   };
 
   const getLocationIcon = (type: WorkLocationType): string => {
@@ -149,20 +156,50 @@ export function TeamCalendarView({ memberSchedules, startDate, weeksToShow = 2 }
               {/* Location Icons for Each Day */}
               <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${weekDays.length}, minmax(60px, 1fr))` }}>
                 {weekDays.map((date, idx) => {
-                  const preference = getPreferenceForDate(member.preferences, date);
+                  const { am, pm, fullDay } = getPreferencesForDate(member.preferences, date);
+                  const isSplitDay = am || pm;
 
+                  if (isSplitDay) {
+                    // Split day view - stacked AM/PM
+                    return (
+                      <div
+                        key={idx}
+                        className="flex flex-col gap-0.5 p-1 rounded border border-gray-300 bg-white"
+                        title={`${am ? `AM: ${getLocationLabel(am.locationType)}` : 'AM: Not set'} / ${pm ? `PM: ${getLocationLabel(pm.locationType)}` : 'PM: Not set'}`}
+                      >
+                        {am ? (
+                          <div className={`flex items-center justify-center gap-0.5 rounded px-1 py-0.5 ${getLocationColor(am.locationType)}`}>
+                            <span className="text-xs">{getLocationIcon(am.locationType)}</span>
+                            <span className="text-[8px] font-bold px-0.5 rounded bg-amber-500 text-white">AM</span>
+                          </div>
+                        ) : (
+                          <div className="text-[8px] text-gray-400 text-center py-0.5">AM -</div>
+                        )}
+                        {pm ? (
+                          <div className={`flex items-center justify-center gap-0.5 rounded px-1 py-0.5 ${getLocationColor(pm.locationType)}`}>
+                            <span className="text-xs">{getLocationIcon(pm.locationType)}</span>
+                            <span className="text-[8px] font-bold px-0.5 rounded bg-indigo-500 text-white">PM</span>
+                          </div>
+                        ) : (
+                          <div className="text-[8px] text-gray-400 text-center py-0.5">PM -</div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // Full day or no preference
                   return (
                     <div
                       key={idx}
                       className={`
-                        flex items-center justify-center p-2 rounded border
-                        ${preference ? getLocationColor(preference.locationType) : 'bg-white border-gray-200'}
+                        flex flex-col items-center justify-center p-2 rounded border
+                        ${fullDay ? getLocationColor(fullDay.locationType) : 'bg-white border-gray-200'}
                         text-center
                       `}
-                      title={preference ? getLocationLabel(preference.locationType) : 'Not set'}
+                      title={fullDay ? getLocationLabel(fullDay.locationType) : 'Not set'}
                     >
                       <span className="text-lg">
-                        {preference ? getLocationIcon(preference.locationType) : '❓'}
+                        {fullDay ? getLocationIcon(fullDay.locationType) : '❓'}
                       </span>
                     </div>
                   );
@@ -193,29 +230,64 @@ export function TeamCalendarView({ memberSchedules, startDate, weeksToShow = 2 }
                     <h4 className="text-sm font-semibold text-gray-700">Schedule Details:</h4>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {weekDays.map((date, idx) => {
-                        const preference = getPreferenceForDate(member.preferences, date);
-                        if (!preference) return null;
+                        const { am, pm, fullDay } = getPreferencesForDate(member.preferences, date);
+                        if (!fullDay && !am && !pm) return null;
 
+                        const isSplitDay = am || pm;
+
+                        if (isSplitDay) {
+                          return (
+                            <div key={idx} className="p-3 rounded-lg border border-gray-300 bg-white">
+                              <div className="text-xs font-medium mb-2">
+                                {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                              </div>
+                              <div className="space-y-1">
+                                {am && (
+                                  <div className={`p-2 rounded ${getLocationColor(am.locationType)}`}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{getLocationIcon(am.locationType)}</span>
+                                      <span className="text-xs font-semibold">{getLocationLabel(am.locationType)}</span>
+                                      <span className="text-[10px] font-bold px-1 rounded bg-amber-500 text-white">AM</span>
+                                    </div>
+                                    {am.officeName && <div className="text-[10px] text-gray-600 mt-0.5">{am.officeName}</div>}
+                                  </div>
+                                )}
+                                {pm && (
+                                  <div className={`p-2 rounded ${getLocationColor(pm.locationType)}`}>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm">{getLocationIcon(pm.locationType)}</span>
+                                      <span className="text-xs font-semibold">{getLocationLabel(pm.locationType)}</span>
+                                      <span className="text-[10px] font-bold px-1 rounded bg-indigo-500 text-white">PM</span>
+                                    </div>
+                                    {pm.officeName && <div className="text-[10px] text-gray-600 mt-0.5">{pm.officeName}</div>}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Full day
                         return (
                           <div
                             key={idx}
-                            className={`p-3 rounded-lg border ${getLocationColor(preference.locationType)}`}
+                            className={`p-3 rounded-lg border ${getLocationColor(fullDay!.locationType)}`}
                           >
                             <div className="text-xs font-medium mb-1">
                               {date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-lg">{getLocationIcon(preference.locationType)}</span>
-                              <span className="text-sm font-semibold">{getLocationLabel(preference.locationType)}</span>
+                              <span className="text-lg">{getLocationIcon(fullDay!.locationType)}</span>
+                              <span className="text-sm font-semibold">{getLocationLabel(fullDay!.locationType)}</span>
                             </div>
-                            {preference.officeName && (
-                              <div className="text-xs text-gray-600 mt-1">{preference.officeName}</div>
+                            {fullDay!.officeName && (
+                              <div className="text-xs text-gray-600 mt-1">{fullDay!.officeName}</div>
                             )}
-                            {preference.remoteLocation && (
-                              <div className="text-xs text-gray-600 mt-1">{preference.remoteLocation}</div>
+                            {fullDay!.remoteLocation && (
+                              <div className="text-xs text-gray-600 mt-1">{fullDay!.remoteLocation}</div>
                             )}
-                            {preference.notes && (
-                              <div className="text-xs text-gray-600 mt-1 italic">{preference.notes}</div>
+                            {fullDay!.notes && (
+                              <div className="text-xs text-gray-600 mt-1 italic">{fullDay!.notes}</div>
                             )}
                           </div>
                         );

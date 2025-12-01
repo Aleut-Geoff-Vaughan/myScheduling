@@ -9,8 +9,15 @@ public class Project : TenantEntity
     public DateTime? EndDate { get; set; }
     public ProjectStatus Status { get; set; }
 
+    // Staffing fields
+    public ProjectType Type { get; set; } = ProjectType.Sold;
+    public decimal? BudgetedHours { get; set; }
+    public decimal? TargetHoursPerMonth { get; set; }
+
     // Navigation properties
     public virtual ICollection<WbsElement> WbsElements { get; set; } = new List<WbsElement>();
+    public virtual ICollection<LaborCategory> LaborCategories { get; set; } = new List<LaborCategory>();
+    public virtual ICollection<ProjectRoleAssignment> ProjectRoleAssignments { get; set; } = new List<ProjectRoleAssignment>();
 }
 
 public enum ProjectStatus
@@ -18,6 +25,15 @@ public enum ProjectStatus
     Draft,
     Active,
     Closed
+}
+
+public enum ProjectType
+{
+    Sold = 0,
+    Unsold = 1,
+    Proposed = 2,
+    Internal = 3,
+    OnHold = 4
 }
 
 public class WbsElement : TenantEntity
@@ -49,6 +65,10 @@ public class WbsElement : TenantEntity
     public string? ApprovalNotes { get; set; }
     public DateTime? ApprovedAt { get; set; }
 
+    // Staffing fields
+    public decimal? BudgetedHours { get; set; }
+    public decimal? TargetHoursPerMonth { get; set; }
+
     // Navigation properties
     public virtual Project Project { get; set; } = null!;
     public virtual User? Owner { get; set; }
@@ -57,6 +77,7 @@ public class WbsElement : TenantEntity
     public virtual ICollection<ProjectRole> ProjectRoles { get; set; } = new List<ProjectRole>();
     public virtual ICollection<Assignment> Assignments { get; set; } = new List<Assignment>();
     public virtual ICollection<WbsChangeHistory> ChangeHistory { get; set; } = new List<WbsChangeHistory>();
+    public virtual ICollection<ProjectRoleAssignment> ProjectRoleAssignments { get; set; } = new List<ProjectRoleAssignment>();
 }
 
 public enum WbsType

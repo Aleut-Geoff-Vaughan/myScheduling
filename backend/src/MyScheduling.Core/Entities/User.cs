@@ -29,11 +29,20 @@ public class User : BaseEntity
     public Guid? ManagerId { get; set; }
     public Guid? DefaultDelegateUserId { get; set; }  // Default delegate for DOA letters
 
+    // Staffing/Career fields
+    public string? PositionTitle { get; set; }
+    public Guid? CareerJobFamilyId { get; set; }
+    public int? CareerLevel { get; set; }
+    public decimal? StandardHoursPerWeek { get; set; } = 40;
+    public bool IsHourly { get; set; } = false;
+
     // Navigation properties
     public virtual ICollection<TenantMembership> TenantMemberships { get; set; } = new List<TenantMembership>();
     public virtual User? Manager { get; set; }
     public virtual ICollection<User> DirectReports { get; set; } = new List<User>();
     public virtual User? DefaultDelegate { get; set; }
+    public virtual CareerJobFamily? CareerJobFamily { get; set; }
+    public virtual ICollection<ProjectRoleAssignment> ProjectRoleAssignments { get; set; } = new List<ProjectRoleAssignment>();
 
     // Deprecated - will be removed in migration
     public virtual ICollection<RoleAssignment> RoleAssignments { get; set; } = new List<RoleAssignment>();

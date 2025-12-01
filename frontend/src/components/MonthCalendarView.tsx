@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { WorkLocationType, type WorkLocationPreference } from '../types/api';
+import { WorkLocationType, DayPortion, type WorkLocationPreference } from '../types/api';
 import { getMonthWeekdays, getMonthYear, isToday, isPast } from '../utils/dateUtils';
 
 interface MonthCalendarViewProps {
@@ -13,9 +13,16 @@ export function MonthCalendarView({ referenceDate, preferences, onDayClick, user
   const monthDays = useMemo(() => getMonthWeekdays(referenceDate), [referenceDate]);
   const monthName = useMemo(() => getMonthYear(referenceDate), [referenceDate]);
 
-  const getPreferenceForDate = (date: Date): WorkLocationPreference | undefined => {
+  // Get all preferences for a date (could be 1 FullDay, or 2 AM/PM, or just 1 AM or PM)
+  const getPreferencesForDate = (date: Date): { am?: WorkLocationPreference; pm?: WorkLocationPreference; fullDay?: WorkLocationPreference } => {
     const dateStr = date.toISOString().split('T')[0];
-    return preferences.find(p => p.workDate === dateStr && p.userId === userId);
+    const dayPrefs = preferences.filter(p => p.workDate === dateStr && p.userId === userId);
+
+    const fullDay = dayPrefs.find(p => p.dayPortion === DayPortion.FullDay);
+    const am = dayPrefs.find(p => p.dayPortion === DayPortion.AM);
+    const pm = dayPrefs.find(p => p.dayPortion === DayPortion.PM);
+
+    return { am, pm, fullDay };
   };
 
   const getLocationTypeLabel = (type: WorkLocationType): string => {
@@ -106,9 +113,17 @@ export function MonthCalendarView({ referenceDate, preferences, onDayClick, user
         {weeks.map((week, weekIdx) => (
           <div key={weekIdx} className="grid grid-cols-5 gap-2">
             {week.map((date) => {
-              const preference = getPreferenceForDate(date);
+              const { am, pm, fullDay } = getPreferencesForDate(date);
+              const isSplitDay = am || pm;
               const today = isToday(date);
               const past = isPast(date);
+
+              // Determine card background - for split days, use neutral background
+              const getCardBackground = () => {
+                if (isSplitDay) return 'bg-white border-gray-300';
+                if (fullDay) return getLocationTypeColor(fullDay.locationType);
+                return 'bg-white border-gray-200 hover:border-gray-300';
+              };
 
               return (
                 <button
@@ -119,10 +134,7 @@ export function MonthCalendarView({ referenceDate, preferences, onDayClick, user
                     relative p-3 rounded-lg border-2 transition-all min-h-[100px]
                     ${today ? 'ring-2 ring-primary-500 ring-offset-2' : ''}
                     ${past ? 'opacity-60' : ''}
-                    ${preference
-                      ? getLocationTypeColor(preference.locationType)
-                      : 'bg-white border-gray-200 hover:border-gray-300'
-                    }
+                    ${getCardBackground()}
                     hover:shadow-md cursor-pointer
                   `}
                 >
@@ -134,28 +146,64 @@ export function MonthCalendarView({ referenceDate, preferences, onDayClick, user
                   </div>
 
                   {/* Location Info */}
-                  {preference ? (
+                  {isSplitDay ? (
+                    /* Split Day View - AM on top, PM on bottom */
+                    <div className="flex flex-col gap-1">
+                      {am ? (
+                        <div className={`rounded p-1 ${getLocationTypeColor(am.locationType)}`}>
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-sm">{getLocationIcon(am.locationType)}</span>
+                            <span className="text-[10px] font-bold px-1 rounded bg-amber-500 text-white">AM</span>
+                          </div>
+                          <div className="text-[10px] font-medium text-center truncate">
+                            {getLocationTypeLabel(am.locationType)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded p-1 bg-gray-100 text-center">
+                          <div className="text-[10px] text-gray-400">AM not set</div>
+                        </div>
+                      )}
+                      {pm ? (
+                        <div className={`rounded p-1 ${getLocationTypeColor(pm.locationType)}`}>
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="text-sm">{getLocationIcon(pm.locationType)}</span>
+                            <span className="text-[10px] font-bold px-1 rounded bg-indigo-500 text-white">PM</span>
+                          </div>
+                          <div className="text-[10px] font-medium text-center truncate">
+                            {getLocationTypeLabel(pm.locationType)}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="rounded p-1 bg-gray-100 text-center">
+                          <div className="text-[10px] text-gray-400">PM not set</div>
+                        </div>
+                      )}
+                    </div>
+                  ) : fullDay ? (
+                    /* Full Day View */
                     <div className="text-center">
                       <div className="text-xl mb-1">
-                        {getLocationIcon(preference.locationType)}
+                        {getLocationIcon(fullDay.locationType)}
                       </div>
                       <div className="text-xs font-semibold">
-                        {getLocationTypeLabel(preference.locationType)}
+                        {getLocationTypeLabel(fullDay.locationType)}
                       </div>
                       {/* Show office name for office locations */}
-                      {preference.office && (
-                        <div className="text-xs text-gray-600 mt-1 truncate" title={preference.office.name}>
-                          {preference.office.name}
+                      {fullDay.office && (
+                        <div className="text-xs text-gray-600 mt-1 truncate" title={fullDay.office.name}>
+                          {fullDay.office.name}
                         </div>
                       )}
                       {/* Show remote location for Remote+ */}
-                      {preference.remoteLocation && (
-                        <div className="text-xs text-gray-600 mt-1 truncate" title={preference.remoteLocation}>
-                          {preference.remoteLocation}
+                      {fullDay.remoteLocation && (
+                        <div className="text-xs text-gray-600 mt-1 truncate" title={fullDay.remoteLocation}>
+                          {fullDay.remoteLocation}
                         </div>
                       )}
                     </div>
                   ) : (
+                    /* No Preference Set */
                     <div className="text-center text-gray-400">
                       <div className="text-xl mb-1">❓</div>
                       <div className="text-xs">Not set</div>

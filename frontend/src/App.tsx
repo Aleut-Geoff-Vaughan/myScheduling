@@ -42,6 +42,13 @@ import { AdminOfficeDetailPage } from './pages/AdminOfficeDetailPage';
 import { AdminSpaceDetailPage } from './pages/AdminSpaceDetailPage';
 import { AdminResumesPage } from './pages/AdminResumesPage';
 import { AdminResumeTemplatesPage } from './pages/AdminResumeTemplatesPage';
+import { AdminHolidaysPage } from './pages/AdminHolidaysPage';
+import { AdminCareerJobFamiliesPage } from './pages/AdminCareerJobFamiliesPage';
+import { AdminSubcontractorCompaniesPage } from './pages/AdminSubcontractorCompaniesPage';
+import { AdminForecastSchedulesPage } from './pages/AdminForecastSchedulesPage';
+import { AdminProjectRoleAssignmentsPage } from './pages/AdminProjectRoleAssignmentsPage';
+import { AdminForecastsPage } from './pages/AdminForecastsPage';
+import { ForecastApprovalPage } from './pages/ForecastApprovalPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { ResumeSharePage } from './pages/ResumeSharePage';
 import { MySchedulePage } from './pages/MySchedulePage';
@@ -140,6 +147,12 @@ function App() {
               <Route path="facilities/space/:spaceId" element={<AdminSpaceDetailPage />} />
               <Route path="resumes" element={<AdminResumesPage />} />
               <Route path="resume-templates" element={<AdminResumeTemplatesPage />} />
+              <Route path="holidays" element={<AdminHolidaysPage />} />
+              <Route path="staffing/role-assignments" element={<AdminProjectRoleAssignmentsPage />} />
+              <Route path="staffing/career-families" element={<AdminCareerJobFamiliesPage />} />
+              <Route path="staffing/subcontractors" element={<AdminSubcontractorCompaniesPage />} />
+              <Route path="staffing/forecast-schedules" element={<AdminForecastSchedulesPage />} />
+              <Route path="staffing/forecasts" element={<AdminForecastsPage />} />
             </Route>
 
             {/* Me Portal Routes (mobile-friendly top nav) */}
@@ -182,6 +195,7 @@ function App() {
               <Route path="templates" element={<TemplatesPage />} />
               <Route path="facilities" element={<FacilitiesPage />} />
               <Route path="staffing-admin" element={<StaffingAdminPage />} />
+              <Route path="forecast-approvals" element={<ForecastApprovalPage />} />
               <Route path="reports" element={<div className="p-6">Reports Module (Coming Soon)</div>} />
             </Route>
 

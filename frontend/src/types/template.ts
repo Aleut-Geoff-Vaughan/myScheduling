@@ -1,4 +1,4 @@
-import { WorkLocationType } from './api';
+import { WorkLocationType, DayPortion } from './api';
 
 export enum TemplateType {
   Day = 0,
@@ -12,6 +12,7 @@ export interface WorkLocationTemplateItem {
   dayOffset: number;
   dayOfWeek?: number; // 0-6 for Sunday-Saturday
   locationType: WorkLocationType;
+  dayPortion: DayPortion; // Full day, AM only, or PM only
   officeId?: string;
   remoteLocation?: string;
   city?: string;

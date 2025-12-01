@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { WorkLocationType, type WorkLocationPreference } from '../types/api';
+import { WorkLocationType, DayPortion, type WorkLocationPreference } from '../types/api';
 import { isToday, isPast, getMondayOfWeek } from '../utils/dateUtils';
 
 interface WeekCalendarViewProps {
@@ -38,9 +38,16 @@ export function WeekCalendarView({
     return days;
   }, [startDate, weeksToShow, daysPerWeek]);
 
-  const getPreferenceForDate = (date: Date): WorkLocationPreference | undefined => {
+  // Get all preferences for a date (could be 1 FullDay, or 2 AM/PM, or just 1 AM or PM)
+  const getPreferencesForDate = (date: Date): { am?: WorkLocationPreference; pm?: WorkLocationPreference; fullDay?: WorkLocationPreference } => {
     const dateStr = date.toISOString().split('T')[0];
-    return preferences.find(p => p.workDate === dateStr && p.userId === userId);
+    const dayPrefs = preferences.filter(p => p.workDate === dateStr && p.userId === userId);
+
+    const fullDay = dayPrefs.find(p => p.dayPortion === DayPortion.FullDay);
+    const am = dayPrefs.find(p => p.dayPortion === DayPortion.AM);
+    const pm = dayPrefs.find(p => p.dayPortion === DayPortion.PM);
+
+    return { am, pm, fullDay };
   };
 
   const getLocationTypeLabel = (type: WorkLocationType): string => {
@@ -132,28 +139,49 @@ export function WeekCalendarView({
     }
   };
 
+  // Render a single half-day block (AM or PM)
+  const renderHalfDayBlock = (pref: WorkLocationPreference, portion: 'AM' | 'PM') => {
+    const portionColor = portion === 'AM' ? 'bg-amber-500' : 'bg-indigo-500';
+    return (
+      <div className={`flex-1 rounded p-1 ${getLocationTypeColor(pref.locationType)}`}>
+        <div className="flex items-center justify-center gap-0.5">
+          <span className="text-sm sm:text-base">{getLocationIcon(pref.locationType)}</span>
+          <span className={`text-[8px] sm:text-[10px] font-bold px-1 rounded ${portionColor} text-white`}>
+            {portion}
+          </span>
+        </div>
+        <div className="text-[8px] sm:text-[10px] font-medium text-center truncate">
+          {getLocationTypeShortLabel(pref.locationType)}
+        </div>
+      </div>
+    );
+  };
+
   // Render a single day card
   const renderDayCard = (date: Date) => {
-    const preference = getPreferenceForDate(date);
+    const { am, pm, fullDay } = getPreferencesForDate(date);
+    const isSplitDay = am || pm;
     const today = isToday(date);
     const past = isPast(date);
     const weekend = isWeekend(date);
+
+    // Determine card background - for split days, use neutral background
+    const getCardBackground = () => {
+      if (isSplitDay) return 'bg-white border-gray-300';
+      if (fullDay) return getLocationTypeColor(fullDay.locationType);
+      if (weekend) return 'bg-gray-50 border-gray-200 hover:border-gray-300';
+      return 'bg-white border-gray-200 hover:border-gray-300';
+    };
 
     return (
       <button
         key={date.toISOString()}
         onClick={() => onDayClick(date)}
         className={`
-          relative p-2 sm:p-4 rounded-lg border-2 transition-all min-w-0
+          relative p-2 sm:p-3 rounded-lg border-2 transition-all min-w-0
           ${today ? 'ring-2 ring-primary-500 ring-offset-1 sm:ring-offset-2' : ''}
           ${past ? 'opacity-60' : ''}
-          ${weekend && !preference ? 'bg-gray-50 border-gray-200' : ''}
-          ${preference
-            ? getLocationTypeColor(preference.locationType)
-            : weekend
-              ? 'bg-gray-50 border-gray-200 hover:border-gray-300'
-              : 'bg-white border-gray-200 hover:border-gray-300'
-          }
+          ${getCardBackground()}
           hover:shadow-md cursor-pointer
         `}
       >
@@ -168,27 +196,47 @@ export function WeekCalendarView({
         </div>
 
         {/* Location Info */}
-        {preference ? (
-          <div className="text-center">
-            <div className="text-lg sm:text-2xl mb-0.5 sm:mb-1">
-              {getLocationIcon(preference.locationType)}
-            </div>
-            <div className="text-[9px] sm:text-xs font-semibold truncate">
-              <span className="hidden sm:inline">{getLocationTypeLabel(preference.locationType)}</span>
-              <span className="sm:hidden">{getLocationTypeShortLabel(preference.locationType)}</span>
-            </div>
-            {preference.remoteLocation && (
-              <div className="text-[9px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1 truncate hidden sm:block">
-                {preference.remoteLocation}
+        {isSplitDay ? (
+          /* Split Day View - AM on top, PM on bottom */
+          <div className="flex flex-col gap-1">
+            {am ? (
+              renderHalfDayBlock(am, 'AM')
+            ) : (
+              <div className="flex-1 rounded p-1 bg-gray-100 text-center">
+                <div className="text-[8px] sm:text-[10px] text-gray-400">AM not set</div>
               </div>
             )}
-            {preference.office && (
+            {pm ? (
+              renderHalfDayBlock(pm, 'PM')
+            ) : (
+              <div className="flex-1 rounded p-1 bg-gray-100 text-center">
+                <div className="text-[8px] sm:text-[10px] text-gray-400">PM not set</div>
+              </div>
+            )}
+          </div>
+        ) : fullDay ? (
+          /* Full Day View */
+          <div className="text-center">
+            <div className="text-lg sm:text-2xl mb-0.5 sm:mb-1">
+              {getLocationIcon(fullDay.locationType)}
+            </div>
+            <div className="text-[9px] sm:text-xs font-semibold truncate">
+              <span className="hidden sm:inline">{getLocationTypeLabel(fullDay.locationType)}</span>
+              <span className="sm:hidden">{getLocationTypeShortLabel(fullDay.locationType)}</span>
+            </div>
+            {fullDay.remoteLocation && (
               <div className="text-[9px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1 truncate hidden sm:block">
-                {preference.office.name}
+                {fullDay.remoteLocation}
+              </div>
+            )}
+            {fullDay.office && (
+              <div className="text-[9px] sm:text-xs text-gray-600 mt-0.5 sm:mt-1 truncate hidden sm:block">
+                {fullDay.office.name}
               </div>
             )}
           </div>
         ) : (
+          /* No Preference Set */
           <div className="text-center text-gray-400">
             <div className="text-lg sm:text-2xl mb-0.5 sm:mb-1">{weekend ? '📅' : '❓'}</div>
             <div className="text-[9px] sm:text-xs">{weekend ? 'Weekend' : 'Not set'}</div>

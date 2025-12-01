@@ -312,6 +312,7 @@ public class WorkLocationPreference : TenantEntity
     public Guid UserId { get; set; }
     public DateOnly WorkDate { get; set; }
     public WorkLocationType LocationType { get; set; }
+    public DayPortion DayPortion { get; set; } = DayPortion.FullDay;  // Full day, AM only, or PM only
 
     // Optional fields based on location type
     public Guid? OfficeId { get; set; }  // Used for OfficeNoReservation and ClientSite
@@ -349,6 +350,13 @@ public enum WorkLocationType
     Travel                  // Travel day (in transit)
 }
 
+public enum DayPortion
+{
+    FullDay,    // Entire day
+    AM,         // Morning only (before noon)
+    PM          // Afternoon only (after noon)
+}
+
 // Company Holidays for tracking federal/company-wide holidays
 public class CompanyHoliday : TenantEntity
 {
@@ -358,6 +366,18 @@ public class CompanyHoliday : TenantEntity
     public bool IsRecurring { get; set; } = false;  // Does this recur annually?
     public string? Description { get; set; }
     public bool IsObserved { get; set; } = true;  // Is the company observing this holiday?
+
+    // Recurrence rules for floating holidays (e.g., "3rd Monday of January" for MLK Day)
+    public int? RecurringMonth { get; set; }  // Month (1-12) for recurring holidays
+    public int? RecurringDay { get; set; }  // Day of month for fixed-date recurring holidays
+    public HolidayRecurrenceRule? RecurrenceRule { get; set; }  // Rule for floating holidays
+
+    // Auto-apply options
+    public bool AutoApplyToSchedule { get; set; } = true;  // Auto-create work location entries
+    public bool AutoApplyToForecast { get; set; } = true;  // Exclude from forecast recommended hours
+
+    // Status
+    public bool IsActive { get; set; } = true;  // Active/inactive for this tenant
 }
 
 public enum HolidayType
@@ -367,4 +387,16 @@ public enum HolidayType
     Religious,          // Religious observances
     Cultural,           // Cultural observances
     Regional            // State or regional holidays
+}
+
+public enum HolidayRecurrenceRule
+{
+    FixedDate = 0,          // Same date every year (e.g., July 4th)
+    FirstMondayOf = 1,      // First Monday of the month
+    SecondMondayOf = 2,     // Second Monday of the month
+    ThirdMondayOf = 3,      // Third Monday of the month (MLK Day, Presidents Day)
+    FourthMondayOf = 4,     // Fourth Monday of the month
+    LastMondayOf = 5,       // Last Monday of the month (Memorial Day)
+    FourthThursdayOf = 6,   // Fourth Thursday of the month (Thanksgiving)
+    DayAfterThanksgiving = 7 // Day after Thanksgiving (special case)
 }

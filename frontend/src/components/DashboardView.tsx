@@ -12,6 +12,7 @@ import { useDashboard } from '../hooks/useDashboard';
 import { getMondayOfWeek } from '../utils/dateUtils';
 import { CalendarSkeleton, StatsCardSkeleton } from './skeletons/CalendarSkeleton';
 import { ErrorBoundary } from './ErrorBoundary';
+import { DayPortion } from '../types/api';
 
 interface DashboardViewProps {
   userId: string;
@@ -94,12 +95,27 @@ export function DashboardView({
     setReferenceDate(new Date());
   };
 
-  const existingPreference = useMemo(() => {
-    if (!selectedDate || !dashboardData) return undefined;
+  // Find existing preferences for the selected date (handles full day and split day modes)
+  const { existingPreference, existingPmPreference } = useMemo(() => {
+    if (!selectedDate || !dashboardData) {
+      return { existingPreference: undefined, existingPmPreference: undefined };
+    }
     const dateStr = selectedDate.toISOString().split('T')[0];
-    return dashboardData.preferences.find(
+    const dayPreferences = dashboardData.preferences.filter(
       (p) => p.workDate === dateStr && p.userId === dashboardData.user.id
     );
+
+    // Look for FullDay, AM, or PM preferences
+    const fullDay = dayPreferences.find((p) => p.dayPortion === DayPortion.FullDay);
+    const am = dayPreferences.find((p) => p.dayPortion === DayPortion.AM);
+    const pm = dayPreferences.find((p) => p.dayPortion === DayPortion.PM);
+
+    // If there's a full day preference, use it as the primary
+    // If there's AM/PM, use AM as primary and PM as secondary
+    return {
+      existingPreference: fullDay || am || dayPreferences[0],
+      existingPmPreference: pm,
+    };
   }, [selectedDate, dashboardData]);
 
   const stats = useMemo(() => {
@@ -381,6 +397,7 @@ export function DashboardView({
             }}
             selectedDate={selectedDate}
             existingPreference={existingPreference}
+            existingPmPreference={existingPmPreference}
             userId={dashboardData.user.id}
           />
         )}

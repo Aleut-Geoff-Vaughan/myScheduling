@@ -81,6 +81,7 @@ export interface WorkLocationPreferenceResponse {
   id: string;
   workDate: string; // ISO date string (YYYY-MM-DD)
   locationType: number; // WorkLocationType enum
+  dayPortion: number; // DayPortion enum (0 = FullDay, 1 = AM, 2 = PM)
   officeId?: string;
   officeName?: string;
   remoteLocation?: string;

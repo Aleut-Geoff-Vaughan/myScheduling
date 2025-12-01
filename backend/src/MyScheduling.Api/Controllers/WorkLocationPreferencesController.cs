@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
@@ -169,16 +169,49 @@ public class WorkLocationPreferencesController : AuthorizedControllerBase
                 return StatusCode(403, "Users can only create their own work location preferences");
             }
 
-            // Check if preference already exists for this person on this date
+            // Check if preference already exists for this person on this date with the same day portion
             var existing = await _context.WorkLocationPreferences
                 .FirstOrDefaultAsync(w =>
                     w.UserId == request.UserId &&
                     w.WorkDate == workDate &&
-                    w.TenantId == request.TenantId);
+                    w.TenantId == request.TenantId &&
+                    w.DayPortion == request.DayPortion);
 
             if (existing != null)
             {
-                return Conflict($"A work location preference already exists for this person on {workDate}");
+                return Conflict($"A work location preference already exists for this person on {workDate} for {request.DayPortion}");
+            }
+
+            // If creating AM or PM, check if a FullDay preference exists and delete it
+            if (request.DayPortion != DayPortion.FullDay)
+            {
+                var fullDayPreference = await _context.WorkLocationPreferences
+                    .FirstOrDefaultAsync(w =>
+                        w.UserId == request.UserId &&
+                        w.WorkDate == workDate &&
+                        w.TenantId == request.TenantId &&
+                        w.DayPortion == DayPortion.FullDay);
+
+                if (fullDayPreference != null)
+                {
+                    _context.WorkLocationPreferences.Remove(fullDayPreference);
+                }
+            }
+            // If creating FullDay, delete any AM/PM preferences for that day
+            else
+            {
+                var partialDayPreferences = await _context.WorkLocationPreferences
+                    .Where(w =>
+                        w.UserId == request.UserId &&
+                        w.WorkDate == workDate &&
+                        w.TenantId == request.TenantId &&
+                        w.DayPortion != DayPortion.FullDay)
+                    .ToListAsync();
+
+                if (partialDayPreferences.Any())
+                {
+                    _context.WorkLocationPreferences.RemoveRange(partialDayPreferences);
+                }
             }
 
             // Validate based on location type
@@ -201,6 +234,7 @@ public class WorkLocationPreferencesController : AuthorizedControllerBase
                 UserId = request.UserId,
                 WorkDate = workDate,
                 LocationType = request.LocationType,
+                DayPortion = request.DayPortion,
                 OfficeId = request.OfficeId,
                 BookingId = request.BookingId,
                 RemoteLocation = request.RemoteLocation,
@@ -278,6 +312,7 @@ public class WorkLocationPreferencesController : AuthorizedControllerBase
 
             // Update properties
             existing.LocationType = request.LocationType;
+            existing.DayPortion = request.DayPortion;
             existing.OfficeId = request.OfficeId;
             existing.BookingId = request.BookingId;
             existing.RemoteLocation = request.RemoteLocation;
@@ -395,6 +430,7 @@ public class WorkLocationPreferencesController : AuthorizedControllerBase
                 {
                     // Update existing
                     existing.LocationType = preference.LocationType;
+                    existing.DayPortion = preference.DayPortion;
                     existing.OfficeId = preference.OfficeId;
                     existing.BookingId = preference.BookingId;
                     existing.RemoteLocation = preference.RemoteLocation;
@@ -439,6 +475,7 @@ public class CreateWorkLocationPreferenceRequest
     public Guid UserId { get; set; }
     public string WorkDate { get; set; } = string.Empty; // YYYY-MM-DD format
     public WorkLocationType LocationType { get; set; }
+    public DayPortion DayPortion { get; set; } = DayPortion.FullDay; // Full day, AM only, or PM only
     public Guid? OfficeId { get; set; }
     public Guid? BookingId { get; set; }
     public string? RemoteLocation { get; set; }
@@ -455,6 +492,7 @@ public class UpdateWorkLocationPreferenceRequest
     public Guid UserId { get; set; }
     public string WorkDate { get; set; } = string.Empty; // YYYY-MM-DD format
     public WorkLocationType LocationType { get; set; }
+    public DayPortion DayPortion { get; set; } = DayPortion.FullDay; // Full day, AM only, or PM only
     public Guid? OfficeId { get; set; }
     public Guid? BookingId { get; set; }
     public string? RemoteLocation { get; set; }
@@ -463,3 +501,4 @@ public class UpdateWorkLocationPreferenceRequest
     public string? Country { get; set; }
     public string? Notes { get; set; }
 }
+

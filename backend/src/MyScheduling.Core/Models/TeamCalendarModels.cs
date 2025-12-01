@@ -111,6 +111,7 @@ public class WorkLocationPreferenceResponse
     public Guid Id { get; set; }
     public string WorkDate { get; set; } = string.Empty; // ISO date format
     public WorkLocationType LocationType { get; set; }
+    public DayPortion DayPortion { get; set; } = DayPortion.FullDay; // Full day, AM only, or PM only
     public Guid? OfficeId { get; set; }
     public string? OfficeName { get; set; }
     public string? RemoteLocation { get; set; }
