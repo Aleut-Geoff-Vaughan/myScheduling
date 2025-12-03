@@ -99,6 +99,10 @@ public class MySchedulingDbContext : DbContext
     public DbSet<AuthorizationAuditLog> AuthorizationAuditLogs => Set<AuthorizationAuditLog>();
     public DbSet<LoginAudit> LoginAudits => Set<LoginAudit>();
 
+    // Authentication (Magic Link & Impersonation)
+    public DbSet<MagicLinkToken> MagicLinkTokens => Set<MagicLinkToken>();
+    public DbSet<ImpersonationSession> ImpersonationSessions => Set<ImpersonationSession>();
+
     // Dropdown Configuration
     public DbSet<TenantDropdownConfiguration> TenantDropdownConfigurations => Set<TenantDropdownConfiguration>();
 
@@ -125,6 +129,7 @@ public class MySchedulingDbContext : DbContext
         ConfigureAuthorization(modelBuilder);
         ConfigureGroups(modelBuilder);
         ConfigureDataArchive(modelBuilder);
+        ConfigureAuthentication(modelBuilder);
 
         // Apply global query filters for soft deletes
         ApplySoftDeleteFilter(modelBuilder);
@@ -1619,6 +1624,63 @@ public class MySchedulingDbContext : DbContext
             entity.Property(e => e.EntityType).IsRequired().HasMaxLength(100);
             entity.HasIndex(e => new { e.TenantId, e.Status });
             entity.HasIndex(e => e.RequestedAt);
+        });
+    }
+
+    private void ConfigureAuthentication(ModelBuilder modelBuilder)
+    {
+        // MagicLinkToken
+        modelBuilder.Entity<MagicLinkToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TokenHash).IsRequired().HasMaxLength(64); // SHA256 hex
+            entity.Property(e => e.ExpiresAt).IsRequired();
+            entity.Property(e => e.RequestedFromIp).HasMaxLength(45); // IPv6 max
+            entity.Property(e => e.RequestedUserAgent).HasMaxLength(500);
+            entity.Property(e => e.UsedFromIp).HasMaxLength(45);
+            entity.Property(e => e.UsedUserAgent).HasMaxLength(500);
+
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.ExpiresAt });
+            entity.HasIndex(e => e.ExpiresAt); // For cleanup jobs
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Ignore computed properties
+            entity.Ignore(e => e.IsExpired);
+            entity.Ignore(e => e.IsUsed);
+            entity.Ignore(e => e.IsValid);
+        });
+
+        // ImpersonationSession
+        modelBuilder.Entity<ImpersonationSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.StartedAt).IsRequired();
+            entity.Property(e => e.Reason).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.IpAddress).HasMaxLength(45);
+            entity.Property(e => e.UserAgent).HasMaxLength(500);
+
+            entity.HasIndex(e => new { e.AdminUserId, e.EndedAt }); // Active sessions by admin
+            entity.HasIndex(e => new { e.ImpersonatedUserId, e.StartedAt });
+            entity.HasIndex(e => e.StartedAt);
+
+            entity.HasOne(e => e.AdminUser)
+                .WithMany()
+                .HasForeignKey(e => e.AdminUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(e => e.ImpersonatedUser)
+                .WithMany()
+                .HasForeignKey(e => e.ImpersonatedUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Ignore computed properties
+            entity.Ignore(e => e.IsActive);
+            entity.Ignore(e => e.Duration);
         });
     }
 

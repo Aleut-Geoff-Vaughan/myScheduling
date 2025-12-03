@@ -25,6 +25,7 @@ import { TeamCalendarAdminPage } from './pages/TeamCalendarAdminPage';
 import { UserProfilePage } from './pages/UserProfilePage';
 import TemplatesPage from './pages/TemplatesPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import { MagicLinkVerifyPage } from './pages/MagicLinkVerifyPage';
 import DOAPage from './pages/DOAPage';
 import { useAuthStore } from './stores/authStore';
 import { AdminLoginReport } from './pages/AdminLoginReport';
@@ -48,10 +49,15 @@ import { AdminSubcontractorCompaniesPage } from './pages/AdminSubcontractorCompa
 import { AdminForecastSchedulesPage } from './pages/AdminForecastSchedulesPage';
 import { AdminProjectRoleAssignmentsPage } from './pages/AdminProjectRoleAssignmentsPage';
 import { AdminForecastsPage } from './pages/AdminForecastsPage';
+import { ForecastVersionsPage } from './pages/ForecastVersionsPage';
+import { ForecastImportExportPage } from './pages/ForecastImportExportPage';
 import { ForecastApprovalPage } from './pages/ForecastApprovalPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { ResumeSharePage } from './pages/ResumeSharePage';
 import { MySchedulePage } from './pages/MySchedulePage';
+import StaffingDashboardPage from './pages/StaffingDashboardPage';
+import ProjectStaffingDetailPage from './pages/ProjectStaffingDetailPage';
+import { AdminImpersonationPage } from './pages/AdminImpersonationPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -115,6 +121,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/auth/magic-link" element={<MagicLinkVerifyPage />} />
             <Route path="/select-workspace" element={<WorkspaceSelectorPage />} />
 
             {/* Public shared resume view (no auth required) */}
@@ -135,6 +142,7 @@ function App() {
               <Route path="groups" element={<AdminGroupsPage />} />
               <Route path="settings" element={<AdminPage viewOverride="settings" />} />
               <Route path="logins" element={<AdminLoginReport />} />
+              <Route path="impersonation" element={<AdminImpersonationPage />} />
               <Route path="data/projects" element={<AdminProjectsPage />} />
               <Route path="data/wbs" element={<AdminWbsPage />} />
               <Route path="data/project-assignments" element={<AdminProjectAssignmentsPage />} />
@@ -153,6 +161,10 @@ function App() {
               <Route path="staffing/subcontractors" element={<AdminSubcontractorCompaniesPage />} />
               <Route path="staffing/forecast-schedules" element={<AdminForecastSchedulesPage />} />
               <Route path="staffing/forecasts" element={<AdminForecastsPage />} />
+              <Route path="staffing/versions" element={<ForecastVersionsPage />} />
+              <Route path="staffing/import-export" element={<ForecastImportExportPage />} />
+              <Route path="staffing/dashboard" element={<StaffingDashboardPage />} />
+              <Route path="staffing/projects/:projectId" element={<ProjectStaffingDetailPage />} />
             </Route>
 
             {/* Me Portal Routes (mobile-friendly top nav) */}

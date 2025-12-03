@@ -2100,7 +2100,7 @@ FederalHoliday.ApplyToForecasts // Adjust forecasts for holidays
 
 ## 8. Implementation Plan
 
-### Implementation Status Summary (Updated 2024-11-30)
+### Implementation Status Summary (Updated 2024-12-02)
 
 | Phase | Status | Description |
 |-------|--------|-------------|
@@ -2108,17 +2108,116 @@ FederalHoliday.ApplyToForecasts // Adjust forecasts for holidays
 | Phase 2 | ✅ Complete | Role Assignments - ProjectRoleAssignments CRUD, TBD management |
 | Phase 3 | ✅ Complete | Forecasting Core - ForecastVersions, Forecasts, AdminForecastsPage |
 | Phase 4 | ✅ Complete | Approval Workflow - Submit/Approve/Reject/Override, ForecastApprovalPage |
-| Phase 5 | 🟡 Partial | Version Management - Backend complete, frontend partial |
-| Phase 6 | ⬜ Not Started | Import/Export |
-| Phase 7 | ⬜ Not Started | Reporting & Dashboard |
+| Phase 5 | ✅ Complete | Version Management - Compare endpoint, ForecastVersionsPage, VersionCompareModal |
+| Phase 6 | ✅ Complete | Import/Export - CSV/Excel export, file import with preview, operation history |
+| Phase 7 | ✅ Complete | Reporting & Dashboard - StaffingReportsController, StaffingDashboardPage, ProjectStaffingDetailPage |
 | Phase 8 | ⬜ Not Started | Polish & Migration |
 
 **Next Steps:**
-- Phase 5: Add version comparison endpoint and dedicated versions UI page
-- Phase 6: Implement CSV/Excel export and import functionality
-- Phase 7: Build reporting dashboards with variance calculations
+- Phase 8: Polish UI, data migration tools
 
 ### Files Created/Modified by Phase
+
+#### Phase 7 Files (Created 2024-12-02):
+
+**Backend Controllers:**
+- `backend/src/MyScheduling.Api/Controllers/StaffingReportsController.cs` - Complete reporting controller with:
+  - `GET /staffingreports/dashboard-summary` - Overall staffing metrics (hours, variance, counts)
+  - `GET /staffingreports/project-summary/{projectId}` - Project-level detail with role assignments
+  - `GET /staffingreports/variance-analysis` - Budget vs forecast variance by project
+  - `GET /staffingreports/burn-rate` - Monthly/cumulative cost burn analysis
+  - `GET /staffingreports/capacity-utilization` - Resource utilization metrics
+  - `GET /staffingreports/projects-summary` - All projects with staffing summary
+
+**Backend Seeders:**
+- `backend/src/MyScheduling.Infrastructure/Data/Seeds/StaffingSeeder.cs` - Comprehensive test data seeder:
+  - Career Job Families (8 records)
+  - Subcontractor Companies (4 records)
+  - Subcontractors (16 records)
+  - Labor Categories (80 records across projects)
+  - Project Role Assignments (100 records)
+  - Forecast Versions (4 records: Current, WhatIf, Historical, Import)
+  - Forecasts (1,200 records across 12 months)
+  - Forecast Approval Schedule (1 record)
+
+- `backend/src/MyScheduling.Api/Controllers/DevSeedController.cs` - Added endpoints:
+  - `POST /dev/devseed/seed-staffing` - Trigger staffing data seeding
+  - `GET /dev/devseed/staffing-stats` - Get staffing data statistics
+
+**Frontend Services:**
+- `frontend/src/services/forecastService.ts` - Added staffing reports types and service:
+  - MonthlyDataPoint, DashboardSummary, ProjectStaffingSummary interfaces
+  - ProjectVariance, VarianceAnalysis, BurnRateAnalysis interfaces
+  - CapacityUtilization, ResourceUtilization, ProjectsSummaryItem interfaces
+  - staffingReportsService with all API methods
+
+**Frontend Pages:**
+- `frontend/src/pages/StaffingDashboardPage.tsx` - Main staffing dashboard with:
+  - Summary cards (Total Forecasted Hours, Variance, Active Projects, Avg Utilization)
+  - Monthly trend chart (bar chart with forecasted/budgeted/actual)
+  - Capacity utilization gauges per resource
+  - Projects table with drill-down navigation
+
+- `frontend/src/pages/ProjectStaffingDetailPage.tsx` - Project detail view with:
+  - Project header with status and version info
+  - Summary statistics cards
+  - Monthly hours breakdown chart
+  - Role assignments table with variance indicators
+
+**Navigation Updates:**
+- `frontend/src/components/layout/AdminLayout.tsx` - Added "Dashboard" nav item under Staffing (positioned first)
+- `frontend/src/App.tsx` - Added routes:
+  - `/admin/staffing/dashboard` - StaffingDashboardPage
+  - `/admin/staffing/projects/:projectId` - ProjectStaffingDetailPage
+
+#### Phase 6 Files (Created 2024-12-02):
+
+**Backend Controllers:**
+- `backend/src/MyScheduling.Api/Controllers/ForecastImportExportController.cs` - Complete import/export controller with:
+  - `GET /forecastimportexport/export/csv` - CSV export endpoint
+  - `GET /forecastimportexport/export/excel` - Excel export endpoint (using EPPlus)
+  - `GET /forecastimportexport/export/template` - Import template download
+  - `POST /forecastimportexport/import/preview` - Import file preview with validation
+  - `POST /forecastimportexport/import/commit` - Commit import to database
+  - `GET /forecastimportexport/history` - Operation history list
+  - `GET /forecastimportexport/history/{id}/download` - Re-download previous export
+
+**Backend Dependencies:**
+- Added EPPlus 7.0.0 package for Excel support
+
+**Frontend Services:**
+- `frontend/src/services/forecastService.ts` - Added import/export types and service methods:
+  - ForecastImportExportType, ForecastImportExportStatus enums
+  - ImportValidationResult, ImportPreviewResponse, ImportCommitResponse interfaces
+  - forecastImportExportService with all API methods
+  - Helper functions: downloadBlob, getImportExportStatusColor, formatFileSize
+
+**Frontend Pages:**
+- `frontend/src/pages/ForecastImportExportPage.tsx` - Full-featured import/export page with:
+  - Export tab with CSV/Excel download and filtering options
+  - Import tab with drag-and-drop file upload
+  - Import preview with validation results table
+  - Import options (update existing, create new version)
+  - History tab with operation log and re-download capability
+
+**Navigation Updates:**
+- `frontend/src/components/layout/AdminLayout.tsx` - Added "Import/Export" nav item under Staffing
+- `frontend/src/App.tsx` - Added route for `/admin/staffing/import-export`
+
+#### Phase 5 Files (Created 2024-12-02):
+
+**Backend Controllers:**
+- `backend/src/MyScheduling.Api/Controllers/ForecastVersionsController.cs` - Added Compare endpoint (`GET /forecastversions/{id}/compare/{otherId}`)
+
+**Frontend Services:**
+- `frontend/src/services/forecastService.ts` - Added VersionCompareResponse types and compare() method
+
+**Frontend Pages:**
+- `frontend/src/pages/ForecastVersionsPage.tsx` - Dedicated version management UI with compare modal
+
+**Navigation Updates:**
+- `frontend/src/components/layout/AdminLayout.tsx` - Added "Versions" nav item under Staffing
+- `frontend/src/App.tsx` - Added route for `/admin/staffing/versions`
 
 #### Phase 3 & 4 Files (Created 2024-11-30):
 
@@ -2249,7 +2348,7 @@ FederalHoliday.ApplyToForecasts // Adjust forecasts for holidays
    - [ ] Approval/rejection notifications
    - [ ] Deadline reminders
 
-### Phase 5: Version Management & What-If (Sprint 9-10) 🟡 PARTIALLY COMPLETE
+### Phase 5: Version Management & What-If (Sprint 9-10) ✅ COMPLETED
 **Goal: What-If scenarios, version comparison, promote/archive**
 
 1. **Backend - Version Management** ✅
@@ -2257,62 +2356,77 @@ FederalHoliday.ApplyToForecasts // Adjust forecasts for holidays
    - [x] Promote What-If to Current endpoint (`POST /forecastversions/{id}/promote`)
    - [x] Archive version endpoint (`POST /forecastversions/{id}/archive`)
    - [x] Delete version endpoint (`DELETE /forecastversions/{id}`)
-   - [ ] Compare versions endpoint (not yet implemented)
+   - [x] Compare versions endpoint (`GET /forecastversions/{id}/compare/{otherId}`)
 
-2. **Frontend - Version Management UI** 🟡
+2. **Frontend - Version Management UI** ✅
    - [x] Version list in AdminForecastsPage with dropdown selector
    - [x] Clone button with name prompt
    - [x] Promote button for What-If versions
    - [x] Archive button with reason prompt
    - [x] Version info card showing type, current status
-   - [ ] Dedicated ForecastVersionsPage (not yet implemented)
-   - [ ] VersionCompareModal (not yet implemented)
+   - [x] Dedicated ForecastVersionsPage (`/admin/staffing/versions`)
+   - [x] VersionCompareModal with side-by-side comparison, summary stats, and change indicators
 
 3. **Version Features** ✅
    - [x] Copy all forecasts when cloning (copyForecasts parameter)
    - [x] Archive old current when promoting (automatic)
    - [x] Track version lineage (BasedOnVersionId)
    - [x] Version-scoped forecast editing (all edits respect selected version)
+   - [x] Compare summary statistics (total hours, difference, percent change)
+   - [x] Change tracking (new, removed, changed forecasts)
 
-### Phase 6: Import/Export (Sprint 11-12)
+### Phase 6: Import/Export (Sprint 11-12) ✅ COMPLETED
 **Goal: Export and import functionality with version support**
 
-1. **Backend - Export**
-   - [ ] CSV export endpoint with version support
-   - [ ] Excel export endpoint (EPPlus or similar)
-   - [ ] Track export history in ForecastImportExport
-   - [ ] Include file hash for re-import detection
+1. **Backend - Export** ✅
+   - [x] CSV export endpoint with version support
+   - [x] Excel export endpoint (EPPlus 7.0.0)
+   - [x] Track export history in ForecastImportExport
+   - [x] Include file hash for re-import detection
+   - [x] Download import template endpoint
 
-2. **Backend - Import**
-   - [ ] Import preview endpoint (validate without commit)
-   - [ ] Import commit endpoint
-   - [ ] Re-import detection (match by file hash)
-   - [ ] Create Import version type or update existing
-   - [ ] Track import history with success/error counts
+2. **Backend - Import** ✅
+   - [x] Import preview endpoint (validate without commit)
+   - [x] Import commit endpoint
+   - [x] Re-import detection (match by file hash)
+   - [x] Create Import version type or update existing
+   - [x] Track import history with success/error counts
 
-3. **Frontend - Import/Export**
-   - [ ] ForecastImportExportPage
-   - [ ] ExportOptionsPanel component
-   - [ ] File upload with drag-and-drop
-   - [ ] ImportPreviewModal with validation results
-   - [ ] Import history table
-   - [ ] Re-download previous exports
+3. **Frontend - Import/Export** ✅
+   - [x] ForecastImportExportPage with tabbed interface
+   - [x] Export options panel with filters (version, project, year, month)
+   - [x] File upload with drag-and-drop
+   - [x] Import preview with validation results table
+   - [x] Import options (update existing, create new version)
+   - [x] History tab with operation log
+   - [x] Re-download previous exports
 
-### Phase 7: Reporting & Dashboard (Sprint 13-14)
+### Phase 7: Reporting & Dashboard (Sprint 13-14) ✅ COMPLETED
 **Goal: Reporting capabilities and dashboards**
 
-1. **Backend - Reports**
-   - [ ] Summary endpoint for dashboards
-   - [ ] Budget vs forecast variance calculations
-   - [ ] Burn rate calculations
+1. **Backend - Reports** ✅
+   - [x] Summary endpoint for dashboards (`GET /staffingreports/dashboard-summary`)
+   - [x] Project summary endpoint (`GET /staffingreports/project-summary/{projectId}`)
+   - [x] Budget vs forecast variance calculations (`GET /staffingreports/variance-analysis`)
+   - [x] Burn rate calculations (`GET /staffingreports/burn-rate`)
+   - [x] Capacity utilization endpoint (`GET /staffingreports/capacity-utilization`)
+   - [x] Projects summary endpoint (`GET /staffingreports/projects-summary`)
 
-2. **Frontend - Reports**
-   - [ ] Project staffing summary view
-   - [ ] Variance displays (budget vs forecast)
-   - [ ] Dashboard widgets
-   - [ ] Monthly forecast charts
-   - [ ] Capacity utilization charts
-   - [ ] Budget burn-down charts
+2. **Frontend - Reports** ✅
+   - [x] StaffingDashboardPage with summary widgets (total hours, variance, projects, utilization)
+   - [x] Monthly trend chart with forecasted/budgeted/actual breakdown
+   - [x] Capacity utilization gauges per resource
+   - [x] Projects table with drill-down to detail view
+   - [x] ProjectStaffingDetailPage with role assignments table
+   - [x] Monthly hours breakdown chart per project
+   - [x] Variance displays (budget vs forecast with percentage)
+
+3. **Test Data Seeding** ✅
+   - [x] StaffingSeeder for comprehensive test data
+   - [x] Seeded 8 Career Job Families, 4 Subcontractor Companies
+   - [x] Seeded 16 Subcontractors, 80 Labor Categories
+   - [x] Seeded 100 Project Role Assignments (employees, subcontractors, TBD)
+   - [x] Seeded 4 Forecast Versions, 1,200 Forecasts
 
 ### Phase 8: Polish & Migration (Sprint 15-16)
 **Goal: Data migration and refinements**

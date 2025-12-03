@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { authService, type TenantAccessInfo } from '../services/authService';
+import { authService, type TenantAccessInfo, type LoginResponse } from '../services/authService';
 
 export enum AppRole {
   Employee = 'Employee',
@@ -32,6 +32,14 @@ interface Workspace {
   roles?: AppRole[];
 }
 
+// Impersonation context
+interface ImpersonationInfo {
+  isImpersonating: boolean;
+  sessionId: string;
+  originalUser: User;
+  impersonatedUser: User;
+}
+
 interface AuthState {
   // User info (set after login)
   user: User | null;
@@ -49,14 +57,23 @@ interface AuthState {
   // Auth status
   isAuthenticated: boolean;
 
+  // Impersonation state
+  impersonation: ImpersonationInfo | null;
+
   // Actions
   login: (email: string, password: string) => Promise<void>;
+  loginWithMagicLink: (token: string) => Promise<void>;
+  loginFromResponse: (response: LoginResponse) => void;
   selectWorkspace: (workspace: Workspace) => void;
   switchWorkspace: () => void;
   logout: () => Promise<void>;
   hasRole: (role: AppRole) => boolean;
   setUser: (user: Partial<User>) => void;
   getToken: () => string | null;
+
+  // Impersonation actions
+  startImpersonation: (targetUserId: string, reason: string) => Promise<void>;
+  endImpersonation: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -68,26 +85,12 @@ export const useAuthStore = create<AuthState>()(
       availableTenants: [],
       currentWorkspace: null,
       isAuthenticated: false,
+      impersonation: null,
 
       login: async (email: string, password: string) => {
         try {
           const response = await authService.login({ email, password });
-
-          const user: User = {
-            id: response.userId,
-            email: response.email,
-            displayName: response.displayName,
-            isSystemAdmin: response.isSystemAdmin,
-          };
-
-          set({
-            user,
-            token: response.token,
-            tokenExpiresAt: response.expiresAt,
-            availableTenants: response.tenantAccess,
-            isAuthenticated: true,
-            currentWorkspace: null  // User must select workspace
-          });
+          get().loginFromResponse(response);
         } catch (error) {
           set({
             user: null,
@@ -95,10 +98,48 @@ export const useAuthStore = create<AuthState>()(
             tokenExpiresAt: null,
             availableTenants: [],
             currentWorkspace: null,
-            isAuthenticated: false
+            isAuthenticated: false,
+            impersonation: null
           });
           throw error;
         }
+      },
+
+      loginWithMagicLink: async (token: string) => {
+        try {
+          const response = await authService.verifyMagicLink(token);
+          get().loginFromResponse(response);
+        } catch (error) {
+          set({
+            user: null,
+            token: null,
+            tokenExpiresAt: null,
+            availableTenants: [],
+            currentWorkspace: null,
+            isAuthenticated: false,
+            impersonation: null
+          });
+          throw error;
+        }
+      },
+
+      loginFromResponse: (response: LoginResponse) => {
+        const user: User = {
+          id: response.userId,
+          email: response.email,
+          displayName: response.displayName,
+          isSystemAdmin: response.isSystemAdmin,
+        };
+
+        set({
+          user,
+          token: response.token,
+          tokenExpiresAt: response.expiresAt,
+          availableTenants: response.tenantAccess,
+          isAuthenticated: true,
+          currentWorkspace: null,  // User must select workspace
+          impersonation: null
+        });
       },
 
       selectWorkspace: (workspace: Workspace) => {
@@ -110,6 +151,18 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
+        const { impersonation } = get();
+
+        // If impersonating, end impersonation first
+        if (impersonation?.isImpersonating) {
+          try {
+            await get().endImpersonation();
+            return; // Don't log out, just end impersonation
+          } catch (error) {
+            console.error('Error ending impersonation during logout:', error);
+          }
+        }
+
         try {
           await authService.logout();
         } catch (error) {
@@ -125,7 +178,8 @@ export const useAuthStore = create<AuthState>()(
             tokenExpiresAt: null,
             availableTenants: [],
             currentWorkspace: null,
-            isAuthenticated: false
+            isAuthenticated: false,
+            impersonation: null
           });
         }
       },
@@ -158,15 +212,75 @@ export const useAuthStore = create<AuthState>()(
             tokenExpiresAt: null,
             availableTenants: [],
             currentWorkspace: null,
-            isAuthenticated: false
+            isAuthenticated: false,
+            impersonation: null
           });
         }
         return null;
       },
+
+      // Impersonation actions
+      startImpersonation: async (targetUserId: string, reason: string) => {
+        const { user } = get();
+        if (!user) {
+          throw new Error('Must be logged in to impersonate');
+        }
+
+        const response = await authService.startImpersonation(targetUserId, reason);
+
+        if (!response.success) {
+          throw new Error('Failed to start impersonation');
+        }
+
+        const impersonatedUser: User = {
+          id: response.impersonatedUser.userId,
+          email: response.impersonatedUser.email,
+          displayName: response.impersonatedUser.displayName,
+          isSystemAdmin: false, // Impersonated users can't be system admins
+        };
+
+        set({
+          user: impersonatedUser,
+          token: response.token,
+          tokenExpiresAt: response.expiresAt,
+          availableTenants: response.tenantAccess,
+          currentWorkspace: null, // Force workspace reselection
+          impersonation: {
+            isImpersonating: true,
+            sessionId: response.sessionId,
+            originalUser: user,
+            impersonatedUser: impersonatedUser,
+          },
+        });
+      },
+
+      endImpersonation: async () => {
+        const { impersonation } = get();
+
+        if (!impersonation?.isImpersonating) {
+          throw new Error('Not currently impersonating');
+        }
+
+        const response = await authService.endImpersonation();
+
+        if (!response.success) {
+          throw new Error('Failed to end impersonation');
+        }
+
+        // Restore original admin user
+        set({
+          user: impersonation.originalUser,
+          token: response.token,
+          tokenExpiresAt: response.expiresAt,
+          availableTenants: response.tenantAccess,
+          currentWorkspace: null, // Force workspace reselection
+          impersonation: null,
+        });
+      },
     }),
     {
       name: 'auth-storage',
-      version: 3, // Increment this to force clear old incompatible storage (v3: JWT tokens)
+      version: 4, // Increment for impersonation support
     }
   )
 );

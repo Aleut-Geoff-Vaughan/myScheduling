@@ -109,6 +109,22 @@ public static class PermissionSeeder
             Create(AppRole.OverrideApprover, "ResumeApproval", PermissionAction.Approve, PermissionScope.Tenant),
         });
 
+        // ==================== RESUME VIEWER ====================
+        // Can view and search all employee resumes within tenant
+        templates.AddRange(new[]
+        {
+            Create(AppRole.ResumeViewer, "ResumeProfile", PermissionAction.Read, PermissionScope.Tenant),
+            Create(AppRole.ResumeViewer, "ResumeSection", PermissionAction.Read, PermissionScope.Tenant),
+            Create(AppRole.ResumeViewer, "ResumeEntry", PermissionAction.Read, PermissionScope.Tenant),
+            Create(AppRole.ResumeViewer, "ResumeVersion", PermissionAction.Read, PermissionScope.Tenant),
+            Create(AppRole.ResumeViewer, "ResumeApproval", PermissionAction.Read, PermissionScope.Tenant),
+            Create(AppRole.ResumeViewer, "User", PermissionAction.Read, PermissionScope.Tenant),
+            Create(AppRole.ResumeViewer, "PersonSkill", PermissionAction.Read, PermissionScope.Tenant),
+            Create(AppRole.ResumeViewer, "Skill", PermissionAction.Read, PermissionScope.Tenant),
+            Create(AppRole.ResumeViewer, "Certification", PermissionAction.Read, PermissionScope.Tenant),
+            Create(AppRole.ResumeViewer, "ResumeTemplate", PermissionAction.Read, PermissionScope.Tenant),
+        });
+
         // ==================== EMPLOYEE ====================
         templates.AddRange(new[]
         {

@@ -408,6 +408,123 @@ public class ForecastVersionsController : AuthorizedControllerBase
         return Ok(MapToResponse(updated));
     }
 
+    [HttpGet("{id}/compare/{otherId}")]
+    [RequiresPermission(Resource = "ForecastVersion", Action = PermissionAction.Read)]
+    public async Task<ActionResult<VersionCompareResponse>> Compare(Guid id, Guid otherId)
+    {
+        var version1 = await _context.ForecastVersions
+            .Include(v => v.Project)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.Id == id);
+
+        var version2 = await _context.ForecastVersions
+            .Include(v => v.Project)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(v => v.Id == otherId);
+
+        if (version1 == null || version2 == null)
+        {
+            return NotFound("One or both versions not found");
+        }
+
+        if (!HasAccessToTenant(version1.TenantId) || !HasAccessToTenant(version2.TenantId))
+        {
+            return Forbid();
+        }
+
+        // Get forecasts for both versions with assignment details
+        var forecasts1 = await _context.Forecasts
+            .Include(f => f.ProjectRoleAssignment)
+                .ThenInclude(a => a.Project)
+            .Include(f => f.ProjectRoleAssignment)
+                .ThenInclude(a => a.User)
+            .Include(f => f.ProjectRoleAssignment)
+                .ThenInclude(a => a.Subcontractor)
+            .Where(f => f.ForecastVersionId == id && !f.IsDeleted)
+            .AsNoTracking()
+            .ToListAsync();
+
+        var forecasts2 = await _context.Forecasts
+            .Include(f => f.ProjectRoleAssignment)
+                .ThenInclude(a => a.Project)
+            .Include(f => f.ProjectRoleAssignment)
+                .ThenInclude(a => a.User)
+            .Include(f => f.ProjectRoleAssignment)
+                .ThenInclude(a => a.Subcontractor)
+            .Where(f => f.ForecastVersionId == otherId && !f.IsDeleted)
+            .AsNoTracking()
+            .ToListAsync();
+
+        // Build comparison by assignment and period
+        var comparisons = new List<ForecastComparisonItem>();
+        var allKeys = new HashSet<string>();
+
+        // Index forecasts by assignment + period
+        var map1 = forecasts1.ToDictionary(f => $"{f.ProjectRoleAssignmentId}|{f.Year}|{f.Month}");
+        var map2 = forecasts2.ToDictionary(f => $"{f.ProjectRoleAssignmentId}|{f.Year}|{f.Month}");
+
+        foreach (var key in map1.Keys) allKeys.Add(key);
+        foreach (var key in map2.Keys) allKeys.Add(key);
+
+        foreach (var key in allKeys)
+        {
+            map1.TryGetValue(key, out var f1);
+            map2.TryGetValue(key, out var f2);
+
+            var source = f1 ?? f2;
+            var assignment = source!.ProjectRoleAssignment;
+
+            comparisons.Add(new ForecastComparisonItem
+            {
+                ProjectRoleAssignmentId = assignment.Id,
+                ProjectId = assignment.ProjectId,
+                ProjectName = assignment.Project?.Name ?? "Unknown",
+                PositionTitle = assignment.PositionTitle,
+                AssigneeName = assignment.User?.DisplayName ?? assignment.Subcontractor?.FullName ?? (assignment.IsTbd ? "TBD" : "Unassigned"),
+                Year = source.Year,
+                Month = source.Month,
+                Version1Hours = f1?.ForecastedHours,
+                Version1Status = f1?.Status,
+                Version1StatusName = f1?.Status.ToString(),
+                Version2Hours = f2?.ForecastedHours,
+                Version2Status = f2?.Status,
+                Version2StatusName = f2?.Status.ToString(),
+                HoursDifference = (f1?.ForecastedHours ?? 0) - (f2?.ForecastedHours ?? 0),
+                IsNew = f1 != null && f2 == null,
+                IsRemoved = f1 == null && f2 != null,
+                IsChanged = f1 != null && f2 != null && f1.ForecastedHours != f2.ForecastedHours
+            });
+        }
+
+        // Calculate summary statistics
+        var totalHours1 = forecasts1.Sum(f => f.ForecastedHours);
+        var totalHours2 = forecasts2.Sum(f => f.ForecastedHours);
+
+        var response = new VersionCompareResponse
+        {
+            Version1 = MapToResponse(version1),
+            Version2 = MapToResponse(version2),
+            Comparisons = comparisons.OrderBy(c => c.ProjectName)
+                .ThenBy(c => c.PositionTitle)
+                .ThenBy(c => c.Year)
+                .ThenBy(c => c.Month)
+                .ToList(),
+            Summary = new VersionCompareSummary
+            {
+                TotalHoursVersion1 = totalHours1,
+                TotalHoursVersion2 = totalHours2,
+                HoursDifference = totalHours1 - totalHours2,
+                PercentChange = totalHours2 > 0 ? Math.Round((totalHours1 - totalHours2) / totalHours2 * 100, 2) : 0,
+                NewForecastsCount = comparisons.Count(c => c.IsNew),
+                RemovedForecastsCount = comparisons.Count(c => c.IsRemoved),
+                ChangedForecastsCount = comparisons.Count(c => c.IsChanged),
+                UnchangedForecastsCount = comparisons.Count(c => !c.IsNew && !c.IsRemoved && !c.IsChanged)
+            }
+        };
+
+        return Ok(response);
+    }
+
     [HttpDelete("{id}")]
     [RequiresPermission(Resource = "ForecastVersion", Action = PermissionAction.Delete)]
     public async Task<IActionResult> Delete(Guid id)
@@ -571,4 +688,45 @@ public class CloneVersionDto
 public class ArchiveVersionDto
 {
     public string? Reason { get; set; }
+}
+
+public class VersionCompareResponse
+{
+    public ForecastVersionResponse Version1 { get; set; } = null!;
+    public ForecastVersionResponse Version2 { get; set; } = null!;
+    public List<ForecastComparisonItem> Comparisons { get; set; } = new();
+    public VersionCompareSummary Summary { get; set; } = new();
+}
+
+public class ForecastComparisonItem
+{
+    public Guid ProjectRoleAssignmentId { get; set; }
+    public Guid ProjectId { get; set; }
+    public string ProjectName { get; set; } = string.Empty;
+    public string PositionTitle { get; set; } = string.Empty;
+    public string AssigneeName { get; set; } = string.Empty;
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public decimal? Version1Hours { get; set; }
+    public ForecastStatus? Version1Status { get; set; }
+    public string? Version1StatusName { get; set; }
+    public decimal? Version2Hours { get; set; }
+    public ForecastStatus? Version2Status { get; set; }
+    public string? Version2StatusName { get; set; }
+    public decimal HoursDifference { get; set; }
+    public bool IsNew { get; set; }
+    public bool IsRemoved { get; set; }
+    public bool IsChanged { get; set; }
+}
+
+public class VersionCompareSummary
+{
+    public decimal TotalHoursVersion1 { get; set; }
+    public decimal TotalHoursVersion2 { get; set; }
+    public decimal HoursDifference { get; set; }
+    public decimal PercentChange { get; set; }
+    public int NewForecastsCount { get; set; }
+    public int RemovedForecastsCount { get; set; }
+    public int ChangedForecastsCount { get; set; }
+    public int UnchangedForecastsCount { get; set; }
 }

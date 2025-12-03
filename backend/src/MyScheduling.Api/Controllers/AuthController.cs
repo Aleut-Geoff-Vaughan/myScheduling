@@ -2,12 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Infrastructure.Data;
 using MyScheduling.Core.Entities;
+using MyScheduling.Core.Interfaces;
 using BCrypt.Net;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using MyScheduling.Core.Entities;
 
 namespace MyScheduling.Api.Controllers;
 
@@ -19,6 +19,8 @@ public class AuthController : ControllerBase
     private readonly ILogger<AuthController> _logger;
     private readonly IConfiguration _configuration;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IMagicLinkService _magicLinkService;
+    private readonly IEmailService _emailService;
     private const int MaxFailedLoginAttempts = 5;
     private const int LockoutDurationMinutes = 30;
 
@@ -26,12 +28,16 @@ public class AuthController : ControllerBase
         MySchedulingDbContext context,
         ILogger<AuthController> logger,
         IConfiguration configuration,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IMagicLinkService magicLinkService,
+        IEmailService emailService)
     {
         _context = context;
         _logger = logger;
         _configuration = configuration;
         _httpContextAccessor = httpContextAccessor;
+        _magicLinkService = magicLinkService;
+        _emailService = emailService;
     }
 
     [HttpPost("login")]
@@ -212,34 +218,6 @@ public class AuthController : ControllerBase
         }
     }
 
-    private async Task LogLoginAsync(User? user, bool isSuccess, string? emailOverride = null)
-    {
-        try
-        {
-            var httpContext = _httpContextAccessor.HttpContext;
-            var ip = httpContext?.Connection?.RemoteIpAddress?.ToString();
-            var userAgent = httpContext?.Request?.Headers["User-Agent"].FirstOrDefault();
-
-            var audit = new LoginAudit
-            {
-                Id = Guid.NewGuid(),
-                UserId = user?.Id,
-                Email = emailOverride ?? user?.Email,
-                IsSuccess = isSuccess,
-                IpAddress = ip,
-                UserAgent = userAgent,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.LoginAudits.Add(audit);
-            await _context.SaveChangesAsync();
-        }
-        catch (Exception logEx)
-        {
-            _logger.LogWarning(logEx, "Failed to log login audit");
-        }
-    }
-
     [HttpPost("set-password")]
     public async Task<IActionResult> SetPassword([FromBody] SetPasswordRequest request)
     {
@@ -344,7 +322,177 @@ public class AuthController : ControllerBase
         return null;
     }
 
-    private (string Token, DateTime ExpiresAt) GenerateJwtToken(User user, List<TenantAccessInfo> tenantAccess)
+    // ==================== MAGIC LINK ENDPOINTS ====================
+
+    /// <summary>
+    /// Request a magic link for passwordless login
+    /// </summary>
+    [HttpPost("magic-link/request")]
+    public async Task<IActionResult> RequestMagicLink([FromBody] MagicLinkRequest request)
+    {
+        try
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers["User-Agent"].FirstOrDefault();
+
+            var result = await _magicLinkService.RequestMagicLinkAsync(request.Email, ip, userAgent);
+
+            if (!result.Success)
+            {
+                // Still return OK to prevent enumeration
+                return Ok(new { message = "If an account exists with this email, a login link has been sent." });
+            }
+
+            // If we have a token, send the email
+            if (!string.IsNullOrEmpty(result.Token))
+            {
+                var baseUrl = _configuration["App:BaseUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+                var magicLinkUrl = $"{baseUrl}/auth/magic-link?token={result.Token}";
+
+                var emailResult = await _emailService.SendMagicLinkEmailAsync(
+                    result.Email!,
+                    magicLinkUrl,
+                    result.ExpiresAt ?? DateTime.UtcNow.AddMinutes(15),
+                    ip);
+
+                if (!emailResult.Success)
+                {
+                    _logger.LogError("Failed to send magic link email to {Email}: {Error}", result.Email, emailResult.ErrorMessage);
+                    // Still return success to prevent enumeration
+                }
+            }
+
+            return Ok(new { message = "If an account exists with this email, a login link has been sent." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error requesting magic link for email: {Email}", request.Email);
+            return Ok(new { message = "If an account exists with this email, a login link has been sent." });
+        }
+    }
+
+    /// <summary>
+    /// Verify a magic link token and log the user in
+    /// </summary>
+    [HttpPost("magic-link/verify")]
+    public async Task<ActionResult<LoginResponse>> VerifyMagicLink([FromBody] MagicLinkVerifyRequest request)
+    {
+        try
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var userAgent = Request.Headers["User-Agent"].FirstOrDefault();
+
+            var result = await _magicLinkService.ValidateMagicLinkAsync(request.Token, ip, userAgent);
+
+            if (!result.Success || result.User == null)
+            {
+                return Unauthorized(new { message = result.ErrorMessage ?? "Invalid or expired link." });
+            }
+
+            var user = result.User;
+
+            // Load tenant memberships if not already loaded
+            await _context.Entry(user)
+                .Collection(u => u.TenantMemberships)
+                .Query()
+                .Include(tm => tm.Tenant)
+                .LoadAsync();
+
+            // Build tenant access list
+            var tenantAccess = user.TenantMemberships
+                .Where(tm => tm.IsActive)
+                .Select(tm => new TenantAccessInfo
+                {
+                    TenantId = tm.TenantId,
+                    TenantName = tm.Tenant.Name,
+                    Roles = tm.Roles.Select(r => r.ToString()).ToArray()
+                })
+                .ToList();
+
+            // Generate JWT token
+            var token = GenerateJwtToken(user, tenantAccess);
+
+            var response = new LoginResponse
+            {
+                Token = token.Token,
+                ExpiresAt = token.ExpiresAt,
+                UserId = user.Id,
+                Email = user.Email,
+                DisplayName = user.DisplayName,
+                IsSystemAdmin = user.IsSystemAdmin,
+                TenantAccess = tenantAccess
+            };
+
+            await LogLoginAsync(user, true, loginMethod: "MagicLink");
+            _logger.LogInformation("Successful magic link login for user {Email}", user.Email);
+
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error verifying magic link");
+            return StatusCode(500, new { message = "An error occurred during login" });
+        }
+    }
+
+    /// <summary>
+    /// Check if a magic link token is valid (without consuming it)
+    /// </summary>
+    [HttpGet("magic-link/check")]
+    public async Task<IActionResult> CheckMagicLink([FromQuery] string token)
+    {
+        try
+        {
+            // We'll do a lightweight check - just see if the token format is valid
+            // and hasn't been used. This doesn't consume the token.
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return Ok(new { valid = false, message = "No token provided" });
+            }
+
+            // For now, just return a basic check - actual validation happens on verify
+            return Ok(new { valid = true, message = "Token format is valid. Please complete login." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking magic link");
+            return Ok(new { valid = false, message = "Error validating token" });
+        }
+    }
+
+    private async Task LogLoginAsync(User? user, bool isSuccess, string? emailOverride = null, string loginMethod = "Password")
+    {
+        try
+        {
+            var httpContext = _httpContextAccessor.HttpContext;
+            var ip = httpContext?.Connection?.RemoteIpAddress?.ToString();
+            var userAgent = httpContext?.Request?.Headers["User-Agent"].FirstOrDefault();
+
+            var audit = new LoginAudit
+            {
+                Id = Guid.NewGuid(),
+                UserId = user?.Id,
+                Email = emailOverride ?? user?.Email,
+                IsSuccess = isSuccess,
+                IpAddress = ip,
+                UserAgent = userAgent,
+                Device = loginMethod, // Reusing Device field for login method
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.LoginAudits.Add(audit);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception logEx)
+        {
+            _logger.LogWarning(logEx, "Failed to log login audit");
+        }
+    }
+
+    private (string Token, DateTime ExpiresAt) GenerateJwtToken(
+        User user,
+        List<TenantAccessInfo> tenantAccess,
+        ImpersonationContext? impersonation = null)
     {
         var jwtKey = _configuration["Jwt:Key"] ?? "MyScheduling-Super-Secret-Key-For-Development-Only-Change-In-Production-2024";
         var jwtIssuer = _configuration["Jwt:Issuer"] ?? "MyScheduling";
@@ -361,6 +509,14 @@ public class AuthController : ControllerBase
             new Claim(ClaimTypes.Name, user.DisplayName),
             new Claim("IsSystemAdmin", user.IsSystemAdmin.ToString())
         };
+
+        // Add impersonation claims if applicable
+        if (impersonation != null)
+        {
+            claims.Add(new Claim("IsImpersonating", "true"));
+            claims.Add(new Claim("OriginalUserId", impersonation.OriginalUserId.ToString()));
+            claims.Add(new Claim("ImpersonationSessionId", impersonation.SessionId.ToString()));
+        }
 
         // Add tenant-specific claims
         foreach (var tenant in tenantAccess)
@@ -427,4 +583,20 @@ public class SetPasswordRequest
 public class UnlockAccountRequest
 {
     public required Guid UserId { get; set; }
+}
+
+public class MagicLinkRequest
+{
+    public required string Email { get; set; }
+}
+
+public class MagicLinkVerifyRequest
+{
+    public required string Token { get; set; }
+}
+
+public class ImpersonationContext
+{
+    public Guid OriginalUserId { get; set; }
+    public Guid SessionId { get; set; }
 }

@@ -139,6 +139,9 @@ builder.Services.AddControllers()
 // Register Database Seeder
 builder.Services.AddScoped<DatabaseSeeder>();
 
+// Register Staffing Seeder
+builder.Services.AddScoped<MyScheduling.Infrastructure.Data.Seeds.StaffingSeeder>();
+
 // Register Validation Services
 builder.Services.AddScoped<IValidationEngine, ValidationEngine>();
 builder.Services.AddScoped<IRuleInterpreter, RuleInterpreter>();
@@ -148,6 +151,13 @@ builder.Services.AddScoped<IFacilitiesExcelService, FacilitiesExcelService>();
 
 // Register Resume Export Service
 builder.Services.AddScoped<ResumeExportService>();
+
+// Register Magic Link and Email Services
+builder.Services.AddScoped<IMagicLinkService, MagicLinkService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Register Impersonation Service
+builder.Services.AddScoped<IImpersonationService, ImpersonationService>();
 
 // Health Checks
 builder.Services.AddHealthChecks()

@@ -52,9 +52,9 @@ export function Table<T extends Record<string, any>>({
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
-            {columns.map((column) => (
+            {columns.map((column, idx) => (
               <th
-                key={column.key}
+                key={column.key || `col-${idx}`}
                 scope="col"
                 className={`px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider ${getAlignClass(column.align)}`}
                 style={{ width: column.width }}

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
+using MyScheduling.Infrastructure.Data.Seeds;
 
 namespace MyScheduling.Api.Controllers;
 
@@ -13,17 +14,20 @@ namespace MyScheduling.Api.Controllers;
 public class DevSeedController : ControllerBase
 {
     private readonly DatabaseSeeder _seeder;
+    private readonly StaffingSeeder _staffingSeeder;
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<DevSeedController> _logger;
     private readonly IWebHostEnvironment _environment;
 
     public DevSeedController(
         DatabaseSeeder seeder,
+        StaffingSeeder staffingSeeder,
         MySchedulingDbContext context,
         ILogger<DevSeedController> logger,
         IWebHostEnvironment environment)
     {
         _seeder = seeder;
+        _staffingSeeder = staffingSeeder;
         _context = context;
         _logger = logger;
         _environment = environment;
@@ -314,6 +318,90 @@ public class DevSeedController : ControllerBase
         {
             _logger.LogError(ex, "Error seeding offices");
             return StatusCode(500, new { message = "Office seeding failed", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Seed staffing module data (CareerJobFamilies, Subcontractors, ProjectRoleAssignments, Forecasts)
+    /// Only available in Development environment
+    /// </summary>
+    [HttpPost("seed-staffing")]
+    public async Task<IActionResult> SeedStaffing()
+    {
+        if (!_environment.IsDevelopment())
+        {
+            return Forbid("Staffing seeding is only available in Development environment");
+        }
+
+        try
+        {
+            _logger.LogInformation("Seeding staffing data via API endpoint");
+            await _staffingSeeder.SeedAsync();
+
+            // Return stats
+            var stats = new
+            {
+                CareerJobFamilies = await _context.CareerJobFamilies.CountAsync(),
+                SubcontractorCompanies = await _context.SubcontractorCompanies.CountAsync(),
+                Subcontractors = await _context.Subcontractors.CountAsync(),
+                LaborCategories = await _context.LaborCategories.CountAsync(),
+                ProjectRoleAssignments = await _context.ProjectRoleAssignments.CountAsync(),
+                ForecastVersions = await _context.ForecastVersions.CountAsync(),
+                Forecasts = await _context.Forecasts.CountAsync(),
+                ForecastApprovalSchedules = await _context.ForecastApprovalSchedules.CountAsync()
+            };
+
+            return Ok(new { message = "Staffing data seeded successfully", stats });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error seeding staffing data");
+            return StatusCode(500, new { message = "Staffing seeding failed", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Get staffing module stats
+    /// Only available in Development environment
+    /// </summary>
+    [HttpGet("staffing-stats")]
+    public async Task<IActionResult> GetStaffingStats()
+    {
+        if (!_environment.IsDevelopment())
+        {
+            return Forbid("Staffing stats are only available in Development environment");
+        }
+
+        try
+        {
+            var tenant = await _context.Tenants.FirstOrDefaultAsync();
+            if (tenant == null) return NotFound("No tenant found");
+
+            var stats = new
+            {
+                CareerJobFamilies = await _context.CareerJobFamilies.CountAsync(c => c.TenantId == tenant.Id),
+                SubcontractorCompanies = await _context.SubcontractorCompanies.CountAsync(s => s.TenantId == tenant.Id),
+                Subcontractors = await _context.Subcontractors.CountAsync(s => s.TenantId == tenant.Id),
+                LaborCategories = await _context.LaborCategories.CountAsync(l => l.TenantId == tenant.Id),
+                ProjectRoleAssignments = await _context.ProjectRoleAssignments.CountAsync(p => p.TenantId == tenant.Id),
+                ForecastVersions = await _context.ForecastVersions.CountAsync(v => v.TenantId == tenant.Id),
+                Forecasts = await _context.Forecasts.CountAsync(f => f.TenantId == tenant.Id),
+                ForecastsByStatus = await _context.Forecasts
+                    .Where(f => f.TenantId == tenant.Id)
+                    .GroupBy(f => f.Status)
+                    .Select(g => new { Status = g.Key.ToString(), Count = g.Count() })
+                    .ToListAsync(),
+                TotalForecastedHours = await _context.Forecasts
+                    .Where(f => f.TenantId == tenant.Id)
+                    .SumAsync(f => f.ForecastedHours)
+            };
+
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting staffing stats");
+            return StatusCode(500, new { message = "Failed to get staffing stats", error = ex.Message });
         }
     }
 }

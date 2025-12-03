@@ -21,6 +21,7 @@ public enum AppRole
     TenantAdmin,
     Executive,
     OverrideApprover,
+    ResumeViewer,  // Can view and search all employee resumes within tenant
 
     // System-Level Roles (assigned via User.IsSystemAdmin or future system-level permissions)
     SystemAdmin,

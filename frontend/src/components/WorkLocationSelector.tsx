@@ -215,7 +215,25 @@ export function WorkLocationSelector({
           country,
           notes
         );
-        await savePreference(preferenceData, existingPreference);
+
+        // If switching from split day to full day, we need to:
+        // 1. Delete the PM preference if it exists
+        // 2. Delete the AM preference if it exists (we'll create a new FullDay one)
+        if (existingPmPreference) {
+          console.log('Deleting PM preference:', existingPmPreference.id);
+          await workLocationService.delete(existingPmPreference.id);
+        }
+
+        // If existing preference is AM (not FullDay), delete it and create new FullDay
+        if (existingPreference && existingPreference.dayPortion === DayPortion.AM) {
+          console.log('Deleting AM preference to replace with FullDay:', existingPreference.id);
+          await workLocationService.delete(existingPreference.id);
+          // Create new full day preference
+          await createMutation.mutateAsync(preferenceData);
+        } else {
+          // Normal update or create
+          await savePreference(preferenceData, existingPreference);
+        }
       } else {
         // Split day: save both AM and PM preferences
         const amPreferenceData = buildPreferenceData(
@@ -239,12 +257,21 @@ export function WorkLocationSelector({
           pmNotes
         );
 
-        // Save AM preference (use existingPreference if it's an AM preference)
-        const amExisting = existingPreference?.dayPortion === DayPortion.AM ? existingPreference : undefined;
-        await savePreference(amPreferenceData, amExisting);
+        // If switching from full day to split day, delete the existing FullDay preference first
+        if (existingPreference && existingPreference.dayPortion === DayPortion.FullDay) {
+          console.log('Deleting FullDay preference to replace with AM/PM:', existingPreference.id);
+          await workLocationService.delete(existingPreference.id);
+          // Create both AM and PM preferences
+          await createMutation.mutateAsync(amPreferenceData);
+          await createMutation.mutateAsync(pmPreferenceData);
+        } else {
+          // Save AM preference (use existingPreference if it's an AM preference)
+          const amExisting = existingPreference?.dayPortion === DayPortion.AM ? existingPreference : undefined;
+          await savePreference(amPreferenceData, amExisting);
 
-        // Save PM preference
-        await savePreference(pmPreferenceData, existingPmPreference);
+          // Save PM preference
+          await savePreference(pmPreferenceData, existingPmPreference);
+        }
       }
 
       // Wait for dashboard refetch to complete before closing modal

@@ -39,6 +39,25 @@ public class RequiresPermissionAttribute : Attribute, IAsyncAuthorizationFilter
             return;
         }
 
+        // Check for impersonation - if the original user (admin) is a system admin, allow access
+        var isImpersonatingClaim = context.HttpContext.User.Claims.FirstOrDefault(c =>
+            c.Type.Equals("IsImpersonating", StringComparison.OrdinalIgnoreCase));
+        if (isImpersonatingClaim != null && bool.TryParse(isImpersonatingClaim.Value, out var isImpersonating) && isImpersonating)
+        {
+            // When impersonating, check if the original admin user is a platform admin
+            var originalUserIdClaim = context.HttpContext.User.Claims.FirstOrDefault(c =>
+                c.Type.Equals("OriginalUserId", StringComparison.OrdinalIgnoreCase));
+            if (originalUserIdClaim != null && Guid.TryParse(originalUserIdClaim.Value, out var originalUserId))
+            {
+                var isOriginalUserAdmin = await authService.IsPlatformAdminAsync(originalUserId);
+                if (isOriginalUserAdmin && AllowPlatformAdmin)
+                {
+                    // Allow impersonating admins to act as the impersonated user
+                    return;
+                }
+            }
+        }
+
         // Get user ID from JWT claims
         var userIdClaim = context.HttpContext.User.Claims.FirstOrDefault(c =>
             c.Type == ClaimTypes.NameIdentifier ||

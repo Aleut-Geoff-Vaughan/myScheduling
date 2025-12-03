@@ -4,6 +4,8 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../stores/authStore';
 import { buildApiUrl } from '../config/api';
 import { Link } from 'react-router-dom';
+import { authService } from '../services/authService';
+import { Mail, Lock, ArrowLeft } from 'lucide-react';
 
 interface HealthStatus {
   status: string;
@@ -14,6 +16,8 @@ interface HealthStatus {
   }>;
 }
 
+type LoginMode = 'password' | 'magic-link';
+
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +26,8 @@ export function LoginPage() {
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [healthError, setHealthError] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
+  const [loginMode, setLoginMode] = useState<LoginMode>('password');
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
@@ -78,6 +84,36 @@ export function LoginPage() {
     }
   };
 
+  const handleMagicLinkRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      if (rememberMe) {
+        localStorage.setItem('remembered-email', email);
+      } else {
+        localStorage.removeItem('remembered-email');
+      }
+
+      await authService.requestMagicLink(email);
+      setMagicLinkSent(true);
+      toast.success('Check your email for the login link!');
+    } catch (err) {
+      // Always show success message to prevent email enumeration
+      setMagicLinkSent(true);
+      toast.success('If an account exists, a login link has been sent.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleBackToPassword = () => {
+    setLoginMode('password');
+    setMagicLinkSent(false);
+    setError('');
+  };
+
   const isDatabaseHealthy = healthStatus?.checks.find(c => c.name === 'database')?.status === 'Healthy';
 
   return (
@@ -124,49 +160,171 @@ export function LoginPage() {
           </div>
 
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
+          {loginMode === 'password' && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                  placeholder="you@company.com"
+                  disabled={isLoading}
+                  autoComplete="username"
+                />
               </div>
-            )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                placeholder="you@company.com"
-                disabled={isLoading}
-                autoComplete="username"
-              />
-            </div>
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                  placeholder="••••••••"
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                />
+              </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
-                placeholder="••••••••"
-                disabled={isLoading}
-                autoComplete="current-password"
-              />
-            </div>
+              <div className="flex items-center justify-between text-sm">
+                <label className="inline-flex items-center gap-2 text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 text-primary-600 border-gray-300 rounded"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    disabled={isLoading}
+                  />
+                  Remember me
+                </label>
+                <span className="text-gray-400">|</span>
+                <Link to="/forgot-password" className="text-primary-600 hover:text-primary-700">
+                  Forgot password?
+                </Link>
+              </div>
 
-            <div className="flex items-center justify-between text-sm">
-              <label className="inline-flex items-center gap-2 text-gray-700">
+              <div className="space-y-3">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed border border-blue-700 shadow-sm tracking-wide"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Signing in...
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Sign In with Password
+                    </span>
+                  )}
+                </button>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white text-gray-500">or</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className="w-full bg-white border border-gray-300 hover:border-primary-400 hover:bg-primary-50 text-gray-800 font-medium py-3 px-4 rounded-lg transition shadow-sm flex items-center justify-center gap-2"
+                  onClick={() => setLoginMode('magic-link')}
+                >
+                  <Mail className="h-5 w-5 text-primary-600" />
+                  <span>Sign in with Email Link</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-800 font-medium py-3 px-4 rounded-lg transition shadow-sm flex items-center justify-center gap-2"
+                  onClick={() => toast('Login with Microsoft coming soon')}
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 23 23" aria-hidden="true">
+                    <rect width="10.5" height="10.5" x="0.5" y="0.5" fill="#F35325" />
+                    <rect width="10.5" height="10.5" x="12" y="0.5" fill="#81BC06" />
+                    <rect width="10.5" height="10.5" x="0.5" y="12" fill="#05A6F0" />
+                    <rect width="10.5" height="10.5" x="12" y="12" fill="#FFBA08" />
+                  </svg>
+                  <span>Sign in with Microsoft</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Magic Link Request Form */}
+          {loginMode === 'magic-link' && !magicLinkSent && (
+            <form onSubmit={handleMagicLinkRequest} className="space-y-4">
+              <button
+                type="button"
+                onClick={handleBackToPassword}
+                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to password login
+              </button>
+
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Mail className="h-5 w-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-medium text-blue-900">Passwordless Sign In</h3>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Enter your email and we'll send you a secure link to sign in.
+                      No password needed.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="magic-email" className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <input
+                  id="magic-email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition"
+                  placeholder="you@company.com"
+                  disabled={isLoading}
+                  autoComplete="email"
+                />
+              </div>
+
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
                 <input
                   type="checkbox"
                   className="h-4 w-4 text-primary-600 border-gray-300 rounded"
@@ -174,19 +332,13 @@ export function LoginPage() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   disabled={isLoading}
                 />
-                Remember me
+                Remember my email
               </label>
-              <span className="text-gray-400">|</span>
-              <Link to="/forgot-password" className="text-primary-600 hover:text-primary-700">
-                Forgot password?
-              </Link>
-            </div>
 
-            <div className="space-y-3">
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed border border-blue-700 shadow-sm tracking-wide"
+                className="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-3 px-4 rounded-lg transition disabled:opacity-60 disabled:cursor-not-allowed border border-primary-700 shadow-sm tracking-wide"
               >
                 {isLoading ? (
                   <span className="flex items-center justify-center">
@@ -194,28 +346,52 @@ export function LoginPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Signing in...
+                    Sending...
                   </span>
                 ) : (
-                  'Sign In'
+                  <span className="flex items-center justify-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Send Login Link
+                  </span>
                 )}
               </button>
+            </form>
+          )}
+
+          {/* Magic Link Sent Confirmation */}
+          {loginMode === 'magic-link' && magicLinkSent && (
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={handleBackToPassword}
+                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to password login
+              </button>
+
+              <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center">
+                <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                  <Mail className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-green-900">Check your email</h3>
+                <p className="text-sm text-green-700 mt-2">
+                  We've sent a login link to <strong>{email}</strong>
+                </p>
+                <p className="text-xs text-green-600 mt-4">
+                  The link will expire in 15 minutes. Check your spam folder if you don't see it.
+                </p>
+              </div>
 
               <button
                 type="button"
-                className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-800 font-medium py-3 px-4 rounded-lg transition shadow-sm flex items-center justify-center gap-2"
-                onClick={() => toast('Login with Microsoft coming soon')}
+                onClick={() => setMagicLinkSent(false)}
+                className="w-full bg-white border border-gray-300 hover:border-gray-400 text-gray-700 font-medium py-2 px-4 rounded-lg transition text-sm"
               >
-                <svg className="w-5 h-5" viewBox="0 0 23 23" aria-hidden="true">
-                  <rect width="10.5" height="10.5" x="0.5" y="0.5" fill="#F35325" />
-                  <rect width="10.5" height="10.5" x="12" y="0.5" fill="#81BC06" />
-                  <rect width="10.5" height="10.5" x="0.5" y="12" fill="#05A6F0" />
-                  <rect width="10.5" height="10.5" x="12" y="12" fill="#FFBA08" />
-                </svg>
-                <span>Sign in with Microsoft</span>
+                Resend link
               </button>
             </div>
-          </form>
+          )}
 
           {/* Login Helper */}
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
