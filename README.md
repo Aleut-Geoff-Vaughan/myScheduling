@@ -53,12 +53,14 @@ Sample accounts: `admin@admin.com`.
 
 ## Key Modules
 - Dashboard: reusable view (self or reports) with calendars, stats, and quick links.
+- MyHub (`/hub`): Unified employee dashboard with collapsible sections for MySchedule, MyReservations, MyDOAs, Project Assignments, and Forecasts—all in one view with summary stats.
 - People: tiles/list, filters (all/direct/direct+indirect), supervisor display, inline edit (permissions), full-record modal edit, default delegate setting.
 - Work Location Templates: CRUD/apply; dashboard/cache refresh polish in progress.
 - Staffing: assignments, capacity timeline, tenant-scoped assignment requests with approvals/inbox, CSV export, and admin/manager views.
 - WBS/Projects: workflow, approvals, history, bulk operations.
 - Hoteling & Facilities Management:
-  - Spaces/bookings with check-in UI
+  - Spaces/bookings with check-in UI and multiple view modes (day/week/month)
+  - Share bookings via email with copy-to-clipboard functionality
   - Hierarchical organization: Office → Floor → Zone → Space
   - Space types: Desk, HotDesk, Office, Cubicle, ConferenceRoom, HuddleRoom, PhoneBooth, TrainingRoom, BreakRoom, ParkingSpot
   - Space availability: Shared, Assigned, Reservable, Restricted

@@ -55,6 +55,7 @@ import { ForecastApprovalPage } from './pages/ForecastApprovalPage';
 import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { ResumeSharePage } from './pages/ResumeSharePage';
 import { MySchedulePage } from './pages/MySchedulePage';
+import { MyHubPage } from './pages/MyHubPage';
 import StaffingDashboardPage from './pages/StaffingDashboardPage';
 import ProjectStaffingDetailPage from './pages/ProjectStaffingDetailPage';
 import { AdminImpersonationPage } from './pages/AdminImpersonationPage';
@@ -191,6 +192,7 @@ function App() {
               }
             >
               <Route index element={<DashboardPage />} />
+              <Route path="hub" element={<MyHubPage />} />
               <Route path="schedule" element={<MySchedulePage />} />
               <Route path="staffing" element={<StaffingPage />} />
               <Route path="hoteling" element={<HotelingPage />} />
