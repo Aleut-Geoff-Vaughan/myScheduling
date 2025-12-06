@@ -164,6 +164,10 @@ export interface TenantSettings {
   notificationBannerMessage?: string;
   notificationBannerType?: 'info' | 'warning' | 'error' | 'success';
   notificationBannerExpiresAt?: string;
+  // Fiscal Year and Budget settings
+  fiscalYearStartMonth?: number;
+  requireBudgetApproval?: boolean;
+  defaultBudgetMonthsAhead?: number;
   createdAt: string;
   updatedAt?: string;
 }
@@ -195,4 +199,8 @@ export interface UpdateTenantSettingsRequest {
   notificationBannerMessage?: string;
   notificationBannerType?: 'info' | 'warning' | 'error' | 'success';
   notificationBannerExpiresAt?: string;
+  // Fiscal Year and Budget settings
+  fiscalYearStartMonth?: number;
+  requireBudgetApproval?: boolean;
+  defaultBudgetMonthsAhead?: number;
 }

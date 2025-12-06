@@ -30,8 +30,9 @@ const SubcontractorStatusLabels: Record<SubcontractorStatus, string> = {
 };
 
 export function AdminSubcontractorCompaniesPage() {
-  const { currentWorkspace } = useAuthStore();
-  const tenantId = currentWorkspace?.tenantId;
+  const { currentWorkspace, availableTenants } = useAuthStore();
+  // Use workspace tenantId, or fall back to first available tenant for admin users
+  const tenantId = currentWorkspace?.tenantId || availableTenants?.[0]?.tenantId;
 
   const [companies, setCompanies] = useState<SubcontractorCompany[]>([]);
   const [careerFamilies, setCareerFamilies] = useState<CareerJobFamily[]>([]);

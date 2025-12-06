@@ -13,8 +13,9 @@ import {
 import toast from 'react-hot-toast';
 
 export function ForecastApprovalPage() {
-  const { currentWorkspace } = useAuthStore();
-  const tenantId = currentWorkspace?.tenantId;
+  const { currentWorkspace, availableTenants } = useAuthStore();
+  // Use workspace tenantId, or fall back to first available tenant for admin users
+  const tenantId = currentWorkspace?.tenantId || availableTenants?.[0]?.tenantId;
 
   // Data state
   const [versions, setVersions] = useState<ForecastVersion[]>([]);

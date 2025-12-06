@@ -19,9 +19,10 @@ function useUserForecastRole(): ForecastRole {
 
 export function ForecastDashboardPage() {
   const navigate = useNavigate();
-  const { user, currentWorkspace } = useAuthStore();
+  const { user, currentWorkspace, availableTenants } = useAuthStore();
   const forecastRole = useUserForecastRole();
-  const tenantId = currentWorkspace?.tenantId;
+  // Use workspace tenantId, or fall back to first available tenant for admin users
+  const tenantId = currentWorkspace?.tenantId || availableTenants?.[0]?.tenantId;
 
   // Fetch projects for stats
   const { data: projects = [], isLoading: projectsLoading } = useProjects({

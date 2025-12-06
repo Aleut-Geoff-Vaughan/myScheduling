@@ -266,6 +266,40 @@ public class ProjectsController : AuthorizedControllerBase
         }
     }
 
+    // PATCH: api/projects/{id}/budget
+    [HttpPatch("{id}/budget")]
+    [RequiresPermission(Resource = "Project", Action = PermissionAction.Update)]
+    public async Task<IActionResult> UpdateProjectBudget(Guid id, [FromBody] UpdateBudgetRequest request)
+    {
+        try
+        {
+            var project = await _context.Projects.FindAsync(id);
+            if (project == null)
+            {
+                return NotFound($"Project with ID {id} not found");
+            }
+
+            project.BudgetedHours = request.BudgetedHours;
+            project.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Project {ProjectId} budget updated to {BudgetedHours} by user {UserId}",
+                id, request.BudgetedHours, GetCurrentUserId());
+
+            return Ok(new {
+                id = project.Id,
+                budgetedHours = project.BudgetedHours,
+                message = "Budget updated successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating budget for project {ProjectId}", id);
+            return StatusCode(500, "An error occurred while updating the project budget");
+        }
+    }
+
     // GET: api/projects/{id}/wbs
     [HttpGet("{id}/wbs")]
     [RequiresPermission(Resource = "WbsElement", Action = PermissionAction.Read)]
@@ -294,4 +328,9 @@ public class ProjectsController : AuthorizedControllerBase
     {
         return await _context.Projects.AnyAsync(e => e.Id == id);
     }
+}
+
+public class UpdateBudgetRequest
+{
+    public decimal? BudgetedHours { get; set; }
 }

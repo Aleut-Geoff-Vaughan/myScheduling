@@ -33,9 +33,10 @@ import type {
 } from '../services/forecastService';
 
 export function ForecastImportExportPage() {
-  const { currentWorkspace } = useAuthStore();
+  const { currentWorkspace, availableTenants } = useAuthStore();
   const queryClient = useQueryClient();
-  const tenantId = currentWorkspace?.tenantId || '';
+  // Use workspace tenantId, or fall back to first available tenant for admin users
+  const tenantId = currentWorkspace?.tenantId || availableTenants?.[0]?.tenantId || '';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // State

@@ -22,7 +22,6 @@ public class DelegationOfAuthorityLetter : BaseEntity
     public virtual User DelegatorUser { get; set; } = null!;
     public virtual User DesigneeUser { get; set; } = null!;
     public virtual ICollection<DigitalSignature> Signatures { get; set; } = new List<DigitalSignature>();
-    public virtual ICollection<DOAActivation> Activations { get; set; } = new List<DOAActivation>();
 }
 
 public enum DOAStatus

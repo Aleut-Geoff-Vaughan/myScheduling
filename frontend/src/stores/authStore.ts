@@ -185,7 +185,11 @@ export const useAuthStore = create<AuthState>()(
       },
 
       hasRole: (role: AppRole) => {
-        const { currentWorkspace } = get();
+        const { currentWorkspace, user } = get();
+        // System admins have all roles
+        if (user?.isSystemAdmin) {
+          return true;
+        }
         return currentWorkspace?.roles?.includes(role) ?? false;
       },
 

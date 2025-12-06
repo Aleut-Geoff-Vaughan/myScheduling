@@ -41,6 +41,9 @@ export function AdminTenantSettingsPage() {
         notificationBannerMessage: settings.notificationBannerMessage,
         notificationBannerType: settings.notificationBannerType,
         notificationBannerExpiresAt: settings.notificationBannerExpiresAt,
+        fiscalYearStartMonth: settings.fiscalYearStartMonth,
+        requireBudgetApproval: settings.requireBudgetApproval,
+        defaultBudgetMonthsAhead: settings.defaultBudgetMonthsAhead,
       });
       if (settings.logoUrl) {
         setLogoPreview(settings.logoUrl);
@@ -491,6 +494,133 @@ export function AdminTenantSettingsPage() {
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Fiscal Year & Budget Settings */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+              Fiscal Year & Budget Configuration
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Configure your organization's fiscal year and budget management settings.
+            </p>
+
+            <div className="space-y-6">
+              {/* Fiscal Year Settings */}
+              <div className="border-b border-gray-200 pb-6">
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Fiscal Year</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label htmlFor="fiscalYearStartMonth" className="block text-sm font-medium text-gray-700 mb-1">
+                      Fiscal Year Start Month
+                    </label>
+                    <select
+                      id="fiscalYearStartMonth"
+                      value={formData.fiscalYearStartMonth || 1}
+                      onChange={(e) => setFormData({ ...formData, fiscalYearStartMonth: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value={1}>January (Calendar Year: Jan - Dec)</option>
+                      <option value={2}>February (Feb - Jan)</option>
+                      <option value={3}>March (Mar - Feb)</option>
+                      <option value={4}>April (Apr - Mar)</option>
+                      <option value={5}>May (May - Apr)</option>
+                      <option value={6}>June (Jun - May)</option>
+                      <option value={7}>July (Jul - Jun)</option>
+                      <option value={8}>August (Aug - Jul)</option>
+                      <option value={9}>September (Sep - Aug)</option>
+                      <option value={10}>October (US Federal: Oct - Sep)</option>
+                      <option value={11}>November (Nov - Oct)</option>
+                      <option value={12}>December (Dec - Nov)</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      This determines how budgets and fiscal year reporting are calculated
+                    </p>
+                  </div>
+
+                  {/* Preview of current fiscal year */}
+                  {formData.fiscalYearStartMonth && (
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <div className="text-sm text-gray-700">
+                        <span className="font-medium">Current Fiscal Year: </span>
+                        {(() => {
+                          const startMonth = formData.fiscalYearStartMonth || 1;
+                          const today = new Date();
+                          const currentMonth = today.getMonth() + 1;
+                          const currentYear = today.getFullYear();
+
+                          let fiscalYear: number;
+                          if (startMonth === 1) {
+                            fiscalYear = currentYear;
+                          } else if (currentMonth >= startMonth) {
+                            fiscalYear = currentYear + 1;
+                          } else {
+                            fiscalYear = currentYear;
+                          }
+
+                          const startYear = startMonth === 1 ? fiscalYear : fiscalYear - 1;
+                          const endYear = startMonth === 1 ? fiscalYear : fiscalYear;
+                          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                          const startMonthName = monthNames[startMonth - 1];
+                          const endMonth = startMonth === 1 ? 12 : startMonth - 1;
+                          const endMonthName = monthNames[endMonth - 1];
+
+                          if (startMonth === 1) {
+                            return `Calendar Year ${fiscalYear} (${startMonthName} ${startYear} - ${endMonthName} ${endYear})`;
+                          }
+                          return `FY${fiscalYear} (${startMonthName} ${startYear} - ${endMonthName} ${endYear})`;
+                        })()}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Budget Settings */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">Budget Settings</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="requireBudgetApproval"
+                      checked={formData.requireBudgetApproval || false}
+                      onChange={(e) =>
+                        setFormData({ ...formData, requireBudgetApproval: e.target.checked })
+                      }
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="requireBudgetApproval" className="text-sm text-gray-700">
+                      Require approval for budget changes
+                    </label>
+                  </div>
+                  <p className="ml-7 text-xs text-gray-500">
+                    When enabled, budgets must be submitted and approved before becoming active
+                  </p>
+
+                  <div>
+                    <label htmlFor="defaultBudgetMonthsAhead" className="block text-sm font-medium text-gray-700 mb-1">
+                      Default Budget Planning Horizon
+                    </label>
+                    <select
+                      id="defaultBudgetMonthsAhead"
+                      value={formData.defaultBudgetMonthsAhead || 12}
+                      onChange={(e) => setFormData({ ...formData, defaultBudgetMonthsAhead: parseInt(e.target.value) })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value={6}>6 months</option>
+                      <option value={12}>12 months (1 year)</option>
+                      <option value={18}>18 months</option>
+                      <option value={24}>24 months (2 years)</option>
+                      <option value={36}>36 months (3 years)</option>
+                    </select>
+                    <p className="mt-1 text-xs text-gray-500">
+                      How far into the future users can create budgets by default
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>

@@ -63,6 +63,9 @@ public class MySchedulingDbContext : DbContext
     public DbSet<ForecastApprovalSchedule> ForecastApprovalSchedules => Set<ForecastApprovalSchedule>();
     public DbSet<ForecastImportExport> ForecastImportExports => Set<ForecastImportExport>();
     public DbSet<ActualHours> ActualHours => Set<ActualHours>();
+    public DbSet<ProjectBudget> ProjectBudgets => Set<ProjectBudget>();
+    public DbSet<ProjectBudgetLine> ProjectBudgetLines => Set<ProjectBudgetLine>();
+    public DbSet<ProjectBudgetHistory> ProjectBudgetHistories => Set<ProjectBudgetHistory>();
 
     // Hoteling & Facilities
     public DbSet<Office> Offices => Set<Office>();
@@ -83,7 +86,6 @@ public class MySchedulingDbContext : DbContext
     public DbSet<WorkLocationTemplateItem> WorkLocationTemplateItems => Set<WorkLocationTemplateItem>();
     public DbSet<DelegationOfAuthorityLetter> DelegationOfAuthorityLetters => Set<DelegationOfAuthorityLetter>();
     public DbSet<DigitalSignature> DigitalSignatures => Set<DigitalSignature>();
-    public DbSet<DOAActivation> DOAActivations => Set<DOAActivation>();
     public DbSet<DOATemplate> DOATemplates => Set<DOATemplate>();
     public DbSet<TenantSettings> TenantSettings => Set<TenantSettings>();
 
@@ -765,6 +767,89 @@ public class MySchedulingDbContext : DbContext
                 .HasForeignKey(e => e.CareerJobFamilyId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
+
+        // ProjectBudget
+        modelBuilder.Entity<ProjectBudget>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.TotalBudgetedHours).HasPrecision(12, 2);
+            entity.Property(e => e.ApprovalNotes).HasMaxLength(1000);
+            entity.Property(e => e.Notes).HasMaxLength(2000);
+
+            entity.HasIndex(e => new { e.TenantId, e.ProjectId, e.FiscalYear, e.IsActive });
+            entity.HasIndex(e => new { e.TenantId, e.Status });
+            entity.HasIndex(e => new { e.ProjectId, e.FiscalYear, e.VersionNumber });
+
+            entity.HasOne(e => e.Project)
+                .WithMany(p => p.ProjectBudgets)
+                .HasForeignKey(e => e.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.PreviousVersion)
+                .WithMany()
+                .HasForeignKey(e => e.PreviousVersionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.SubmittedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.SubmittedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.ApprovedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ApprovedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ProjectBudgetLine
+        modelBuilder.Entity<ProjectBudgetLine>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.BudgetedHours).HasPrecision(10, 2);
+            entity.Property(e => e.Notes).HasMaxLength(1000);
+
+            entity.HasIndex(e => new { e.TenantId, e.ProjectBudgetId, e.Year, e.Month });
+            entity.HasIndex(e => new { e.ProjectBudgetId, e.WbsElementId, e.Year, e.Month });
+
+            entity.HasOne(e => e.ProjectBudget)
+                .WithMany(b => b.Lines)
+                .HasForeignKey(e => e.ProjectBudgetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.WbsElement)
+                .WithMany()
+                .HasForeignKey(e => e.WbsElementId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(e => e.LaborCategory)
+                .WithMany()
+                .HasForeignKey(e => e.LaborCategoryId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ProjectBudgetHistory
+        modelBuilder.Entity<ProjectBudgetHistory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OldTotalHours).HasPrecision(12, 2);
+            entity.Property(e => e.NewTotalHours).HasPrecision(12, 2);
+            entity.Property(e => e.ChangeReason).HasMaxLength(500);
+
+            entity.HasIndex(e => new { e.ProjectBudgetId, e.ChangedAt });
+            entity.HasIndex(e => e.ChangedByUserId);
+
+            entity.HasOne(e => e.ProjectBudget)
+                .WithMany(b => b.History)
+                .HasForeignKey(e => e.ProjectBudgetId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ChangedByUser)
+                .WithMany()
+                .HasForeignKey(e => e.ChangedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private void ConfigureHoteling(ModelBuilder modelBuilder)
@@ -1008,11 +1093,6 @@ public class MySchedulingDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.BookingId)
                 .OnDelete(DeleteBehavior.SetNull);
-
-            entity.HasOne(e => e.DOAActivation)
-                .WithMany(d => d.WorkLocationPreferences)
-                .HasForeignKey(e => e.DOAActivationId)
-                .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<CompanyHoliday>(entity =>
@@ -1128,29 +1208,6 @@ public class MySchedulingDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(e => e.SignerUserId)
                 .OnDelete(DeleteBehavior.Restrict);
-        });
-
-        modelBuilder.Entity<DOAActivation>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.StartDate).IsRequired();
-            entity.Property(e => e.EndDate).IsRequired();
-            entity.Property(e => e.Reason).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.Notes).HasMaxLength(500);
-            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
-
-            entity.HasIndex(e => new { e.TenantId, e.DOALetterId, e.IsActive });
-            entity.HasIndex(e => new { e.StartDate, e.EndDate });
-
-            entity.HasOne(e => e.DOALetter)
-                .WithMany(d => d.Activations)
-                .HasForeignKey(e => e.DOALetterId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.Tenant)
-                .WithMany()
-                .HasForeignKey(e => e.TenantId)
-                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 

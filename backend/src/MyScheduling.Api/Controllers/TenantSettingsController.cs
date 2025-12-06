@@ -119,6 +119,11 @@ public class TenantSettingsController : AuthorizedControllerBase
             if (request.NotificationBannerType != null) settings.NotificationBannerType = request.NotificationBannerType;
             if (request.NotificationBannerExpiresAt.HasValue) settings.NotificationBannerExpiresAt = request.NotificationBannerExpiresAt;
 
+            // Update fiscal year and budget settings
+            if (request.FiscalYearStartMonth.HasValue) settings.FiscalYearStartMonth = request.FiscalYearStartMonth.Value;
+            if (request.RequireBudgetApproval.HasValue) settings.RequireBudgetApproval = request.RequireBudgetApproval.Value;
+            if (request.DefaultBudgetMonthsAhead.HasValue) settings.DefaultBudgetMonthsAhead = request.DefaultBudgetMonthsAhead.Value;
+
             settings.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -244,4 +249,9 @@ public class UpdateTenantSettingsRequest
     public string? NotificationBannerMessage { get; set; }
     public string? NotificationBannerType { get; set; }
     public DateTime? NotificationBannerExpiresAt { get; set; }
+
+    // Fiscal Year and Budget settings
+    public int? FiscalYearStartMonth { get; set; }
+    public bool? RequireBudgetApproval { get; set; }
+    public int? DefaultBudgetMonthsAhead { get; set; }
 }

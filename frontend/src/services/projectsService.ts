@@ -35,4 +35,8 @@ export const projectsService = {
   async delete(id: string): Promise<void> {
     return api.delete<void>(`/projects/${id}`);
   },
+
+  async updateBudget(id: string, budgetedHours: number | null): Promise<{ id: string; budgetedHours: number | null }> {
+    return api.patch<{ id: string; budgetedHours: number | null }>(`/projects/${id}/budget`, { budgetedHours });
+  },
 };

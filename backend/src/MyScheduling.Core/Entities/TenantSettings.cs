@@ -37,6 +37,14 @@ public class TenantSettings : BaseEntity
     public string? NotificationBannerType { get; set; } // "info", "warning", "error", "success"
     public DateTime? NotificationBannerExpiresAt { get; set; }
 
+    // Fiscal Year Configuration
+    // FiscalYearStartMonth: 1 = January (calendar year), 4 = April (Apr-Mar), 7 = July (Jul-Jun), 10 = October (Oct-Sep)
+    public int FiscalYearStartMonth { get; set; } = 1; // Default to calendar year
+
+    // Budget Configuration
+    public bool RequireBudgetApproval { get; set; } = false;
+    public int DefaultBudgetMonthsAhead { get; set; } = 12; // How many months ahead budgets can be created
+
     // Navigation properties
     public virtual Tenant Tenant { get; set; } = null!;
 }

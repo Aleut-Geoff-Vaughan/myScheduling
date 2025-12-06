@@ -18,6 +18,7 @@ public class Project : TenantEntity
     public virtual ICollection<WbsElement> WbsElements { get; set; } = new List<WbsElement>();
     public virtual ICollection<LaborCategory> LaborCategories { get; set; } = new List<LaborCategory>();
     public virtual ICollection<ProjectRoleAssignment> ProjectRoleAssignments { get; set; } = new List<ProjectRoleAssignment>();
+    public virtual ICollection<ProjectBudget> ProjectBudgets { get; set; } = new List<ProjectBudget>();
 }
 
 public enum ProjectStatus

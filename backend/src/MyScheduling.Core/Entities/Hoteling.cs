@@ -326,17 +326,12 @@ public class WorkLocationPreference : TenantEntity
 
     public string? Notes { get; set; }  // Optional notes about the day
 
-    // DOA relationship
-    public Guid? DOAActivationId { get; set; }  // Link to active delegation of authority
-
     // Navigation properties
     [System.Text.Json.Serialization.JsonIgnore]
     public virtual User User { get; set; } = null!;
     public virtual Office? Office { get; set; }  // Include in serialization for display purposes
     [System.Text.Json.Serialization.JsonIgnore]
     public virtual Booking? Booking { get; set; }
-    [System.Text.Json.Serialization.JsonIgnore]
-    public virtual DOAActivation? DOAActivation { get; set; }
 }
 
 public enum WorkLocationType

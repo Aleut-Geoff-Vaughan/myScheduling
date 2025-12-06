@@ -444,3 +444,142 @@ public enum ActualHoursSource
     SpreadsheetUpload = 1,
     ManualEntry = 2
 }
+
+// ==================== PROJECT BUDGET ====================
+
+/// <summary>
+/// Versioned budget for a project for a specific fiscal year
+/// Supports multiple budget versions: Original, Re-forecast Q1, Re-forecast Q2, etc.
+/// </summary>
+public class ProjectBudget : TenantEntity
+{
+    public Guid ProjectId { get; set; }
+
+    // Fiscal Year (using the tenant's fiscal year configuration)
+    // For Apr-Mar fiscal year, FY2025 would be April 2024 - March 2025
+    public int FiscalYear { get; set; }
+
+    // Budget Version Info
+    public string Name { get; set; } = string.Empty; // e.g., "Original Budget", "Q1 Re-forecast", "Q2 Re-forecast"
+    public string? Description { get; set; }
+    public ProjectBudgetType Type { get; set; } = ProjectBudgetType.Original;
+
+    // Version Management
+    public int VersionNumber { get; set; } = 1;
+    public bool IsActive { get; set; } = true; // The active budget for variance calculations
+    public Guid? PreviousVersionId { get; set; } // Link to the previous version this was based on
+
+    // Total Hours (sum of monthly lines, or direct entry if not using monthly breakdown)
+    public decimal TotalBudgetedHours { get; set; }
+
+    // Approval Workflow
+    public ProjectBudgetStatus Status { get; set; } = ProjectBudgetStatus.Draft;
+    public Guid? SubmittedByUserId { get; set; }
+    public DateTime? SubmittedAt { get; set; }
+    public Guid? ApprovedByUserId { get; set; }
+    public DateTime? ApprovedAt { get; set; }
+    public string? ApprovalNotes { get; set; }
+
+    // Effective dates (when this budget version becomes/became active)
+    public DateTime? EffectiveFrom { get; set; }
+    public DateTime? EffectiveTo { get; set; }
+
+    // Notes
+    public string? Notes { get; set; }
+
+    // Navigation
+    public virtual Project Project { get; set; } = null!;
+    public virtual ProjectBudget? PreviousVersion { get; set; }
+    public virtual User? SubmittedByUser { get; set; }
+    public virtual User? ApprovedByUser { get; set; }
+    public virtual ICollection<ProjectBudgetLine> Lines { get; set; } = new List<ProjectBudgetLine>();
+    public virtual ICollection<ProjectBudgetHistory> History { get; set; } = new List<ProjectBudgetHistory>();
+}
+
+public enum ProjectBudgetType
+{
+    Original = 0,        // Initial budget at start of fiscal year
+    Reforecast = 1,      // Quarterly or periodic re-forecast
+    Amendment = 2,       // Budget amendment/change order
+    WhatIf = 3           // What-if scenario (not active)
+}
+
+public enum ProjectBudgetStatus
+{
+    Draft = 0,
+    Submitted = 1,
+    Approved = 2,
+    Rejected = 3,
+    Superseded = 4       // Replaced by a newer version
+}
+
+// ==================== PROJECT BUDGET LINE ====================
+
+/// <summary>
+/// Monthly breakdown of budgeted hours for a project budget
+/// Optional - if not used, only TotalBudgetedHours on ProjectBudget is used
+/// </summary>
+public class ProjectBudgetLine : TenantEntity
+{
+    public Guid ProjectBudgetId { get; set; }
+
+    // Period (calendar month, regardless of fiscal year)
+    public int Year { get; set; }
+    public int Month { get; set; }
+
+    // Hours
+    public decimal BudgetedHours { get; set; }
+
+    // Optional: WBS-level budgeting
+    public Guid? WbsElementId { get; set; }
+
+    // Optional: Labor category level budgeting
+    public Guid? LaborCategoryId { get; set; }
+
+    // Notes
+    public string? Notes { get; set; }
+
+    // Navigation
+    public virtual ProjectBudget ProjectBudget { get; set; } = null!;
+    public virtual WbsElement? WbsElement { get; set; }
+    public virtual LaborCategory? LaborCategory { get; set; }
+}
+
+// ==================== PROJECT BUDGET HISTORY ====================
+
+/// <summary>
+/// Audit trail for budget changes
+/// </summary>
+public class ProjectBudgetHistory : BaseEntity
+{
+    public Guid ProjectBudgetId { get; set; }
+
+    public Guid ChangedByUserId { get; set; }
+    public DateTime ChangedAt { get; set; }
+    public ProjectBudgetChangeType ChangeType { get; set; }
+
+    public decimal? OldTotalHours { get; set; }
+    public decimal? NewTotalHours { get; set; }
+    public ProjectBudgetStatus? OldStatus { get; set; }
+    public ProjectBudgetStatus? NewStatus { get; set; }
+    public string? ChangeReason { get; set; }
+
+    // Navigation
+    public virtual ProjectBudget ProjectBudget { get; set; } = null!;
+    public virtual User ChangedByUser { get; set; } = null!;
+}
+
+public enum ProjectBudgetChangeType
+{
+    Created = 0,
+    HoursUpdated = 1,
+    StatusChanged = 2,
+    Submitted = 3,
+    Approved = 4,
+    Rejected = 5,
+    Activated = 6,
+    Deactivated = 7,
+    LineAdded = 8,
+    LineUpdated = 9,
+    LineRemoved = 10
+}

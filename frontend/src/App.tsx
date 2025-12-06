@@ -7,7 +7,7 @@ import { WorkspaceSelectorPage } from './pages/WorkspaceSelectorPage';
 import { MeLayout } from './components/layout/MeLayout';
 import { ManagerLayout } from './components/layout/ManagerLayout';
 import { AdminLayout } from './components/layout/AdminLayout';
-import { DashboardPage } from './pages/DashboardPage';
+// DashboardPage removed - MyHubPage is now the home page
 import { ProjectsPage } from './pages/ProjectsPage';
 import { WbsPage } from './pages/WbsPage';
 import { StaffingPage } from './pages/StaffingPage';
@@ -67,6 +67,7 @@ import { MyForecastsPage } from './pages/MyForecastsPage';
 import { ForecastProjectsPage } from './pages/ForecastProjectsPage';
 import { ProjectForecastGridPage } from './pages/ProjectForecastGridPage';
 import { BudgetManagementPage } from './pages/BudgetManagementPage';
+import { CreateBudgetPage } from './pages/CreateBudgetPage';
 import { ForecastAnalyticsPage } from './pages/ForecastAnalyticsPage';
 import { ForecastReviewPage } from './pages/ForecastReviewPage';
 import { ForecastApprovalsPage } from './pages/ForecastApprovalsPage';
@@ -171,15 +172,7 @@ function App() {
               <Route path="resumes" element={<AdminResumesPage />} />
               <Route path="resume-templates" element={<AdminResumeTemplatesPage />} />
               <Route path="holidays" element={<AdminHolidaysPage />} />
-              <Route path="staffing/role-assignments" element={<AdminProjectRoleAssignmentsPage />} />
-              <Route path="staffing/career-families" element={<AdminCareerJobFamiliesPage />} />
-              <Route path="staffing/subcontractors" element={<AdminSubcontractorCompaniesPage />} />
-              <Route path="staffing/forecast-schedules" element={<AdminForecastSchedulesPage />} />
-              <Route path="staffing/forecasts" element={<AdminForecastsPage />} />
-              <Route path="staffing/versions" element={<ForecastVersionsPage />} />
-              <Route path="staffing/import-export" element={<ForecastImportExportPage />} />
-              <Route path="staffing/dashboard" element={<StaffingDashboardPage />} />
-              <Route path="staffing/projects/:projectId" element={<ProjectStaffingDetailPage />} />
+              <Route path="career-families" element={<AdminCareerJobFamiliesPage />} />
             </Route>
 
             {/* Me Portal Routes (mobile-friendly top nav) */}
@@ -191,8 +184,7 @@ function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<DashboardPage />} />
-              <Route path="hub" element={<MyHubPage />} />
+              <Route index element={<MyHubPage />} />
               <Route path="schedule" element={<MySchedulePage />} />
               <Route path="staffing" element={<StaffingPage />} />
               <Route path="hoteling" element={<HotelingPage />} />
@@ -242,12 +234,20 @@ function App() {
               <Route path="projects/:projectId" element={<ProjectForecastGridPage />} />
               <Route path="projects/:projectId/grid" element={<ProjectForecastGridPage />} />
               <Route path="budgets" element={<BudgetManagementPage />} />
+              <Route path="budgets/create/:projectId" element={<CreateBudgetPage />} />
               <Route path="analytics" element={<ForecastAnalyticsPage />} />
               <Route path="review" element={<ForecastReviewPage />} />
               <Route path="approvals" element={<ForecastApprovalsPage />} />
               <Route path="versions" element={<ForecastVersionsPage />} />
               <Route path="import-export" element={<ForecastImportExportPage />} />
               <Route path="settings" element={<ForecastSettingsPage />} />
+              {/* Staffing Admin - moved from /admin/staffing */}
+              <Route path="staffing-dashboard" element={<StaffingDashboardPage />} />
+              <Route path="staffing/projects/:projectId" element={<ProjectStaffingDetailPage />} />
+              <Route path="role-assignments" element={<AdminProjectRoleAssignmentsPage />} />
+              <Route path="subcontractors" element={<AdminSubcontractorCompaniesPage />} />
+              <Route path="schedules" element={<AdminForecastSchedulesPage />} />
+              <Route path="forecasts" element={<AdminForecastsPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />

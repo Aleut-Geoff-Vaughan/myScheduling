@@ -79,4 +79,22 @@ export const doaService = {
       : '/delegationofauthority/active';
     return api.get<DOAActivation[]>(url);
   },
+
+  /**
+   * Get DOA activations that overlap with a date range
+   */
+  async getActivationsInRange(startDate: string, endDate: string): Promise<DOAActivation[]> {
+    return api.get<DOAActivation[]>(
+      `/delegationofauthority/activations/range?startDate=${startDate}&endDate=${endDate}`
+    );
+  },
+
+  /**
+   * Get Active DOA letters whose effective dates overlap with a date range
+   */
+  async getActiveLettersInRange(startDate: string, endDate: string): Promise<DelegationOfAuthorityLetter[]> {
+    return api.get<DelegationOfAuthorityLetter[]>(
+      `/delegationofauthority/letters/range?startDate=${startDate}&endDate=${endDate}`
+    );
+  },
 };

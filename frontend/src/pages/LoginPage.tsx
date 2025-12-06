@@ -393,17 +393,6 @@ export function LoginPage() {
             </div>
           )}
 
-          {/* Login Helper */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="text-xs font-medium text-blue-900 mb-2">Test Accounts:</div>
-            <div className="text-xs text-blue-700 space-y-1">
-              <div><strong>Regular User:</strong> test@test.com (any password)</div>
-              <div><strong>System Admin:</strong> admin@test.com (any password)</div>
-              <div className="mt-2 pt-2 border-t border-blue-300 text-blue-600">
-                After login, you'll select your workspace from available tenants.
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Footer */}

@@ -30,13 +30,12 @@ public class DelegationOfAuthorityController : AuthorizedControllerBase
             var userId = GetCurrentUserId();
             var tenantIds = GetUserTenantIds();
 
-            // Optimize: Don't load Signatures and Activations in list view - they're heavy collections
+            // Optimize: Don't load Signatures in list view - they're heavy collections
             // They can be loaded on-demand when viewing individual letters
             var query = _context.DelegationOfAuthorityLetters
                 .Include(d => d.DelegatorUser)
                 .Include(d => d.DesigneeUser)
                 // Removed: .Include(d => d.Signatures) - Load on demand for detail view
-                // Removed: .Include(d => d.Activations) - Load on demand for detail view
                 .Where(d => tenantIds.Contains(d.TenantId))
                 .AsNoTracking();
 
@@ -81,7 +80,6 @@ public class DelegationOfAuthorityController : AuthorizedControllerBase
                 .Include(d => d.DelegatorUser)
                 .Include(d => d.DesigneeUser)
                 .Include(d => d.Signatures)
-                .Include(d => d.Activations)
                 .FirstOrDefaultAsync(d => d.Id == id && tenantIds.Contains(d.TenantId));
 
             if (letter == null)
@@ -384,7 +382,6 @@ public class DelegationOfAuthorityController : AuthorizedControllerBase
             var tenantId = tenantIds.FirstOrDefault();
 
             var letter = await _context.DelegationOfAuthorityLetters
-                .Include(d => d.Activations)
                 .FirstOrDefaultAsync(d => d.Id == id && d.TenantId == tenantId);
 
             if (letter == null)
@@ -403,14 +400,6 @@ public class DelegationOfAuthorityController : AuthorizedControllerBase
                 return BadRequest("DOA letter is already revoked");
             }
 
-            // Deactivate all active activations
-            foreach (var activation in letter.Activations.Where(a => a.IsActive))
-            {
-                activation.IsActive = false;
-                activation.DeactivatedAt = DateTime.UtcNow;
-                activation.DeactivatedByUserId = userId;
-            }
-
             letter.Status = DOAStatus.Revoked;
             letter.UpdatedAt = DateTime.UtcNow;
 
@@ -425,74 +414,13 @@ public class DelegationOfAuthorityController : AuthorizedControllerBase
         }
     }
 
-    // POST: api/delegationofauthority/{id}/activate
-    [HttpPost("{id}/activate")]
-    [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Update)]
-    public async Task<ActionResult<DOAActivation>> ActivateDOALetter(Guid id, [FromBody] ActivationRequest request)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-            var tenantIds = GetUserTenantIds();
-            var tenantId = tenantIds.FirstOrDefault();
-
-            var letter = await _context.DelegationOfAuthorityLetters
-                .FirstOrDefaultAsync(d => d.Id == id && d.TenantId == tenantId);
-
-            if (letter == null)
-            {
-                return NotFound($"DOA letter with ID {id} not found");
-            }
-
-            // Only delegator can activate
-            if (letter.DelegatorUserId != userId)
-            {
-                return StatusCode(403, "Only the delegator can activate this DOA letter");
-            }
-
-            // Must be active (fully signed)
-            if (letter.Status != DOAStatus.Active)
-            {
-                return BadRequest("DOA letter must be active (fully signed) to create an activation");
-            }
-
-            // Validate dates are within letter's effective dates
-            if (request.StartDate < DateOnly.FromDateTime(letter.EffectiveStartDate) ||
-                request.EndDate > DateOnly.FromDateTime(letter.EffectiveEndDate))
-            {
-                return BadRequest("Activation dates must be within the letter's effective dates");
-            }
-
-            // Create activation
-            var activation = new DOAActivation
-            {
-                Id = Guid.NewGuid(),
-                DOALetterId = id,
-                TenantId = tenantId,
-                StartDate = request.StartDate,
-                EndDate = request.EndDate,
-                Reason = request.Reason,
-                Notes = request.Notes,
-                IsActive = true,
-                CreatedAt = DateTime.UtcNow
-            };
-
-            _context.DOAActivations.Add(activation);
-            await _context.SaveChangesAsync();
-
-            return Ok(activation);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error activating DOA letter {LetterId}", id);
-            return StatusCode(500, "An error occurred while activating the DOA letter");
-        }
-    }
-
-    // GET: api/delegationofauthority/active
-    [HttpGet("active")]
+    // GET: api/delegationofauthority/letters/range
+    // Returns Active DOA letters whose effective dates overlap with the given date range
+    [HttpGet("letters/range")]
     [RequiresPermission(Resource = "DelegationOfAuthority", Action = PermissionAction.Read)]
-    public async Task<ActionResult<IEnumerable<DOAActivation>>> GetActiveActivations([FromQuery] DateOnly? date = null)
+    public async Task<ActionResult<IEnumerable<DelegationOfAuthorityLetter>>> GetActiveLettersInRange(
+        [FromQuery] DateTime startDate,
+        [FromQuery] DateTime endDate)
     {
         try
         {
@@ -500,27 +428,24 @@ public class DelegationOfAuthorityController : AuthorizedControllerBase
             var tenantIds = GetUserTenantIds();
             var tenantId = tenantIds.FirstOrDefault();
 
-            var checkDate = date ?? DateOnly.FromDateTime(DateTime.UtcNow);
-
-            var activations = await _context.DOAActivations
-                .Include(a => a.DOALetter)
-                    .ThenInclude(d => d.DelegatorUser)
-                .Include(a => a.DOALetter)
-                    .ThenInclude(d => d.DesigneeUser)
-                .Where(a => a.TenantId == tenantId &&
-                           a.IsActive &&
-                           a.StartDate <= checkDate &&
-                           a.EndDate >= checkDate &&
-                           (a.DOALetter.DelegatorUserId == userId || a.DOALetter.DesigneeUserId == userId))
+            // Get all Active DOA letters whose effective dates overlap with the given date range
+            var letters = await _context.DelegationOfAuthorityLetters
+                .Include(d => d.DelegatorUser)
+                .Include(d => d.DesigneeUser)
+                .Where(d => tenantIds.Contains(d.TenantId) &&
+                           d.Status == DOAStatus.Active &&
+                           d.EffectiveStartDate <= endDate &&
+                           d.EffectiveEndDate >= startDate &&
+                           (d.DelegatorUserId == userId || d.DesigneeUserId == userId))
                 .AsNoTracking()
                 .ToListAsync();
 
-            return Ok(activations);
+            return Ok(letters);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving active DOA activations");
-            return StatusCode(500, "An error occurred while retrieving active DOA activations");
+            _logger.LogError(ex, "Error retrieving Active DOA letters for date range");
+            return StatusCode(500, "An error occurred while retrieving DOA letters");
         }
     }
 }

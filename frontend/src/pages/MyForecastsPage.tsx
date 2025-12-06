@@ -14,8 +14,9 @@ type ViewMode = 'byProject' | 'byMonth' | 'list';
 type StatusFilter = 'all' | ForecastStatus;
 
 export function MyForecastsPage() {
-  const { currentWorkspace } = useAuthStore();
-  const tenantId = currentWorkspace?.tenantId || '';
+  const { currentWorkspace, availableTenants } = useAuthStore();
+  // Use workspace tenantId, or fall back to first available tenant for admin users
+  const tenantId = currentWorkspace?.tenantId || availableTenants?.[0]?.tenantId || '';
   const [viewMode, setViewMode] = useState<ViewMode>('byProject');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

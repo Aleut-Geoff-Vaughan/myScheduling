@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { useDashboard } from '../hooks/useDashboard';
 import { bookingsService } from '../services/bookingsService';
@@ -8,28 +8,117 @@ import { doaService } from '../services/doaService';
 import { projectAssignmentsService } from '../services/projectAssignmentsService';
 import { forecastsService, type Forecast, ForecastStatus } from '../services/forecastService';
 import { getMondayOfWeek } from '../utils/dateUtils';
-import { Card, CardBody } from '../components/ui';
 import { BookingStatus, ProjectAssignmentStatus } from '../types/api';
-import type { DOAActivation } from '../types/doa';
+import type { DelegationOfAuthorityLetter } from '../types/doa';
+import type { Booking, ProjectAssignment } from '../types/api';
+import {
+  Calendar,
+  Users,
+  Briefcase,
+  FileText,
+  Clock,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  List,
+} from 'lucide-react';
 
-// Get date range for the next two weeks
-function getDateRange() {
-  const monday = getMondayOfWeek(new Date());
-  const endDate = new Date(monday);
-  endDate.setDate(endDate.getDate() + 13);
+type ViewMode = '1week' | '2weeks' | 'month';
+
+// Get date range based on view mode and offset
+function getDateRange(viewMode: ViewMode, weekOffset: number = 0) {
+  const today = new Date();
+  let startDate: Date;
+  let days: number;
+
+  if (viewMode === 'month') {
+    // Get first day of current month, then offset by months
+    startDate = new Date(today.getFullYear(), today.getMonth() + weekOffset, 1);
+    // Get last day of that month
+    const lastDay = new Date(today.getFullYear(), today.getMonth() + weekOffset + 1, 0);
+    days = lastDay.getDate();
+    // Adjust to start from Sunday of the first week
+    const startDayOfWeek = startDate.getDay();
+    startDate.setDate(startDate.getDate() - startDayOfWeek);
+    // Calculate total days to show (full weeks)
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + weekOffset + 1, 0);
+    const endDayOfWeek = endOfMonth.getDay();
+    const daysAfterMonth = endDayOfWeek === 6 ? 0 : 6 - endDayOfWeek;
+    days = startDayOfWeek + lastDay.getDate() + daysAfterMonth;
+  } else {
+    const weeksToShow = viewMode === '1week' ? 1 : 2;
+    startDate = getMondayOfWeek(today);
+    startDate.setDate(startDate.getDate() + weekOffset * 7);
+    days = weeksToShow * 7;
+  }
+
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + days - 1);
+
   return {
-    startDate: monday.toISOString().split('T')[0],
+    startDate: startDate.toISOString().split('T')[0],
     endDate: endDate.toISOString().split('T')[0],
-    startDatetime: monday.toISOString(),
+    startDatetime: startDate.toISOString(),
     endDatetime: endDate.toISOString(),
+    days,
+    displayMonth: viewMode === 'month' ? new Date(today.getFullYear(), today.getMonth() + weekOffset, 1) : null,
   };
 }
 
+// Generate array of dates for the calendar
+function generateCalendarDates(startDate: string, days: number): Date[] {
+  const dates: Date[] = [];
+  const start = new Date(startDate + 'T00:00:00');
+  for (let i = 0; i < days; i++) {
+    const date = new Date(start);
+    date.setDate(start.getDate() + i);
+    dates.push(date);
+  }
+  return dates;
+}
+
+// Format date for display
+function formatDateHeader(date: Date): { day: string; date: string; fullDate: string; isToday: boolean; isWeekend: boolean } {
+  const today = new Date();
+  const isToday = date.toDateString() === today.toDateString();
+  const dayOfWeek = date.getDay();
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  return {
+    day: date.toLocaleDateString('en-US', { weekday: 'short' }),
+    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    fullDate: date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }),
+    isToday,
+    isWeekend,
+  };
+}
+
+// Check if a date falls within a range
+function isDateInRange(date: Date, startStr: string, endStr: string): boolean {
+  const dateOnly = new Date(date.toISOString().split('T')[0] + 'T00:00:00');
+  const start = new Date(startStr.split('T')[0] + 'T00:00:00');
+  const end = new Date(endStr.split('T')[0] + 'T00:00:00');
+  return dateOnly >= start && dateOnly <= end;
+}
+
+// Check if a date matches a specific date string
+function isSameDate(date: Date, dateStr: string): boolean {
+  const dateOnly = date.toISOString().split('T')[0];
+  const compareDate = dateStr.split('T')[0];
+  return dateOnly === compareDate;
+}
+
 export function MyHubPage() {
+  const navigate = useNavigate();
   const { user, currentWorkspace } = useAuthStore();
   const tenantId = currentWorkspace?.tenantId || '';
-  const dateRange = useMemo(() => getDateRange(), []);
-  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('2weeks');
+  const [weekOffset, setWeekOffset] = useState(0);
+  const dateRange = useMemo(() => getDateRange(viewMode, weekOffset), [viewMode, weekOffset]);
+  const calendarDates = useMemo(
+    () => generateCalendarDates(dateRange.startDate, dateRange.days),
+    [dateRange]
+  );
 
   // MySchedule data
   const { data: dashboardData, isLoading: scheduleLoading } = useDashboard(
@@ -50,11 +139,11 @@ export function MyHubPage() {
     enabled: !!user?.id,
   });
 
-  // Active DOAs
-  const { data: activeDOAs = [], isLoading: doasLoading } = useQuery({
-    queryKey: ['active-doas', dateRange.startDate],
-    queryFn: () => doaService.getActiveActivations(),
-    enabled: true,
+  // Active DOA Letters for the visible date range (by effective dates)
+  const { data: doaLetters = [], isLoading: doasLoading } = useQuery({
+    queryKey: ['my-doa-letters-range', user?.id, dateRange.startDate, dateRange.endDate],
+    queryFn: () => doaService.getActiveLettersInRange(dateRange.startDate, dateRange.endDate),
+    enabled: !!user?.id,
   });
 
   // Project Assignments
@@ -78,496 +167,781 @@ export function MyHubPage() {
     enabled: !!tenantId,
   });
 
-  // Calculate summary stats
-  const scheduleStats = useMemo(() => {
-    if (!dashboardData) return { remote: 0, office: 0, client: 0, pto: 0 };
-    return {
-      remote: dashboardData.stats.remoteDays,
-      office: dashboardData.stats.officeDays,
-      client: dashboardData.stats.clientSites,
-      pto: 0,
-    };
-  }, [dashboardData]);
-
-  const bookingStats = useMemo(() => {
-    const upcoming = bookings.filter(
-      (b) => b.status === BookingStatus.Reserved && new Date(b.startDatetime) > new Date()
-    );
-    const today = bookings.filter((b) => {
-      const startDate = new Date(b.startDatetime).toDateString();
-      return startDate === new Date().toDateString();
-    });
-    return { total: bookings.length, upcoming: upcoming.length, today: today.length };
-  }, [bookings]);
-
-  const doaStats = useMemo(() => {
-    const myDOAs = activeDOAs.filter(
-      (d: DOAActivation) =>
-        d.doaLetter?.designeeUserId === user?.id || d.doaLetter?.delegatorUserId === user?.id
-    );
-    return { active: myDOAs.length };
-  }, [activeDOAs, user?.id]);
-
-  const assignmentStats = useMemo(() => {
-    return { active: assignments.length };
-  }, [assignments]);
-
-  const forecastStats = useMemo(() => {
-    const draft = forecasts.filter((f: Forecast) => f.status === ForecastStatus.Draft).length;
-    const submitted = forecasts.filter((f: Forecast) => f.status === ForecastStatus.Submitted).length;
-    const totalHours = forecasts.reduce((sum: number, f: Forecast) => sum + f.forecastedHours, 0);
-    return { total: forecasts.length, draft, submitted, totalHours };
-  }, [forecasts]);
-
-  const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
-  };
+  const isLoading = scheduleLoading || bookingsLoading || doasLoading || assignmentsLoading || forecastsLoading;
 
   if (!user) return null;
+
+  // Quick Actions
+  const quickActions = [
+    {
+      title: 'Log PTO',
+      description: 'Request time off',
+      icon: Clock,
+      color: 'bg-amber-500',
+      hoverColor: 'hover:bg-amber-50',
+      borderColor: 'border-amber-200',
+      onClick: () => navigate('/schedule'),
+    },
+    {
+      title: 'Book a Room',
+      description: 'Reserve a desk or meeting room',
+      icon: Building2,
+      color: 'bg-blue-500',
+      hoverColor: 'hover:bg-blue-50',
+      borderColor: 'border-blue-200',
+      onClick: () => navigate('/hoteling'),
+    },
+    {
+      title: 'Update Resume',
+      description: 'Keep your skills current',
+      icon: FileText,
+      color: 'bg-purple-500',
+      hoverColor: 'hover:bg-purple-50',
+      borderColor: 'border-purple-200',
+      onClick: () => navigate('/resumes'),
+    },
+    {
+      title: 'Create DOA',
+      description: 'Set up delegation of authority',
+      icon: Users,
+      color: 'bg-green-500',
+      hoverColor: 'hover:bg-green-50',
+      borderColor: 'border-green-200',
+      onClick: () => navigate('/doa'),
+    },
+    {
+      title: 'Update Assignments',
+      description: 'Manage project staffing',
+      icon: Briefcase,
+      color: 'bg-indigo-500',
+      hoverColor: 'hover:bg-indigo-50',
+      borderColor: 'border-indigo-200',
+      onClick: () => navigate('/staffing'),
+    },
+    {
+      title: 'View Schedule',
+      description: 'Plan work locations',
+      icon: Calendar,
+      color: 'bg-teal-500',
+      hoverColor: 'hover:bg-teal-50',
+      borderColor: 'border-teal-200',
+      onClick: () => navigate('/schedule'),
+    },
+  ];
+
+  // Navigation handlers
+  const goToPrevious = () => {
+    if (viewMode === 'month') {
+      setWeekOffset((prev) => prev - 1);
+    } else {
+      setWeekOffset((prev) => prev - (viewMode === '1week' ? 1 : 2));
+    }
+  };
+
+  const goToNext = () => {
+    if (viewMode === 'month') {
+      setWeekOffset((prev) => prev + 1);
+    } else {
+      setWeekOffset((prev) => prev + (viewMode === '1week' ? 1 : 2));
+    }
+  };
+
+  const goToToday = () => {
+    setWeekOffset(0);
+  };
+
+  // Helper to get schedules for a specific date (returns array for split days)
+  const getSchedulesForDate = (date: Date) => {
+    if (!dashboardData?.preferences) return [];
+    return dashboardData.preferences.filter((p) => isSameDate(date, p.workDate));
+  };
+
+  // Helper to get bookings for a specific date
+  const getBookingsForDate = (date: Date): Booking[] => {
+    return bookings.filter((b) => isSameDate(date, b.startDatetime));
+  };
+
+  // Helper to get DOA letters active on a specific date (by effective dates)
+  const getDOAsForDate = (date: Date): DelegationOfAuthorityLetter[] => {
+    return doaLetters.filter((d: DelegationOfAuthorityLetter) =>
+      isDateInRange(date, d.effectiveStartDate, d.effectiveEndDate)
+    );
+  };
+
+  // Helper to get assignments active on a specific date
+  const getAssignmentsForDate = (date: Date): ProjectAssignment[] => {
+    return assignments.filter((a) => {
+      const endDate = a.endDate || '2099-12-31';
+      return isDateInRange(date, a.startDate, endDate);
+    });
+  };
+
+  // Helper to check if forecast applies to date (monthly forecasts)
+  const getForecastsForDate = (date: Date): Forecast[] => {
+    const dateMonth = date.getMonth() + 1;
+    const dateYear = date.getFullYear();
+    return forecasts.filter((f: Forecast) => f.month === dateMonth && f.year === dateYear);
+  };
+
+  // Get display title for current view
+  const getDisplayTitle = () => {
+    if (viewMode === 'month' && dateRange.displayMonth) {
+      return dateRange.displayMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    const startDate = new Date(dateRange.startDate + 'T00:00:00');
+    const endDate = new Date(dateRange.endDate + 'T00:00:00');
+    return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+  };
+
+  // Check if current date range includes today
+  const isTodayInRange = calendarDates.some((d) => d.toDateString() === new Date().toDateString());
 
   return (
     <div className="p-3 sm:p-6">
       {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-4">
+        <div>
+          <h1 className="text-xl sm:text-3xl font-bold text-gray-900">myHub</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">
+            Welcome back, {user.displayName}!
+          </p>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
       <div className="mb-6">
-        <h1 className="text-xl sm:text-3xl font-bold text-gray-900">myHub</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">
-          Your unified dashboard - everything in one place
-        </p>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
-        <SummaryCard
-          title="Schedule"
-          subtitle="Next 2 weeks"
-          stat={`${scheduleStats.office + scheduleStats.remote} days`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          }
-          color="bg-blue-500"
-          link="/schedule"
-          loading={scheduleLoading}
-        />
-        <SummaryCard
-          title="Reservations"
-          subtitle="Office bookings"
-          stat={`${bookingStats.upcoming} upcoming`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          }
-          color="bg-emerald-500"
-          link="/hoteling"
-          loading={bookingsLoading}
-        />
-        <SummaryCard
-          title="DOAs"
-          subtitle="Active delegations"
-          stat={`${doaStats.active} active`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          }
-          color="bg-purple-500"
-          link="/doa"
-          loading={doasLoading}
-        />
-        <SummaryCard
-          title="Assignments"
-          subtitle="Project roles"
-          stat={`${assignmentStats.active} active`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          }
-          color="bg-orange-500"
-          link="/staffing"
-          loading={assignmentsLoading}
-        />
-        <SummaryCard
-          title="Forecasts"
-          subtitle="Hours forecast"
-          stat={`${forecastStats.totalHours.toLocaleString()} hrs`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          }
-          color="bg-cyan-500"
-          link="/forecast/my-forecasts"
-          loading={forecastsLoading}
-        />
-      </div>
-
-      {/* Detailed Sections */}
-      <div className="space-y-4">
-        {/* MySchedule Section */}
-        <CollapsibleSection
-          title="My Schedule"
-          subtitle={`${scheduleStats.office} office, ${scheduleStats.remote} remote days`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          }
-          color="bg-blue-500"
-          isExpanded={expandedSection === 'schedule'}
-          onToggle={() => toggleSection('schedule')}
-          loading={scheduleLoading}
-          link="/schedule"
-        >
-          {dashboardData && dashboardData.preferences.length > 0 ? (
-            <div className="grid grid-cols-7 gap-1 sm:gap-2">
-              {dashboardData.preferences.slice(0, 14).map((pref, idx) => (
-                <div
-                  key={pref.id || idx}
-                  className={`p-2 rounded text-center text-xs ${getScheduleColor(pref.locationType)}`}
-                >
-                  <div className="font-medium">{formatDayShort(pref.workDate)}</div>
-                  <div className="truncate">{getLocationShort(pref.locationType)}</div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No schedule preferences set for this period.</p>
-          )}
-        </CollapsibleSection>
-
-        {/* Reservations Section */}
-        <CollapsibleSection
-          title="My Reservations"
-          subtitle={`${bookingStats.today} today, ${bookingStats.upcoming} upcoming`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          }
-          color="bg-emerald-500"
-          isExpanded={expandedSection === 'bookings'}
-          onToggle={() => toggleSection('bookings')}
-          loading={bookingsLoading}
-          link="/hoteling"
-        >
-          {bookings.length > 0 ? (
-            <div className="space-y-2">
-              {bookings.slice(0, 5).map((booking) => (
-                <div
-                  key={booking.id}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
-                >
-                  <div>
-                    <div className="font-medium text-sm">
-                      {new Date(booking.startDatetime).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(booking.startDatetime).toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
-                    </div>
-                  </div>
-                  <div className={`px-2 py-1 rounded text-xs ${getBookingStatusColor(booking.status)}`}>
-                    {getBookingStatusLabel(booking.status)}
-                  </div>
-                </div>
-              ))}
-              {bookings.length > 5 && (
-                <Link to="/hoteling" className="text-emerald-600 text-sm hover:underline">
-                  View all {bookings.length} reservations
-                </Link>
-              )}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No upcoming reservations.</p>
-          )}
-        </CollapsibleSection>
-
-        {/* DOAs Section */}
-        <CollapsibleSection
-          title="My DOAs"
-          subtitle={`${doaStats.active} active delegations`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          }
-          color="bg-purple-500"
-          isExpanded={expandedSection === 'doas'}
-          onToggle={() => toggleSection('doas')}
-          loading={doasLoading}
-          link="/doa"
-        >
-          {activeDOAs.length > 0 ? (
-            <div className="space-y-2">
-              {activeDOAs
-                .filter(
-                  (d: DOAActivation) =>
-                    d.doaLetter?.designeeUserId === user?.id ||
-                    d.doaLetter?.delegatorUserId === user?.id
-                )
-                .slice(0, 5)
-                .map((doa: DOAActivation) => (
-                  <div
-                    key={doa.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
-                  >
-                    <div>
-                      <div className="font-medium text-sm">
-                        {doa.doaLetter?.subjectLine || 'Delegation'}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {doa.doaLetter?.designeeUserId === user?.id ? 'Designee' : 'Delegator'}
-                        {' - '}
-                        {new Date(doa.startDate).toLocaleDateString()} to{' '}
-                        {new Date(doa.endDate).toLocaleDateString()}
-                      </div>
-                    </div>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
-                      Active
-                    </span>
-                  </div>
-                ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No active delegations.</p>
-          )}
-        </CollapsibleSection>
-
-        {/* Project Assignments Section */}
-        <CollapsibleSection
-          title="My Project Assignments"
-          subtitle={`${assignmentStats.active} active assignments`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          }
-          color="bg-orange-500"
-          isExpanded={expandedSection === 'assignments'}
-          onToggle={() => toggleSection('assignments')}
-          loading={assignmentsLoading}
-          link="/staffing"
-        >
-          {assignments.length > 0 ? (
-            <div className="space-y-2">
-              {assignments.slice(0, 5).map((assignment) => (
-                <div
-                  key={assignment.id}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
-                >
-                  <div>
-                    <div className="font-medium text-sm">Project Assignment</div>
-                    <div className="text-xs text-gray-500">
-                      {new Date(assignment.startDate).toLocaleDateString()}
-                      {assignment.endDate && ` - ${new Date(assignment.endDate).toLocaleDateString()}`}
-                    </div>
-                  </div>
-                  <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">
-                    Active
-                  </span>
-                </div>
-              ))}
-              {assignments.length > 5 && (
-                <Link to="/staffing" className="text-orange-600 text-sm hover:underline">
-                  View all {assignments.length} assignments
-                </Link>
-              )}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No active project assignments.</p>
-          )}
-        </CollapsibleSection>
-
-        {/* Forecasts Section */}
-        <CollapsibleSection
-          title="My Forecasts"
-          subtitle={`${forecastStats.totalHours.toLocaleString()} total hours forecasted`}
-          icon={
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-          }
-          color="bg-cyan-500"
-          isExpanded={expandedSection === 'forecasts'}
-          onToggle={() => toggleSection('forecasts')}
-          loading={forecastsLoading}
-          link="/forecast/my-forecasts"
-        >
-          {forecasts.length > 0 ? (
-            <div className="space-y-2">
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="text-center p-2 bg-gray-100 rounded">
-                  <div className="text-lg font-bold text-gray-900">{forecastStats.draft}</div>
-                  <div className="text-xs text-gray-500">Draft</div>
-                </div>
-                <div className="text-center p-2 bg-yellow-50 rounded">
-                  <div className="text-lg font-bold text-yellow-700">{forecastStats.submitted}</div>
-                  <div className="text-xs text-gray-500">Submitted</div>
-                </div>
-                <div className="text-center p-2 bg-cyan-50 rounded">
-                  <div className="text-lg font-bold text-cyan-700">{forecastStats.total}</div>
-                  <div className="text-xs text-gray-500">Total</div>
-                </div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-3">Quick Actions</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {quickActions.map((action) => (
+            <button
+              key={action.title}
+              type="button"
+              onClick={action.onClick}
+              className={`p-4 rounded-lg border ${action.borderColor} ${action.hoverColor} bg-white transition-all hover:shadow-md text-left`}
+            >
+              <div className={`${action.color} w-10 h-10 rounded-lg flex items-center justify-center mb-3`}>
+                <action.icon className="w-5 h-5 text-white" />
               </div>
-              {forecasts.slice(0, 3).map((forecast: Forecast) => (
-                <div
-                  key={forecast.id}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
-                >
-                  <div>
-                    <div className="font-medium text-sm">{forecast.projectName || 'Project'}</div>
-                    <div className="text-xs text-gray-500">
-                      {forecast.periodDisplay} - {forecast.forecastedHours} hrs
-                    </div>
-                  </div>
-                  <span className={`px-2 py-1 rounded text-xs ${getForecastStatusColor(forecast.status)}`}>
-                    {forecast.statusName}
-                  </span>
-                </div>
-              ))}
-              {forecasts.length > 3 && (
-                <Link to="/forecast/my-forecasts" className="text-cyan-600 text-sm hover:underline">
-                  View all {forecasts.length} forecasts
-                </Link>
-              )}
+              <h3 className="font-medium text-gray-900 text-sm">{action.title}</h3>
+              <p className="text-xs text-gray-500 mt-0.5">{action.description}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Calendar Navigation & View Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
+        {/* Navigation */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={goToPrevious}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+            title={viewMode === 'month' ? 'Previous month' : 'Previous week(s)'}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            type="button"
+            onClick={goToToday}
+            disabled={isTodayInRange && weekOffset === 0}
+            className={`px-3 py-1.5 text-sm rounded-lg transition ${
+              isTodayInRange && weekOffset === 0
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+            }`}
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={goToNext}
+            className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition"
+            title={viewMode === 'month' ? 'Next month' : 'Next week(s)'}
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+          <span className="ml-2 text-lg font-semibold text-gray-800">{getDisplayTitle()}</span>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+          <button
+            type="button"
+            onClick={() => { setViewMode('1week'); setWeekOffset(0); }}
+            className={`px-3 py-1.5 text-sm rounded-md transition flex items-center gap-1 ${
+              viewMode === '1week'
+                ? 'bg-white text-emerald-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            1 Week
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode('2weeks'); setWeekOffset(0); }}
+            className={`px-3 py-1.5 text-sm rounded-md transition flex items-center gap-1 ${
+              viewMode === '2weeks'
+                ? 'bg-white text-emerald-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <List className="w-4 h-4" />
+            2 Weeks
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode('month'); setWeekOffset(0); }}
+            className={`px-3 py-1.5 text-sm rounded-md transition flex items-center gap-1 ${
+              viewMode === 'month'
+                ? 'bg-white text-emerald-700 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            <LayoutGrid className="w-4 h-4" />
+            Month
+          </button>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-3 mb-4 text-xs">
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-blue-500"></span> Schedule
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-emerald-500"></span> Reservations
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-purple-500"></span> DOAs
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-orange-500"></span> Assignments
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-3 h-3 rounded bg-cyan-500"></span> Forecasts
+        </span>
+      </div>
+
+      {/* Calendar Grid */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {isLoading ? (
+          <div className="p-8">
+            <div className="animate-pulse space-y-4">
+              <div className="h-10 bg-gray-200 rounded"></div>
+              <div className="h-32 bg-gray-200 rounded"></div>
+              <div className="h-32 bg-gray-200 rounded"></div>
             </div>
-          ) : (
-            <p className="text-gray-500 text-sm">No forecasts found.</p>
-          )}
-        </CollapsibleSection>
+          </div>
+        ) : viewMode === 'month' ? (
+          // Month Calendar Grid View
+          <MonthCalendarView
+            calendarDates={calendarDates}
+            getSchedulesForDate={getSchedulesForDate}
+            getBookingsForDate={getBookingsForDate}
+            getDOAsForDate={getDOAsForDate}
+            getAssignmentsForDate={getAssignmentsForDate}
+            getForecastsForDate={getForecastsForDate}
+            displayMonth={dateRange.displayMonth}
+            user={user}
+          />
+        ) : (
+          // Week/2-Week Table View
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[800px]">
+              {/* Date Headers */}
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="w-28 p-2 text-left text-xs font-medium text-gray-500 uppercase bg-gray-50 sticky left-0 z-10">
+                    Category
+                  </th>
+                  {calendarDates.map((date, idx) => {
+                    const header = formatDateHeader(date);
+                    return (
+                      <th
+                        key={idx}
+                        className={`p-2 text-center min-w-[100px] ${
+                          header.isToday
+                            ? 'bg-emerald-50 border-x-2 border-emerald-400'
+                            : header.isWeekend
+                            ? 'bg-gray-100'
+                            : 'bg-gray-50'
+                        }`}
+                      >
+                        <div className={`text-xs font-medium ${header.isToday ? 'text-emerald-700' : 'text-gray-500'}`}>
+                          {header.day}
+                        </div>
+                        <div className={`text-sm font-bold ${header.isToday ? 'text-emerald-800' : 'text-gray-700'}`}>
+                          {header.date}
+                        </div>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {/* Schedule Row */}
+                <tr className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="p-2 bg-white sticky left-0 z-10 border-r border-gray-100">
+                    <Link to="/schedule" className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-blue-600">
+                      <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                      Schedule
+                    </Link>
+                  </td>
+                  {calendarDates.map((date, idx) => {
+                    const schedules = getSchedulesForDate(date);
+                    const header = formatDateHeader(date);
+                    return (
+                      <td
+                        key={idx}
+                        className={`p-1 align-top ${
+                          header.isToday ? 'border-x-2 border-emerald-400 bg-emerald-50/50' : ''
+                        }`}
+                      >
+                        {schedules.length > 0 ? (
+                          <div className="space-y-1">
+                            {schedules.map((schedule, sIdx) => {
+                              const portionLabel = getDayPortionLabel(schedule.dayPortion);
+                              return (
+                                <div
+                                  key={sIdx}
+                                  className={`px-2 py-1 rounded text-xs ${getScheduleColor(schedule.locationType)}`}
+                                  title={`${getLocationLabel(schedule.locationType)}${portionLabel ? ` (${portionLabel})` : ''}${schedule.office?.name ? ` - ${schedule.office.name}` : ''}`}
+                                >
+                                  <div className="font-medium">
+                                    {portionLabel && <span className="mr-1">{portionLabel}:</span>}
+                                    {getLocationLabel(schedule.locationType)}
+                                  </div>
+                                  {schedule.office?.name && (
+                                    <div className="text-[10px] opacity-80 truncate">{schedule.office.name}</div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-center block">-</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* Reservations Row */}
+                <tr className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="p-2 bg-white sticky left-0 z-10 border-r border-gray-100">
+                    <Link to="/hoteling" className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-emerald-600">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      Reservations
+                    </Link>
+                  </td>
+                  {calendarDates.map((date, idx) => {
+                    const dayBookings = getBookingsForDate(date);
+                    const header = formatDateHeader(date);
+                    return (
+                      <td
+                        key={idx}
+                        className={`p-1 align-top ${
+                          header.isToday ? 'border-x-2 border-emerald-400 bg-emerald-50/50' : ''
+                        }`}
+                      >
+                        {dayBookings.length > 0 ? (
+                          <div className="space-y-1">
+                            {dayBookings.slice(0, 3).map((booking, bIdx) => (
+                              <div
+                                key={bIdx}
+                                className={`px-2 py-1 rounded text-xs ${getBookingStatusColor(booking.status)}`}
+                                title={`${booking.space?.name || 'Booking'} - ${new Date(booking.startDatetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`}
+                              >
+                                <div className="font-medium">
+                                  {new Date(booking.startDatetime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                                {booking.space?.name && (
+                                  <div className="text-[10px] opacity-80 truncate">{booking.space.name}</div>
+                                )}
+                              </div>
+                            ))}
+                            {dayBookings.length > 3 && (
+                              <div className="text-xs text-gray-500 text-center">+{dayBookings.length - 3} more</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-center block">-</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* DOAs Row */}
+                <tr className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="p-2 bg-white sticky left-0 z-10 border-r border-gray-100">
+                    <Link to="/doa" className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-purple-600">
+                      <span className="w-2 h-2 rounded-full bg-purple-500"></span>
+                      DOAs
+                    </Link>
+                  </td>
+                  {calendarDates.map((date, idx) => {
+                    const dayDOAs = getDOAsForDate(date);
+                    const header = formatDateHeader(date);
+                    return (
+                      <td
+                        key={idx}
+                        className={`p-1 align-top ${
+                          header.isToday ? 'border-x-2 border-emerald-400 bg-emerald-50/50' : ''
+                        }`}
+                      >
+                        {dayDOAs.length > 0 ? (
+                          <div className="space-y-1">
+                            {dayDOAs.slice(0, 2).map((doa, dIdx) => {
+                              const isDesignee = doa.designeeUserId === user?.id;
+                              return (
+                                <div
+                                  key={dIdx}
+                                  className={`px-2 py-1 rounded text-xs ${
+                                    isDesignee
+                                      ? 'bg-purple-100 text-purple-800'
+                                      : 'bg-indigo-100 text-indigo-800'
+                                  }`}
+                                  title={`${doa.subjectLine || 'DOA'} - ${isDesignee ? 'You are acting for ' + (doa.delegatorUser?.displayName || 'delegator') : 'Delegated to ' + (doa.designeeUser?.displayName || 'designee')}`}
+                                >
+                                  <div className="font-medium">{isDesignee ? 'Acting' : 'Out'}</div>
+                                  <div className="text-[10px] opacity-80 truncate">
+                                    {isDesignee
+                                      ? `for ${doa.delegatorUser?.displayName || 'delegator'}`
+                                      : `${doa.designeeUser?.displayName || 'designee'}`}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                            {dayDOAs.length > 2 && (
+                              <div className="text-xs text-gray-500 text-center">+{dayDOAs.length - 2} more</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-center block">-</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* Assignments Row */}
+                <tr className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="p-2 bg-white sticky left-0 z-10 border-r border-gray-100">
+                    <Link to="/staffing" className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-orange-600">
+                      <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                      Assignments
+                    </Link>
+                  </td>
+                  {calendarDates.map((date, idx) => {
+                    const dayAssignments = getAssignmentsForDate(date);
+                    const header = formatDateHeader(date);
+                    return (
+                      <td
+                        key={idx}
+                        className={`p-1 align-top ${
+                          header.isToday ? 'border-x-2 border-emerald-400 bg-emerald-50/50' : ''
+                        }`}
+                      >
+                        {dayAssignments.length > 0 ? (
+                          <div className="space-y-1">
+                            {dayAssignments.slice(0, 2).map((assignment, aIdx) => (
+                              <div
+                                key={aIdx}
+                                className="px-2 py-1 rounded text-xs bg-orange-100 text-orange-800"
+                                title={`Assignment - ${assignment.status === ProjectAssignmentStatus.Active ? 'Active' : 'Assigned'}`}
+                              >
+                                <div className="font-medium truncate">
+                                  {assignment.status === ProjectAssignmentStatus.Active ? 'Active' : 'Assigned'}
+                                </div>
+                                {assignment.notes && (
+                                  <div className="text-[10px] opacity-80 truncate">{assignment.notes}</div>
+                                )}
+                              </div>
+                            ))}
+                            {dayAssignments.length > 2 && (
+                              <div className="text-xs text-gray-500 text-center">+{dayAssignments.length - 2} more</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-center block">-</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+
+                {/* Forecasts Row */}
+                <tr className="hover:bg-gray-50">
+                  <td className="p-2 bg-white sticky left-0 z-10 border-r border-gray-100">
+                    <Link to="/forecast/my-forecasts" className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-cyan-600">
+                      <span className="w-2 h-2 rounded-full bg-cyan-500"></span>
+                      Forecasts
+                    </Link>
+                  </td>
+                  {calendarDates.map((date, idx) => {
+                    const dayForecasts = getForecastsForDate(date);
+                    const header = formatDateHeader(date);
+                    // Only show on first day of the month or first visible day
+                    const isFirstOfMonth = date.getDate() === 1;
+                    const isFirstVisible = idx === 0;
+                    const showForecast = (isFirstOfMonth || isFirstVisible) && dayForecasts.length > 0;
+
+                    return (
+                      <td
+                        key={idx}
+                        className={`p-1 align-top ${
+                          header.isToday ? 'border-x-2 border-emerald-400 bg-emerald-50/50' : ''
+                        }`}
+                      >
+                        {showForecast ? (
+                          <div className="space-y-1">
+                            {dayForecasts.slice(0, 2).map((forecast, fIdx) => (
+                              <div
+                                key={fIdx}
+                                className={`px-2 py-1 rounded text-xs ${getForecastStatusColor(forecast.status)}`}
+                                title={`${forecast.projectName}: ${forecast.forecastedHours}h - ${forecast.statusName}`}
+                              >
+                                <div className="font-medium">{forecast.forecastedHours}h</div>
+                                <div className="text-[10px] opacity-80 truncate">{forecast.projectName}</div>
+                              </div>
+                            ))}
+                            {dayForecasts.length > 2 && (
+                              <div className="text-xs text-gray-500 text-center">+{dayForecasts.length - 2} more</div>
+                            )}
+                          </div>
+                        ) : dayForecasts.length > 0 ? (
+                          <span className="text-cyan-300 text-center block">•</span>
+                        ) : (
+                          <span className="text-gray-300 text-center block">-</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Quick Stats Footer */}
+      <div className="mt-6 grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <QuickStat
+          label="Schedule Days"
+          value={(dashboardData?.stats?.officeDays ?? 0) + (dashboardData?.stats?.remoteDays ?? 0)}
+          link="/schedule"
+          color="text-blue-600"
+        />
+        <QuickStat
+          label="Reservations"
+          value={bookings.filter((b) => b.status === BookingStatus.Reserved).length}
+          link="/hoteling"
+          color="text-emerald-600"
+        />
+        <QuickStat
+          label="Active DOAs"
+          value={doaLetters.length}
+          link="/doa"
+          color="text-purple-600"
+        />
+        <QuickStat
+          label="Assignments"
+          value={assignments.length}
+          link="/staffing"
+          color="text-orange-600"
+        />
+        <QuickStat
+          label="Forecast Hours"
+          value={forecasts.reduce((sum: number, f: Forecast) => sum + f.forecastedHours, 0)}
+          link="/forecast/my-forecasts"
+          color="text-cyan-600"
+          suffix="hrs"
+        />
       </div>
     </div>
   );
 }
 
-// Summary Card Component
-interface SummaryCardProps {
-  title: string;
-  subtitle: string;
-  stat: string;
-  icon: React.ReactNode;
-  color: string;
-  link: string;
-  loading?: boolean;
+// Month Calendar View Component
+interface MonthCalendarViewProps {
+  calendarDates: Date[];
+  getSchedulesForDate: (date: Date) => { locationType: number; dayPortion: number; office?: { name: string } }[];
+  getBookingsForDate: (date: Date) => Booking[];
+  getDOAsForDate: (date: Date) => DelegationOfAuthorityLetter[];
+  getAssignmentsForDate: (date: Date) => ProjectAssignment[];
+  getForecastsForDate: (date: Date) => Forecast[];
+  displayMonth: Date | null;
+  user: { id: string; displayName: string } | null;
 }
 
-function SummaryCard({ title, subtitle, stat, icon, color, link, loading }: SummaryCardProps) {
+function MonthCalendarView({
+  calendarDates,
+  getSchedulesForDate,
+  getBookingsForDate,
+  getDOAsForDate,
+  getAssignmentsForDate,
+  getForecastsForDate,
+  displayMonth,
+  user,
+}: MonthCalendarViewProps) {
+  const weeks: Date[][] = [];
+  for (let i = 0; i < calendarDates.length; i += 7) {
+    weeks.push(calendarDates.slice(i, i + 7));
+  }
+
+  const isCurrentMonth = (date: Date) => {
+    if (!displayMonth) return true;
+    return date.getMonth() === displayMonth.getMonth();
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full min-w-[900px]">
+        <thead>
+          <tr className="border-b border-gray-200">
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+              <th key={day} className="p-2 text-center text-xs font-medium text-gray-500 uppercase bg-gray-50 w-[14.28%]">
+                {day}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {weeks.map((week, weekIdx) => (
+            <tr key={weekIdx} className="border-b border-gray-100">
+              {week.map((date, dayIdx) => {
+                const header = formatDateHeader(date);
+                const schedules = getSchedulesForDate(date);
+                const dayBookings = getBookingsForDate(date);
+                const dayDOAs = getDOAsForDate(date);
+                const dayAssignments = getAssignmentsForDate(date);
+                const dayForecasts = getForecastsForDate(date);
+                const inCurrentMonth = isCurrentMonth(date);
+
+                return (
+                  <td
+                    key={dayIdx}
+                    className={`p-1 align-top min-h-[120px] h-28 ${
+                      header.isToday
+                        ? 'bg-emerald-50 ring-2 ring-inset ring-emerald-400'
+                        : header.isWeekend
+                        ? 'bg-gray-50'
+                        : ''
+                    } ${!inCurrentMonth ? 'opacity-40' : ''}`}
+                  >
+                    <div className="flex flex-col h-full">
+                      <div className={`text-sm font-bold mb-1 ${header.isToday ? 'text-emerald-700' : 'text-gray-700'}`}>
+                        {date.getDate()}
+                      </div>
+                      <div className="flex-1 space-y-0.5 overflow-hidden">
+                        {/* Schedule */}
+                        {schedules.slice(0, 2).map((schedule, sIdx) => {
+                          const portionLabel = getDayPortionLabel(schedule.dayPortion);
+                          return (
+                            <div
+                              key={`s-${sIdx}`}
+                              className={`px-1 py-0.5 rounded text-[10px] truncate ${getScheduleColor(schedule.locationType)}`}
+                              title={`${getLocationLabel(schedule.locationType)}${portionLabel ? ` (${portionLabel})` : ''}`}
+                            >
+                              {portionLabel ? `${portionLabel}: ` : ''}{getLocationShort(schedule.locationType)}
+                            </div>
+                          );
+                        })}
+                        {/* Bookings */}
+                        {dayBookings.slice(0, 1).map((booking, bIdx) => (
+                          <div
+                            key={`b-${bIdx}`}
+                            className={`px-1 py-0.5 rounded text-[10px] truncate ${getBookingStatusColor(booking.status)}`}
+                          >
+                            {new Date(booking.startDatetime).toLocaleTimeString('en-US', { hour: 'numeric' })}
+                          </div>
+                        ))}
+                        {/* DOAs */}
+                        {dayDOAs.slice(0, 1).map((doa, dIdx) => {
+                          const isDesignee = doa.designeeUserId === user?.id;
+                          return (
+                            <div
+                              key={`d-${dIdx}`}
+                              className={`px-1 py-0.5 rounded text-[10px] truncate ${
+                                isDesignee ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800'
+                              }`}
+                            >
+                              {isDesignee ? 'Acting' : 'Out'}
+                            </div>
+                          );
+                        })}
+                        {/* Assignments */}
+                        {dayAssignments.length > 0 && (
+                          <div className="px-1 py-0.5 rounded text-[10px] truncate bg-orange-100 text-orange-800">
+                            {dayAssignments.length} proj
+                          </div>
+                        )}
+                        {/* Forecasts - show only if first of month */}
+                        {date.getDate() === 1 && dayForecasts.length > 0 && (
+                          <div className="px-1 py-0.5 rounded text-[10px] truncate bg-cyan-100 text-cyan-800">
+                            {dayForecasts.reduce((sum, f) => sum + f.forecastedHours, 0)}h
+                          </div>
+                        )}
+                        {/* More indicator */}
+                        {(dayBookings.length > 1 || dayDOAs.length > 1) && (
+                          <div className="text-[9px] text-gray-500 text-center">
+                            +{dayBookings.length + dayDOAs.length - 2} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// Quick Stat Component
+interface QuickStatProps {
+  label: string;
+  value: number;
+  link: string;
+  color: string;
+  suffix?: string;
+}
+
+function QuickStat({ label, value, link, color, suffix }: QuickStatProps) {
   return (
     <Link
       to={link}
-      className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4 hover:shadow-md hover:border-gray-300 transition group"
+      className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 hover:shadow-md hover:border-gray-300 transition"
     >
-      <div className="flex items-start justify-between">
-        <div className="min-w-0 flex-1">
-          <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">{title}</p>
-          <p className="text-xs text-gray-500 truncate">{subtitle}</p>
-        </div>
-        <div className={`${color} rounded-lg p-1.5 sm:p-2 flex-shrink-0 group-hover:scale-110 transition`}>
-          <div className="text-white">{icon}</div>
-        </div>
-      </div>
-      <div className="mt-2">
-        {loading ? (
-          <div className="h-6 bg-gray-200 rounded animate-pulse w-16"></div>
-        ) : (
-          <p className="text-lg sm:text-xl font-bold text-gray-900">{stat}</p>
-        )}
+      <div className="text-xs text-gray-500">{label}</div>
+      <div className={`text-xl font-bold ${color}`}>
+        {value.toLocaleString()}{suffix ? ` ${suffix}` : ''}
       </div>
     </Link>
   );
 }
 
-// Collapsible Section Component
-interface CollapsibleSectionProps {
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  color: string;
-  isExpanded: boolean;
-  onToggle: () => void;
-  loading?: boolean;
-  link: string;
-  children: React.ReactNode;
-}
-
-function CollapsibleSection({
-  title,
-  subtitle,
-  icon,
-  color,
-  isExpanded,
-  onToggle,
-  loading,
-  link,
-  children,
-}: CollapsibleSectionProps) {
-  return (
-    <Card>
-      <div
-        className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition"
-        onClick={onToggle}
-      >
-        <div className="flex items-center gap-3">
-          <div className={`${color} rounded-lg p-2 text-white`}>{icon}</div>
-          <div>
-            <h3 className="font-semibold text-gray-900">{title}</h3>
-            <p className="text-sm text-gray-500">{subtitle}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            to={link}
-            onClick={(e) => e.stopPropagation()}
-            className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
-          >
-            View All
-          </Link>
-          <svg
-            className={`w-5 h-5 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
-      {isExpanded && (
-        <CardBody className="pt-0 border-t border-gray-100">
-          {loading ? (
-            <div className="space-y-2">
-              <div className="h-12 bg-gray-100 rounded animate-pulse"></div>
-              <div className="h-12 bg-gray-100 rounded animate-pulse"></div>
-            </div>
-          ) : (
-            children
-          )}
-        </CardBody>
-      )}
-    </Card>
-  );
-}
-
-// Helper functions
+// Helper functions - WorkLocationType enum: Remote=0, RemotePlus=1, ClientSite=2, OfficeNoReservation=3, OfficeWithReservation=4, PTO=5, Travel=6
 function getScheduleColor(locationType: number): string {
   switch (locationType) {
     case 0: // Remote
+    case 1: // RemotePlus
       return 'bg-blue-100 text-blue-800';
-    case 1: // Office
-      return 'bg-green-100 text-green-800';
-    case 2: // Client
+    case 2: // ClientSite
       return 'bg-orange-100 text-orange-800';
-    case 3: // PTO
+    case 3: // OfficeNoReservation
+    case 4: // OfficeWithReservation
+      return 'bg-green-100 text-green-800';
+    case 5: // PTO
       return 'bg-amber-100 text-amber-800';
+    case 6: // Travel
+      return 'bg-purple-100 text-purple-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
@@ -575,28 +949,43 @@ function getScheduleColor(locationType: number): string {
 
 function getLocationShort(locationType: number): string {
   switch (locationType) {
-    case 0:
-      return 'Remote';
-    case 1:
-      return 'Office';
-    case 2:
-      return 'Client';
-    case 3:
-      return 'PTO';
-    default:
-      return '-';
+    case 0: return 'Remote';
+    case 1: return 'Remote+';
+    case 2: return 'Client';
+    case 3: return 'Office';
+    case 4: return 'Office';
+    case 5: return 'PTO';
+    case 6: return 'Travel';
+    default: return '-';
   }
 }
 
-function formatDayShort(dateStr: string): string {
-  const date = new Date(dateStr + 'T00:00:00');
-  return date.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+function getLocationLabel(locationType: number): string {
+  switch (locationType) {
+    case 0: return 'Remote';
+    case 1: return 'Remote Plus';
+    case 2: return 'Client Site';
+    case 3: return 'In Office';
+    case 4: return 'In Office (Reserved)';
+    case 5: return 'PTO';
+    case 6: return 'Travel';
+    default: return 'Unknown';
+  }
+}
+
+// DayPortion enum: FullDay=0, AM=1, PM=2
+function getDayPortionLabel(dayPortion: number): string {
+  switch (dayPortion) {
+    case 1: return 'AM';
+    case 2: return 'PM';
+    default: return '';
+  }
 }
 
 function getBookingStatusColor(status: BookingStatus): string {
   switch (status) {
     case BookingStatus.Reserved:
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-emerald-100 text-emerald-800';
     case BookingStatus.CheckedIn:
       return 'bg-green-100 text-green-800';
     case BookingStatus.Completed:
@@ -607,23 +996,6 @@ function getBookingStatusColor(status: BookingStatus): string {
       return 'bg-amber-100 text-amber-800';
     default:
       return 'bg-gray-100 text-gray-800';
-  }
-}
-
-function getBookingStatusLabel(status: BookingStatus): string {
-  switch (status) {
-    case BookingStatus.Reserved:
-      return 'Reserved';
-    case BookingStatus.CheckedIn:
-      return 'Checked In';
-    case BookingStatus.Completed:
-      return 'Completed';
-    case BookingStatus.Cancelled:
-      return 'Cancelled';
-    case BookingStatus.NoShow:
-      return 'No Show';
-    default:
-      return 'Unknown';
   }
 }
 
@@ -640,7 +1012,7 @@ function getForecastStatusColor(status: ForecastStatus): string {
     case ForecastStatus.Rejected:
       return 'bg-red-100 text-red-800';
     case ForecastStatus.Locked:
-      return 'bg-blue-100 text-blue-800';
+      return 'bg-cyan-100 text-cyan-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }

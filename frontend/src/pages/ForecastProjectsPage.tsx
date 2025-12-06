@@ -5,8 +5,9 @@ import { useAuthStore } from '../stores/authStore';
 import { staffingReportsService, type ProjectsSummaryItem } from '../services/forecastService';
 
 export function ForecastProjectsPage() {
-  const { currentWorkspace } = useAuthStore();
-  const tenantId = currentWorkspace?.tenantId || '';
+  const { currentWorkspace, availableTenants } = useAuthStore();
+  // Use workspace tenantId, or fall back to first available tenant for admin users
+  const tenantId = currentWorkspace?.tenantId || availableTenants?.[0]?.tenantId || '';
   const [searchTerm, setSearchTerm] = useState('');
   const [sortField, setSortField] = useState<'name' | 'hours' | 'assignments'>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');

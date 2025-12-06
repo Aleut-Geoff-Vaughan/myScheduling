@@ -12,8 +12,9 @@ import toast from 'react-hot-toast';
 import { GitCompare, Copy, ArrowUpCircle, Archive, Trash2, Plus, X, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 export function ForecastVersionsPage() {
-  const { currentWorkspace } = useAuthStore();
-  const tenantId = currentWorkspace?.tenantId;
+  const { currentWorkspace, availableTenants } = useAuthStore();
+  // Use workspace tenantId, or fall back to first available tenant for admin users
+  const tenantId = currentWorkspace?.tenantId || availableTenants?.[0]?.tenantId;
 
   const [versions, setVersions] = useState<ForecastVersion[]>([]);
   const [isLoading, setIsLoading] = useState(true);

@@ -23,8 +23,9 @@ import toast from 'react-hot-toast';
 type AssignmentType = 'user' | 'subcontractor' | 'tbd';
 
 export function AdminProjectRoleAssignmentsPage() {
-  const { currentWorkspace } = useAuthStore();
-  const tenantId = currentWorkspace?.tenantId;
+  const { currentWorkspace, availableTenants } = useAuthStore();
+  // Use workspace tenantId, or fall back to first available tenant for admin users
+  const tenantId = currentWorkspace?.tenantId || availableTenants?.[0]?.tenantId;
 
   const [assignments, setAssignments] = useState<ProjectRoleAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);

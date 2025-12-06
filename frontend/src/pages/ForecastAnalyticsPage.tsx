@@ -6,8 +6,9 @@ import { staffingReportsService } from '../services/forecastService';
 type ChartType = 'status' | 'variance' | 'utilization';
 
 export function ForecastAnalyticsPage() {
-  const { currentWorkspace } = useAuthStore();
-  const tenantId = currentWorkspace?.tenantId;
+  const { currentWorkspace, availableTenants } = useAuthStore();
+  // Use workspace tenantId, or fall back to first available tenant for admin users
+  const tenantId = currentWorkspace?.tenantId || availableTenants?.[0]?.tenantId;
 
   const [selectedChart, setSelectedChart] = useState<ChartType>('status');
 
