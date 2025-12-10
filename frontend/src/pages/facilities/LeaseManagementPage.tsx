@@ -26,7 +26,10 @@ function getStatusColor(status: LeaseStatus): string {
   }
 }
 
-function getDaysUntilExpiration(endDate: string): { days: number; label: string; color: string } {
+function getDaysUntilExpiration(endDate?: string): { days: number; label: string; color: string } {
+  if (!endDate) {
+    return { days: 0, label: 'No date', color: 'text-gray-400' };
+  }
   const days = differenceInDays(parseISO(endDate), new Date());
   if (days < 0) {
     return { days, label: 'Expired', color: 'text-red-600' };
@@ -98,6 +101,7 @@ export function LeaseManagementPage() {
   const totalMonthlyRent = activeLeases.reduce((sum, l) => sum + (l.monthlyRent || 0), 0);
   const totalAnnualRent = activeLeases.reduce((sum, l) => sum + (l.annualRent || 0), 0);
   const expiringWithin90Days = activeLeases.filter(l => {
+    if (!l.endDate) return false;
     const days = differenceInDays(parseISO(l.endDate), new Date());
     return days >= 0 && days <= 90;
   });
@@ -356,7 +360,7 @@ export function LeaseManagementPage() {
                       </td>
                       <td className="px-6 py-4">
                         <div>
-                          <p className="text-sm text-gray-900">{format(parseISO(lease.endDate), 'MMM d, yyyy')}</p>
+                          <p className="text-sm text-gray-900">{lease.endDate ? format(parseISO(lease.endDate), 'MMM d, yyyy') : '-'}</p>
                           <p className={`text-xs ${expiration.color}`}>{expiration.label}</p>
                         </div>
                       </td>

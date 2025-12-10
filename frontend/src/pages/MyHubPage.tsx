@@ -209,6 +209,15 @@ export function MyHubPage() {
       onClick: () => navigate('/hoteling'),
     },
     {
+      title: 'Facilities',
+      description: 'Office directory & check-in',
+      icon: Building2,
+      color: 'bg-teal-500',
+      hoverColor: 'hover:bg-teal-50',
+      borderColor: 'border-teal-200',
+      onClick: () => navigate('/facilities'),
+    },
+    {
       title: 'Update Resume',
       description: 'Keep your skills current',
       icon: FileText,

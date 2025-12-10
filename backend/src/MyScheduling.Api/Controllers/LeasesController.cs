@@ -525,8 +525,10 @@ public class LeasesController : AuthorizedControllerBase
     /// Get lease calendar (option years and key dates)
     /// </summary>
     [HttpGet("calendar")]
+    [HttpGet("calendar/{year:int}")]
     [RequiresPermission(Resource = "Lease", Action = PermissionAction.Read)]
     public async Task<ActionResult<IEnumerable<LeaseCalendarItem>>> GetLeaseCalendar(
+        int? year = null,
         [FromQuery] int months = 12)
     {
         try
@@ -535,8 +537,21 @@ public class LeasesController : AuthorizedControllerBase
             if (!tenantId.HasValue)
                 return BadRequest(new { message = "Invalid tenant context" });
 
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
-            var endDate = today.AddMonths(months);
+            DateOnly startDate;
+            DateOnly endDate;
+
+            if (year.HasValue)
+            {
+                // Year-based filtering: return all events for the specified year
+                startDate = new DateOnly(year.Value, 1, 1);
+                endDate = new DateOnly(year.Value, 12, 31);
+            }
+            else
+            {
+                // Month-based filtering: return events from today for the specified months
+                startDate = DateOnly.FromDateTime(DateTime.UtcNow);
+                endDate = startDate.AddMonths(months);
+            }
 
             var calendarItems = new List<LeaseCalendarItem>();
 
@@ -545,7 +560,7 @@ public class LeasesController : AuthorizedControllerBase
                 .Include(l => l.Office)
                 .Where(l => l.TenantId == tenantId.Value &&
                        l.Status == LeaseStatus.Active &&
-                       l.LeaseEndDate >= today &&
+                       l.LeaseEndDate >= startDate &&
                        l.LeaseEndDate <= endDate)
                 .ToListAsync();
 
@@ -561,7 +576,7 @@ public class LeasesController : AuthorizedControllerBase
                 });
 
                 if (lease.RenewalNoticeDeadline.HasValue &&
-                    lease.RenewalNoticeDeadline >= today &&
+                    lease.RenewalNoticeDeadline >= startDate &&
                     lease.RenewalNoticeDeadline <= endDate)
                 {
                     calendarItems.Add(new LeaseCalendarItem
@@ -575,7 +590,7 @@ public class LeasesController : AuthorizedControllerBase
                 }
 
                 if (lease.InsuranceExpirationDate.HasValue &&
-                    lease.InsuranceExpirationDate >= today &&
+                    lease.InsuranceExpirationDate >= startDate &&
                     lease.InsuranceExpirationDate <= endDate)
                 {
                     calendarItems.Add(new LeaseCalendarItem
@@ -595,7 +610,7 @@ public class LeasesController : AuthorizedControllerBase
                 .ThenInclude(l => l.Office)
                 .Where(o => o.TenantId == tenantId.Value &&
                        o.Status == OptionYearStatus.Available &&
-                       o.ExerciseDeadline >= today &&
+                       o.ExerciseDeadline >= startDate &&
                        o.ExerciseDeadline <= endDate)
                 .ToListAsync();
 

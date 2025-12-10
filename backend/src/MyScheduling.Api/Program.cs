@@ -274,6 +274,8 @@ if (Environment.GetEnvironmentVariable("SEED_FACILITIES")?.Equals("true", String
     try
     {
         await SeedFacilitiesData.SeedSpacesForAllOffices(context);
+        // Also seed the portal data (leases, travel guides, announcements, etc.)
+        await SeedFacilitiesData.SeedFacilitiesPortalData(context, "Arlington");
         logger.LogInformation("Facilities seed data applied successfully");
     }
     catch (Exception ex)

@@ -448,7 +448,7 @@ export const facilitiesPortalService = {
   // ==================== OFFICE DIRECTORY ====================
 
   async getOfficeDirectory(): Promise<OfficeDirectoryItem[]> {
-    return api.get<OfficeDirectoryItem[]>('/facilities-portal/office-directory');
+    return api.get<OfficeDirectoryItem[]>('/facilities-portal/offices');
   },
 
   async getOfficeDetails(officeId: string): Promise<{
@@ -458,21 +458,21 @@ export const facilitiesPortalService = {
     clientSiteDetail?: ClientSiteDetail;
     activeAnnouncements: FacilityAnnouncement[];
   }> {
-    return api.get(`/facilities-portal/office-directory/${officeId}`);
+    return api.get(`/facilities-portal/offices/${officeId}`);
   },
 
   // ==================== TRAVEL GUIDES ====================
 
   async getTravelGuides(): Promise<OfficeTravelGuide[]> {
-    return api.get<OfficeTravelGuide[]>('/facilities-portal/travel-guides');
+    return api.get<OfficeTravelGuide[]>('/facilities-portal/offices');
   },
 
   async getTravelGuide(officeId: string): Promise<OfficeTravelGuide> {
-    return api.get<OfficeTravelGuide>(`/facilities-portal/travel-guides/${officeId}`);
+    return api.get<OfficeTravelGuide>(`/facilities-portal/offices/${officeId}/travel-guide`);
   },
 
   async upsertTravelGuide(officeId: string, guide: Partial<OfficeTravelGuide>): Promise<OfficeTravelGuide> {
-    return api.put<OfficeTravelGuide>(`/facilities-portal/travel-guides/${officeId}`, guide);
+    return api.put<OfficeTravelGuide>(`/facilities-portal/offices/${officeId}/travel-guide`, guide);
   },
 
   // ==================== OFFICE POCs ====================
@@ -504,7 +504,7 @@ export const facilitiesPortalService = {
   },
 
   async getWhosHere(officeId: string): Promise<WhosHereItem[]> {
-    return api.get<WhosHereItem[]>(`/facilities-portal/whos-here/${officeId}`);
+    return api.get<WhosHereItem[]>(`/facilities-portal/offices/${officeId}/whos-here`);
   },
 
   async getMyCheckIns(): Promise<FacilityCheckIn[]> {
