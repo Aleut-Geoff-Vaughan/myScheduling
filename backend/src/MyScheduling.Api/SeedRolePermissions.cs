@@ -77,6 +77,18 @@ public static class SeedRolePermissions
         // ProjectRoleAssignment permissions
         templates.AddRange(GetProjectRoleAssignmentTemplates());
 
+        // Forecast permissions (CRUD for forecasts - separate from ForecastVersion)
+        templates.AddRange(GetForecastTemplates());
+
+        // CareerJobFamily permissions
+        templates.AddRange(GetCareerJobFamilyTemplates());
+
+        // LaborCategory permissions
+        templates.AddRange(GetLaborCategoryTemplates());
+
+        // ForecastApprovalSchedule permissions
+        templates.AddRange(GetForecastApprovalScheduleTemplates());
+
         return templates;
     }
 
@@ -393,6 +405,150 @@ public static class SeedRolePermissions
             // Executive - Read access
             CreateTemplate(AppRole.Executive, "ProjectRoleAssignment", PermissionAction.Read, PermissionScope.Tenant,
                 "View all project role assignments in tenant"),
+        };
+    }
+
+    private static List<RolePermissionTemplate> GetForecastTemplates()
+    {
+        return new List<RolePermissionTemplate>
+        {
+            // Employee - Read own forecasts (for their project assignments)
+            CreateTemplate(AppRole.Employee, "Forecast", PermissionAction.Read, PermissionScope.Owner,
+                "View forecasts for assigned projects"),
+
+            // ProjectManager - Full CRUD for their projects
+            CreateTemplate(AppRole.ProjectManager, "Forecast", PermissionAction.Read, PermissionScope.Owner,
+                "View forecasts for owned projects"),
+            CreateTemplate(AppRole.ProjectManager, "Forecast", PermissionAction.Create, PermissionScope.Owner,
+                "Create forecasts for owned projects"),
+            CreateTemplate(AppRole.ProjectManager, "Forecast", PermissionAction.Update, PermissionScope.Owner,
+                "Update forecasts for owned projects"),
+            CreateTemplate(AppRole.ProjectManager, "Forecast", PermissionAction.Delete, PermissionScope.Owner,
+                "Delete forecasts for owned projects"),
+            CreateTemplate(AppRole.ProjectManager, "Forecast", PermissionAction.Approve, PermissionScope.Owner,
+                "Approve forecasts for owned projects"),
+
+            // ResourceManager - Full tenant access
+            CreateTemplate(AppRole.ResourceManager, "Forecast", PermissionAction.Read, PermissionScope.Tenant,
+                "View all forecasts in tenant"),
+            CreateTemplate(AppRole.ResourceManager, "Forecast", PermissionAction.Create, PermissionScope.Tenant,
+                "Create forecasts"),
+            CreateTemplate(AppRole.ResourceManager, "Forecast", PermissionAction.Update, PermissionScope.Tenant,
+                "Update forecasts"),
+            CreateTemplate(AppRole.ResourceManager, "Forecast", PermissionAction.Delete, PermissionScope.Tenant,
+                "Delete forecasts"),
+            CreateTemplate(AppRole.ResourceManager, "Forecast", PermissionAction.Approve, PermissionScope.Tenant,
+                "Approve forecasts"),
+            CreateTemplate(AppRole.ResourceManager, "Forecast", PermissionAction.Manage, PermissionScope.Tenant,
+                "Full forecast management access"),
+        };
+    }
+
+    private static List<RolePermissionTemplate> GetCareerJobFamilyTemplates()
+    {
+        return new List<RolePermissionTemplate>
+        {
+            // Employee - Read access for viewing job families
+            CreateTemplate(AppRole.Employee, "CareerJobFamily", PermissionAction.Read, PermissionScope.Tenant,
+                "View career job families"),
+
+            // ProjectManager - Read for staffing planning
+            CreateTemplate(AppRole.ProjectManager, "CareerJobFamily", PermissionAction.Read, PermissionScope.Tenant,
+                "View career job families for staffing"),
+
+            // ResourceManager - Full CRUD for managing job families
+            CreateTemplate(AppRole.ResourceManager, "CareerJobFamily", PermissionAction.Read, PermissionScope.Tenant,
+                "View all career job families"),
+            CreateTemplate(AppRole.ResourceManager, "CareerJobFamily", PermissionAction.Create, PermissionScope.Tenant,
+                "Create career job families"),
+            CreateTemplate(AppRole.ResourceManager, "CareerJobFamily", PermissionAction.Update, PermissionScope.Tenant,
+                "Update career job families"),
+            CreateTemplate(AppRole.ResourceManager, "CareerJobFamily", PermissionAction.Delete, PermissionScope.Tenant,
+                "Delete career job families"),
+
+            // FinanceLead - Read for cost analysis
+            CreateTemplate(AppRole.FinanceLead, "CareerJobFamily", PermissionAction.Read, PermissionScope.Tenant,
+                "View career job families for cost analysis"),
+
+            // Executive - Read access
+            CreateTemplate(AppRole.Executive, "CareerJobFamily", PermissionAction.Read, PermissionScope.Tenant,
+                "View career job families"),
+        };
+    }
+
+    private static List<RolePermissionTemplate> GetLaborCategoryTemplates()
+    {
+        return new List<RolePermissionTemplate>
+        {
+            // Employee - Read access for viewing labor categories
+            CreateTemplate(AppRole.Employee, "LaborCategory", PermissionAction.Read, PermissionScope.Tenant,
+                "View labor categories"),
+
+            // ProjectManager - Full CRUD for their projects
+            CreateTemplate(AppRole.ProjectManager, "LaborCategory", PermissionAction.Read, PermissionScope.Tenant,
+                "View labor categories"),
+            CreateTemplate(AppRole.ProjectManager, "LaborCategory", PermissionAction.Create, PermissionScope.Owner,
+                "Create labor categories for owned projects"),
+            CreateTemplate(AppRole.ProjectManager, "LaborCategory", PermissionAction.Update, PermissionScope.Owner,
+                "Update labor categories for owned projects"),
+            CreateTemplate(AppRole.ProjectManager, "LaborCategory", PermissionAction.Delete, PermissionScope.Owner,
+                "Delete labor categories for owned projects"),
+
+            // ResourceManager - Full tenant access
+            CreateTemplate(AppRole.ResourceManager, "LaborCategory", PermissionAction.Read, PermissionScope.Tenant,
+                "View all labor categories"),
+            CreateTemplate(AppRole.ResourceManager, "LaborCategory", PermissionAction.Create, PermissionScope.Tenant,
+                "Create labor categories"),
+            CreateTemplate(AppRole.ResourceManager, "LaborCategory", PermissionAction.Update, PermissionScope.Tenant,
+                "Update labor categories"),
+            CreateTemplate(AppRole.ResourceManager, "LaborCategory", PermissionAction.Delete, PermissionScope.Tenant,
+                "Delete labor categories"),
+
+            // FinanceLead - Read for cost analysis
+            CreateTemplate(AppRole.FinanceLead, "LaborCategory", PermissionAction.Read, PermissionScope.Tenant,
+                "View labor categories for cost analysis"),
+
+            // Executive - Read access
+            CreateTemplate(AppRole.Executive, "LaborCategory", PermissionAction.Read, PermissionScope.Tenant,
+                "View labor categories"),
+        };
+    }
+
+    private static List<RolePermissionTemplate> GetForecastApprovalScheduleTemplates()
+    {
+        return new List<RolePermissionTemplate>
+        {
+            // Employee - Read own approval schedules
+            CreateTemplate(AppRole.Employee, "ForecastApprovalSchedule", PermissionAction.Read, PermissionScope.Owner,
+                "View own forecast approval schedules"),
+
+            // ProjectManager - Full CRUD for their projects
+            CreateTemplate(AppRole.ProjectManager, "ForecastApprovalSchedule", PermissionAction.Read, PermissionScope.Owner,
+                "View approval schedules for owned projects"),
+            CreateTemplate(AppRole.ProjectManager, "ForecastApprovalSchedule", PermissionAction.Create, PermissionScope.Owner,
+                "Create approval schedules for owned projects"),
+            CreateTemplate(AppRole.ProjectManager, "ForecastApprovalSchedule", PermissionAction.Update, PermissionScope.Owner,
+                "Update approval schedules for owned projects"),
+            CreateTemplate(AppRole.ProjectManager, "ForecastApprovalSchedule", PermissionAction.Delete, PermissionScope.Owner,
+                "Delete approval schedules for owned projects"),
+
+            // ResourceManager - Full tenant access
+            CreateTemplate(AppRole.ResourceManager, "ForecastApprovalSchedule", PermissionAction.Read, PermissionScope.Tenant,
+                "View all forecast approval schedules"),
+            CreateTemplate(AppRole.ResourceManager, "ForecastApprovalSchedule", PermissionAction.Create, PermissionScope.Tenant,
+                "Create forecast approval schedules"),
+            CreateTemplate(AppRole.ResourceManager, "ForecastApprovalSchedule", PermissionAction.Update, PermissionScope.Tenant,
+                "Update forecast approval schedules"),
+            CreateTemplate(AppRole.ResourceManager, "ForecastApprovalSchedule", PermissionAction.Delete, PermissionScope.Tenant,
+                "Delete forecast approval schedules"),
+
+            // FinanceLead - Read access
+            CreateTemplate(AppRole.FinanceLead, "ForecastApprovalSchedule", PermissionAction.Read, PermissionScope.Tenant,
+                "View forecast approval schedules"),
+
+            // Executive - Read access
+            CreateTemplate(AppRole.Executive, "ForecastApprovalSchedule", PermissionAction.Read, PermissionScope.Tenant,
+                "View forecast approval schedules"),
         };
     }
 
