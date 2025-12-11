@@ -4,15 +4,13 @@ import { Toaster } from 'react-hot-toast';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { LoginPage } from './pages/LoginPage';
 import { WorkspaceSelectorPage } from './pages/WorkspaceSelectorPage';
-import { MeLayout } from './components/layout/MeLayout';
-import { ManagerLayout } from './components/layout/ManagerLayout';
 import { AdminLayout } from './components/layout/AdminLayout';
+import { UnifiedLayout } from './components/layout/UnifiedLayout';
 // DashboardPage removed - MyHubPage is now the home page
 import { ProjectsPage } from './pages/ProjectsPage';
 import { WbsPage } from './pages/WbsPage';
 import { MyStaffingPlanPage } from './pages/MyStaffingPlanPage';
 import { HotelingPage } from './pages/HotelingPage';
-import { FacilitiesPage } from './pages/FacilitiesPage';
 import { ResumesPage } from './pages/ResumesPage';
 import { ResumeProfilePage } from './pages/ResumeProfilePage';
 import { AdminPage } from './pages/AdminPage';
@@ -22,8 +20,6 @@ import { AdminProjectAssignmentsPage } from './pages/AdminProjectAssignmentsPage
 import { AdminAssignmentsPage } from './pages/AdminAssignmentsPage';
 import { TeamCalendarPage } from './pages/TeamCalendarPage';
 import { TeamCalendarAdminPage } from './pages/TeamCalendarAdminPage';
-import { UserProfilePage } from './pages/UserProfilePage';
-import TemplatesPage from './pages/TemplatesPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import { MagicLinkVerifyPage } from './pages/MagicLinkVerifyPage';
 import DOAPage from './pages/DOAPage';
@@ -52,8 +48,6 @@ import { AdminProjectRoleAssignmentsPage } from './pages/AdminProjectRoleAssignm
 import { AdminForecastsPage } from './pages/AdminForecastsPage';
 import { ForecastVersionsPage } from './pages/ForecastVersionsPage';
 import { ForecastImportExportPage } from './pages/ForecastImportExportPage';
-import { ForecastApprovalPage } from './pages/ForecastApprovalPage';
-import { ManagerDashboardPage } from './pages/ManagerDashboardPage';
 import { ManagerResumesPage } from './pages/ManagerResumesPage';
 import { ResumeSharePage } from './pages/ResumeSharePage';
 import { MySchedulePage } from './pages/MySchedulePage';
@@ -63,8 +57,6 @@ import ProjectStaffingDetailPage from './pages/ProjectStaffingDetailPage';
 import { AdminImpersonationPage } from './pages/AdminImpersonationPage';
 import { AdminUserEditPage } from './pages/AdminUserEditPage';
 import { AdminTeamCalendarsPage } from './pages/AdminTeamCalendarsPage';
-import { ForecastLayout } from './components/layout/ForecastLayout';
-import { FacilitiesLayout } from './components/layout/FacilitiesLayout';
 import { ForecastDashboardPage } from './pages/ForecastDashboardPage';
 import { FacilitiesDashboardPage } from './pages/FacilitiesDashboardPage';
 import { FacilitiesAdminPage } from './pages/facilities/FacilitiesAdminPage';
@@ -84,7 +76,6 @@ import { ClearancesPage } from './pages/facilities/ClearancesPage';
 import { ForeignTravelPage } from './pages/facilities/ForeignTravelPage';
 import { ScifAccessPage } from './pages/facilities/ScifAccessPage';
 import { UsageAnalyticsPage } from './pages/facilities/UsageAnalyticsPage';
-import { FacilitiesSettingsPage } from './pages/facilities/FacilitiesSettingsPage';
 import { MyForecastsPage } from './pages/MyForecastsPage';
 import { ForecastProjectsPage } from './pages/ForecastProjectsPage';
 import { ProjectForecastGridPage } from './pages/ProjectForecastGridPage';
@@ -199,57 +190,86 @@ function App() {
               <Route path="email-test" element={<EmailTestPage />} />
             </Route>
 
-            {/* Me Portal Routes (mobile-friendly top nav) */}
+            {/* Root redirect to /work */}
             <Route
               path="/"
               element={
                 <ProtectedRoute>
-                  <MeLayout />
+                  <Navigate to="/work" replace />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Legacy routes - redirect to new unified routes */}
+            <Route path="/schedule" element={<Navigate to="/work/schedule" replace />} />
+            <Route path="/staffing" element={<Navigate to="/work/staffing" replace />} />
+            <Route path="/hoteling" element={<Navigate to="/facilities/book" replace />} />
+            <Route path="/resumes" element={<Navigate to="/work/resumes" replace />} />
+            <Route path="/resumes/:id" element={<Navigate to="/work/resumes/:id" replace />} />
+            <Route path="/doa" element={<Navigate to="/work/doa" replace />} />
+            <Route path="/inbox" element={<Navigate to="/work/assignments" replace />} />
+            <Route path="/profile" element={<Navigate to="/work" replace />} />
+
+            {/* Manager Portal - Legacy redirects to unified /work routes */}
+            <Route path="/manager" element={<Navigate to="/work" replace />} />
+            <Route path="/manager/people" element={<Navigate to="/work/team/people" replace />} />
+            <Route path="/manager/people/:id/dashboard" element={<Navigate to="/work/team/people/:id/dashboard" replace />} />
+            <Route path="/manager/staffing" element={<Navigate to="/work/team/staffing" replace />} />
+            <Route path="/manager/team-calendar" element={<Navigate to="/work/team/calendar" replace />} />
+            <Route path="/manager/team-calendar/admin" element={<Navigate to="/work/team/calendar/admin" replace />} />
+            <Route path="/manager/projects" element={<Navigate to="/work/projects" replace />} />
+            <Route path="/manager/wbs" element={<Navigate to="/work/wbs" replace />} />
+            <Route path="/manager/facilities" element={<Navigate to="/facilities" replace />} />
+            <Route path="/manager/resumes" element={<Navigate to="/work/team/resumes" replace />} />
+            <Route path="/manager/staffing-admin" element={<Navigate to="/work/settings/staffing" replace />} />
+            <Route path="/manager/forecast-approvals" element={<Navigate to="/forecast/approvals" replace />} />
+            <Route path="/manager/reports" element={<Navigate to="/work/reports" replace />} />
+
+            {/* NEW: Unified myWork Routes (new navigation system) */}
+            <Route
+              path="/work"
+              element={
+                <ProtectedRoute>
+                  <UnifiedLayout />
                 </ProtectedRoute>
               }
             >
+              {/* Dashboard */}
               <Route index element={<MyHubPage />} />
+
+              {/* My Work section */}
               <Route path="schedule" element={<MySchedulePage />} />
-              <Route path="templates" element={<TemplatesPage />} />
               <Route path="staffing" element={<MyStaffingPlanPage />} />
-              <Route path="hoteling" element={<HotelingPage />} />
+              <Route path="assignments" element={<InboxPage />} />
               <Route path="resumes" element={<ResumesPage />} />
               <Route path="resumes/:id" element={<ResumeProfilePage />} />
               <Route path="doa" element={<DOAPage />} />
-              <Route path="profile" element={<UserProfilePage />} />
-              <Route path="inbox" element={<InboxPage />} />
-            </Route>
 
-            {/* Manager Portal Routes (sidebar nav) */}
-            <Route
-              path="/manager"
-              element={
-                <ProtectedRoute>
-                  <ManagerLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<ManagerDashboardPage />} />
-              <Route path="people" element={<PeoplePage />} />
-              <Route path="people/:id/dashboard" element={<PersonDashboardPage />} />
-              <Route path="staffing" element={<ManagementStaffingPage />} />
-              <Route path="team-calendar" element={<TeamCalendarPage />} />
-              <Route path="team-calendar/admin" element={<TeamCalendarAdminPage />} />
+              {/* Team section */}
+              <Route path="team/people" element={<PeoplePage />} />
+              <Route path="team/people/:id/dashboard" element={<PersonDashboardPage />} />
+              <Route path="team/staffing" element={<ManagementStaffingPage />} />
+              <Route path="team/calendar" element={<TeamCalendarPage />} />
+              <Route path="team/calendar/admin" element={<TeamCalendarAdminPage />} />
+              <Route path="team/resumes" element={<ManagerResumesPage />} />
+
+              {/* Projects section */}
               <Route path="projects" element={<ProjectsPage />} />
               <Route path="wbs" element={<WbsPage />} />
-              <Route path="facilities" element={<FacilitiesPage />} />
-              <Route path="resumes" element={<ManagerResumesPage />} />
-              <Route path="staffing-admin" element={<StaffingAdminPage />} />
-              <Route path="forecast-approvals" element={<ForecastApprovalPage />} />
+
+              {/* Reports */}
               <Route path="reports" element={<div className="p-6">Reports Module (Coming Soon)</div>} />
+
+              {/* Settings */}
+              <Route path="settings/staffing" element={<StaffingAdminPage />} />
             </Route>
 
-            {/* myForecast Portal Routes (sidebar nav) */}
+            {/* NEW: Unified myForecast Routes (new navigation system) */}
             <Route
               path="/forecast"
               element={
                 <ProtectedRoute>
-                  <ForecastLayout />
+                  <UnifiedLayout />
                 </ProtectedRoute>
               }
             >
@@ -267,7 +287,8 @@ function App() {
               <Route path="import-export" element={<ForecastImportExportPage />} />
               <Route path="settings" element={<ForecastSettingsPage />} />
               <Route path="cost-rates" element={<CostRatesPage />} />
-              {/* Staffing Admin - moved from /admin/staffing */}
+              <Route path="non-labor" element={<ForecastSettingsPage />} />
+              {/* Staffing Dashboard */}
               <Route path="staffing-dashboard" element={<StaffingDashboardPage />} />
               <Route path="staffing/projects/:projectId" element={<ProjectStaffingDetailPage />} />
               <Route path="role-assignments" element={<AdminProjectRoleAssignmentsPage />} />
@@ -276,40 +297,44 @@ function App() {
               <Route path="forecasts" element={<AdminForecastsPage />} />
             </Route>
 
-            {/* myFacilities Portal Routes (sidebar nav) */}
+            {/* NEW: Unified myFacilities Routes (new navigation system) */}
             <Route
               path="/facilities"
               element={
                 <ProtectedRoute>
-                  <FacilitiesLayout />
+                  <UnifiedLayout />
                 </ProtectedRoute>
               }
             >
               <Route index element={<FacilitiesDashboardPage />} />
+              {/* Hoteling section */}
+              <Route path="book" element={<HotelingPage />} />
               <Route path="check-in" element={<CheckInPage />} />
               <Route path="whos-here" element={<WhosHerePage />} />
+              {/* Offices section */}
               <Route path="offices" element={<OfficeDirectoryPage />} />
               <Route path="offices/:officeId" element={<OfficeDetailPage />} />
               <Route path="travel-guides" element={<TravelGuidesPage />} />
               <Route path="announcements" element={<AnnouncementsPage />} />
+              {/* Management section */}
               <Route path="leases" element={<LeaseManagementPage />} />
               <Route path="leases/:leaseId" element={<LeaseDetailPage />} />
               <Route path="option-years" element={<OptionYearsCalendarPage />} />
               <Route path="field-assignments" element={<FieldAssignmentsPage />} />
               <Route path="client-sites" element={<ClientSitesPage />} />
+              {/* Security section */}
               <Route path="clearances" element={<ClearancesPage />} />
               <Route path="foreign-travel" element={<ForeignTravelPage />} />
               <Route path="scif-access" element={<ScifAccessPage />} />
-              <Route path="analytics" element={<UsageAnalyticsPage />} />
-              <Route path="settings" element={<FacilitiesSettingsPage />} />
-              {/* Admin Pages - migrated from /admin */}
+              {/* Settings section */}
               <Route path="admin" element={<FacilitiesAdminPage />} />
               <Route path="admin/offices" element={<OfficeManagementPage />} />
               <Route path="admin/offices/:officeId" element={<AdminOfficeDetailPage />} />
               <Route path="admin/spaces/:spaceId" element={<AdminSpaceDetailPage />} />
+              <Route path="analytics" element={<UsageAnalyticsPage />} />
             </Route>
 
-            <Route path="*" element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />} />
+            <Route path="*" element={<Navigate to={isAuthenticated ? "/work" : "/login"} replace />} />
           </Routes>
         </BrowserRouter>
       </QueryClientProvider>
