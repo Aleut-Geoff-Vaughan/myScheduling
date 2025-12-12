@@ -37,9 +37,12 @@ export const getResume = async (id: string): Promise<ResumeProfile> => {
 export const getMyResume = async (): Promise<ResumeProfile | null> => {
   try {
     return await api.get<ResumeProfile>('/resumes/my');
-  } catch (error: any) {
-    if (error?.response?.status === 404) {
-      return null; // User doesn't have a resume yet
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { status?: number } };
+      if (axiosError?.response?.status === 404) {
+        return null; // User doesn't have a resume yet
+      }
     }
     throw error;
   }

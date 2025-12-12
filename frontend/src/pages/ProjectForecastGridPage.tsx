@@ -268,8 +268,11 @@ export function ProjectForecastGridPage() {
   const getCellKey = (assignmentId: string, year: number, month: number) =>
     `${assignmentId}-${year}-${month}`;
 
-  const getCellForecast = (assignmentId: string, year: number, month: number) =>
-    forecastMap[getCellKey(assignmentId, year, month)];
+  const getCellForecast = useCallback(
+    (assignmentId: string, year: number, month: number) =>
+      forecastMap[getCellKey(assignmentId, year, month)],
+    [forecastMap]
+  );
 
   const handleCellClick = (assignmentId: string, year: number, month: number) => {
     const cellKey = getCellKey(assignmentId, year, month);
@@ -313,7 +316,7 @@ export function ProjectForecastGridPage() {
     }
 
     setEditingCell(null);
-  }, [cellValues, forecastMap, updateForecastMutation, createForecastMutation]);
+  }, [cellValues, getCellForecast, updateForecastMutation, createForecastMutation]);
 
   const handleKeyDown = (e: React.KeyboardEvent, assignmentId: string, year: number, month: number) => {
     if (e.key === 'Enter' || e.key === 'Tab') {

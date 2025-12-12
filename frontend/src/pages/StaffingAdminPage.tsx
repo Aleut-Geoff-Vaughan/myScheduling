@@ -128,7 +128,7 @@ export default function StaffingAdminPage() {
             <select
               className="text-sm border border-gray-300 rounded px-2 py-1"
               value={pageSize}
-              onChange={(e) => setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value) as any)}
+              onChange={(e) => setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value) as 50 | 100)}
             >
               <option value={50}>50</option>
               <option value={100}>100</option>

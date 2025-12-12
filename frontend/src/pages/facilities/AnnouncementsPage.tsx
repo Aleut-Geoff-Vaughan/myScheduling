@@ -175,7 +175,6 @@ export function AnnouncementsPage() {
 function AnnouncementCard({
   announcement,
   onAcknowledge,
-  canManage: _canManage,
 }: {
   announcement: FacilityAnnouncement;
   onAcknowledge: () => void;

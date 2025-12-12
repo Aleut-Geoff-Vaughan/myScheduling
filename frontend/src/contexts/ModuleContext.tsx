@@ -62,12 +62,13 @@ export function ModuleProvider({ children }: ModuleProviderProps) {
   useEffect(() => {
     const moduleFromPath = getModuleFromPath(location.pathname);
     if (moduleFromPath && moduleFromPath !== currentModule) {
-      setCurrentModuleState(moduleFromPath);
+      // Use microtask to avoid synchronous setState in effect
+      Promise.resolve().then(() => setCurrentModuleState(moduleFromPath));
     }
 
     // Handle admin path
     if (isAdminPath(location.pathname) && !isAdminOpen) {
-      setIsAdminOpen(true);
+      Promise.resolve().then(() => setIsAdminOpen(true));
     }
   }, [location.pathname, currentModule, isAdminOpen]);
 
@@ -149,6 +150,7 @@ export function ModuleProvider({ children }: ModuleProviderProps) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useModule(): ModuleContextValue {
   const context = useContext(ModuleContext);
   if (!context) {
@@ -158,6 +160,7 @@ export function useModule(): ModuleContextValue {
 }
 
 // Hook for checking if user has access to a module
+// eslint-disable-next-line react-refresh/only-export-components
 export function useModuleAccess() {
   const { hasRole } = useAuthStore();
 

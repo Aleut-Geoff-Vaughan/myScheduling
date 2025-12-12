@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Modal, Button } from './ui';
 import { BookingStatus, type Booking, type Space } from '../types/api';
 
@@ -31,7 +31,8 @@ export function ShareBookingsModal({
   const [copied, setCopied] = useState(false);
   const [format, setFormat] = useState<'detailed' | 'summary'>('detailed');
 
-  const getStatusLabel = (status: BookingStatus): string => {
+  // Memoize helper functions to avoid useMemo dependency issues
+  const getStatusLabel = useCallback((status: BookingStatus): string => {
     switch (status) {
       case BookingStatus.Reserved:
         return 'Confirmed';
@@ -46,9 +47,9 @@ export function ShareBookingsModal({
       default:
         return 'Unknown';
     }
-  };
+  }, []);
 
-  const getStatusEmoji = (status: BookingStatus): string => {
+  const getStatusEmoji = useCallback((status: BookingStatus): string => {
     switch (status) {
       case BookingStatus.Reserved:
         return '📅';
@@ -63,18 +64,18 @@ export function ShareBookingsModal({
       default:
         return '📍';
     }
-  };
+  }, []);
 
-  const getSpaceName = (spaceId: string): string => {
+  const getSpaceName = useCallback((spaceId: string): string => {
     const space = spaces.find(s => s.id === spaceId);
     return space?.name || spaceId.substring(0, 8) + '...';
-  };
+  }, [spaces]);
 
-  const getSpaceType = (spaceId: string): string => {
+  const getSpaceType = useCallback((spaceId: string): string => {
     const space = spaces.find(s => s.id === spaceId);
     if (!space) return '';
     return space.type === 0 ? 'Desk' : space.type === 1 ? 'Conference Room' : 'Space';
-  };
+  }, [spaces]);
 
   const formatDate = (dateStr: string): string => {
     const date = new Date(dateStr);
@@ -215,7 +216,7 @@ export function ShareBookingsModal({
 
       return content;
     }
-  }, [bookings, user, startDate, endDate, format, spaces]);
+  }, [bookings, user, startDate, endDate, format, getSpaceName, getSpaceType, getStatusEmoji, getStatusLabel]);
 
   const handleCopy = async () => {
     try {

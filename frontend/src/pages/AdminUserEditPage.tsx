@@ -69,7 +69,7 @@ function PersonSelect({ label, value, onChange, people, excludeId, placeholder =
           aria-labelledby={`${dropdownId}-label`}
           aria-haspopup="listbox"
           onClick={() => !disabled && setIsOpen(!isOpen)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); !disabled && setIsOpen(!isOpen); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!disabled) setIsOpen(!isOpen); } }}
           className={`w-full px-3 py-2 text-left border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         >
           {selectedPerson ? (
@@ -258,7 +258,17 @@ export function AdminUserEditPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [loginHistory, setLoginHistory] = useState<any>(null);
+  const [loginHistory, setLoginHistory] = useState<{
+    totalLogins: number;
+    lastSuccessfulAt: string | null;
+    lastFailedAt: string | null;
+    logins: Array<{
+      id: string;
+      createdAt: string;
+      isSuccess: boolean;
+      ipAddress: string | null;
+    }>;
+  } | null>(null);
 
   // Team Calendars state
   const [showCalendarModal, setShowCalendarModal] = useState(false);
@@ -303,6 +313,7 @@ export function AdminUserEditPage() {
 
   useEffect(() => {
     if (user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional sync from user prop
       setFormData({
         displayName: user.displayName,
         email: user.email,
@@ -327,7 +338,7 @@ export function AdminUserEditPage() {
       toast.success('User updated successfully');
       setIsEditing(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update user');
     },
   });
@@ -342,7 +353,7 @@ export function AdminUserEditPage() {
       setEditingRoles([]);
       toast.success('Roles updated successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update roles');
     },
   });
@@ -358,7 +369,7 @@ export function AdminUserEditPage() {
       setNewMembershipTenantId('');
       setNewMembershipRoles([AppRole.Employee]);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to add tenant access');
     },
   });
@@ -371,7 +382,7 @@ export function AdminUserEditPage() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Tenant access removed');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to remove tenant access');
     },
   });
@@ -384,7 +395,7 @@ export function AdminUserEditPage() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('Membership status updated');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update membership status');
     },
   });
@@ -396,7 +407,7 @@ export function AdminUserEditPage() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('User deactivated');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to deactivate user');
     },
   });
@@ -408,7 +419,7 @@ export function AdminUserEditPage() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('User reactivated');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to reactivate user');
     },
   });
@@ -421,7 +432,7 @@ export function AdminUserEditPage() {
       setNewPassword('');
       setConfirmPassword('');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to set password');
     },
   });
@@ -433,7 +444,7 @@ export function AdminUserEditPage() {
       toast.success('User deleted');
       navigate('/admin/users');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete user');
     },
   });
@@ -451,7 +462,7 @@ export function AdminUserEditPage() {
       toast.success('Team calendar created');
       closeCalendarModal();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to create calendar');
     },
   });
@@ -468,7 +479,7 @@ export function AdminUserEditPage() {
       toast.success('Team calendar updated');
       closeCalendarModal();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update calendar');
     },
   });
@@ -485,7 +496,7 @@ export function AdminUserEditPage() {
       toast.success('Team calendar deleted');
       setShowDeleteCalendarConfirm(null);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete calendar');
     },
   });
@@ -493,7 +504,8 @@ export function AdminUserEditPage() {
   const loadLoginHistory = async () => {
     try {
       const data = await usersService.getLoginHistory(id!, 20);
-      setLoginHistory(data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setLoginHistory(data as any);
     } catch (error) {
       console.error('Failed to load login history', error);
     }
@@ -1129,7 +1141,7 @@ export function AdminUserEditPage() {
                           </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
-                          {loginHistory.logins.map((log: any) => (
+                          {loginHistory.logins.map((log) => (
                             <tr key={log.id}>
                               <td className="px-3 py-2 text-gray-900">
                                 {new Date(log.createdAt).toLocaleString()}

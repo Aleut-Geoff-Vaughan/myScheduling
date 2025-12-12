@@ -43,6 +43,7 @@ export function ResumeDetailPage() {
       setSections([]);
       setVersions([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const loadResumeData = async () => {
@@ -381,7 +382,7 @@ export function ResumeDetailPage() {
               <div className="space-y-4">
                 {sections
                   .sort((a, b) => a.displayOrder - b.displayOrder)
-                  .map((section, _index) => (
+                  .map((section) => (
                     <div
                       key={section.id}
                       className="border border-gray-200 rounded-lg p-4 hover:border-gray-300"

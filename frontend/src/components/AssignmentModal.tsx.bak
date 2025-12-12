@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup } from './ui';
 import { assignmentsService } from '../services/assignmentsService';
@@ -18,10 +18,22 @@ export function AssignmentModal({ isOpen, onClose, assignment, mode }: Assignmen
   const { data: tenants = [] } = useTenants();
   const { data: users = [] } = useUsers();
 
-  // Use useMemo to compute initial form data
-  const initialFormData = useMemo(() => {
+  const [formData, setFormData] = useState({
+    tenantId: '',
+    userId: '',
+    wbsElementId: '',
+    projectRoleId: '',
+    startDate: '',
+    endDate: '',
+    allocation: 100,
+    status: AssignmentStatus.Draft,
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
     if (assignment && mode === 'edit') {
-      return {
+      setFormData({
         tenantId: assignment.tenantId,
         userId: assignment.userId,
         wbsElementId: assignment.wbsElementId,
@@ -30,28 +42,16 @@ export function AssignmentModal({ isOpen, onClose, assignment, mode }: Assignmen
         endDate: assignment.endDate?.split('T')[0] || '',
         allocation: assignment.allocation || 100,
         status: assignment.status,
-      };
+      });
     } else {
-      return {
+      // Set default tenant if available
+      setFormData(prev => ({
+        ...prev,
         tenantId: tenants[0]?.id || '',
-        userId: '',
-        wbsElementId: '',
-        projectRoleId: '',
         startDate: new Date().toISOString().split('T')[0],
-        endDate: '',
-        allocation: 100,
-        status: AssignmentStatus.Draft,
-      };
+      }));
     }
   }, [assignment, mode, tenants]);
-
-  const [formData, setFormData] = useState(initialFormData);
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    setFormData(initialFormData);
-  }, [initialFormData]);
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<Assignment, 'id' | 'createdAt' | 'updatedAt' | 'approvedByUserId'>) =>
@@ -60,7 +60,7 @@ export function AssignmentModal({ isOpen, onClose, assignment, mode }: Assignmen
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       onClose();
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       setErrors({ submit: error.message || 'Failed to create assignment' });
     },
   });
@@ -71,7 +71,7 @@ export function AssignmentModal({ isOpen, onClose, assignment, mode }: Assignmen
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       onClose();
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       setErrors({ submit: error.message || 'Failed to update assignment' });
     },
   });
@@ -114,7 +114,7 @@ export function AssignmentModal({ isOpen, onClose, assignment, mode }: Assignmen
     }
   };
 
-  const handleChange = (field: string, value: string | number) => {
+  const handleChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => {

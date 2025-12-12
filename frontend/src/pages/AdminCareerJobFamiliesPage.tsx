@@ -51,6 +51,7 @@ export function AdminCareerJobFamiliesPage() {
 
   useEffect(() => {
     loadFamilies();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, filterActive, search]);
 
   const handleCreate = () => {

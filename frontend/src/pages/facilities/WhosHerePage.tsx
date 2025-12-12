@@ -6,7 +6,10 @@ import type { WhosHereItem } from '../../services/facilitiesPortalService';
 
 export function WhosHerePage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedOfficeId, setSelectedOfficeId] = useState<string>(searchParams.get('office') || '');
+
+  // Initialize selectedOfficeId from URL params or empty string
+  const initialOfficeId = searchParams.get('office') || '';
+  const [selectedOfficeId, setSelectedOfficeId] = useState<string>(initialOfficeId);
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch offices
@@ -31,16 +34,6 @@ export function WhosHerePage() {
       setSearchParams({});
     }
   }, [selectedOfficeId, setSearchParams]);
-
-  // Set initial office from query params or first office
-  useEffect(() => {
-    if (!selectedOfficeId && offices.length > 0) {
-      const officeFromParams = searchParams.get('office');
-      if (officeFromParams && offices.find(o => o.id === officeFromParams)) {
-        setSelectedOfficeId(officeFromParams);
-      }
-    }
-  }, [offices, searchParams, selectedOfficeId]);
 
   // Filter people by search term
   const filteredPeople = whosHere.filter(person => {

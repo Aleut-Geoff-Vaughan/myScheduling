@@ -49,8 +49,9 @@ export function AdminProjectAssignmentsPage() {
       toast.success('Project assignment created successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create project assignment');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to create project assignment';
+      toast.error(message);
     },
   });
 
@@ -63,8 +64,9 @@ export function AdminProjectAssignmentsPage() {
       toast.success('Project assignment updated successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update project assignment');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to update project assignment';
+      toast.error(message);
     },
   });
 
@@ -75,8 +77,9 @@ export function AdminProjectAssignmentsPage() {
       queryClient.invalidateQueries({ queryKey: ['projectAssignments'] });
       toast.success('Project assignment deleted successfully');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete project assignment');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to delete project assignment';
+      toast.error(message);
     },
   });
 

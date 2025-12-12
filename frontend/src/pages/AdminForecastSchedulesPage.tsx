@@ -52,7 +52,7 @@ export function AdminForecastSchedulesPage() {
 
   useEffect(() => {
     loadSchedules();
-  }, [tenantId, filterActive]);
+  }, [tenantId, filterActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleCreate = () => {
     setEditingSchedule(null);

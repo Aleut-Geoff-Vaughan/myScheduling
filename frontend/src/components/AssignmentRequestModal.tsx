@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup } from './ui';
 import { projectsService } from '../services/projectsService';
@@ -55,23 +55,27 @@ export function AssignmentRequestModal({ isOpen, onClose, onSubmit, isSubmitting
     enabled: !!currentWorkspace?.tenantId && isOpen,
   });
 
+  const defaultFormData = useMemo(() => ({
+   
+    projectId: '',
+    wbsElementId: undefined,
+    projectRoleId: undefined,
+    tenantId: currentWorkspace?.tenantId,
+    requestedForUserId: user?.id,
+    startDate: new Date().toISOString().split('T')[0],
+    endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
+    allocationPct: 100,
+    notes: '',
+    approverGroupId: undefined,
+  }), [currentWorkspace?.tenantId, user?.id]);
+
   useEffect(() => {
     if (isOpen) {
-      setFormData({
-        projectId: '',
-        wbsElementId: undefined,
-        projectRoleId: undefined,
-        tenantId: currentWorkspace?.tenantId,
-        requestedForUserId: user?.id,
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString().split('T')[0],
-        allocationPct: 100,
-        notes: '',
-        approverGroupId: undefined,
-      });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData(defaultFormData);
       setErrors({});
     }
-  }, [isOpen, currentWorkspace?.tenantId, user?.id]);
+  }, [isOpen, defaultFormData]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -97,19 +101,19 @@ export function AssignmentRequestModal({ isOpen, onClose, onSubmit, isSubmitting
 
     const requestData: CreateAssignmentRequest = {
       ...formData,
-      projectId: formData.projectId as any, // Convert string to Guid on backend
-      wbsElementId: formData.wbsElementId as any,
-      projectRoleId: formData.projectRoleId as any,
+      projectId: formData.projectId, // Convert string to Guid on backend
+      wbsElementId: formData.wbsElementId,
+      projectRoleId: formData.projectRoleId,
       startDate: formData.startDate ? new Date(formData.startDate).toISOString() : undefined,
       endDate: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
-      approverGroupId: formData.approverGroupId as any,
+      approverGroupId: formData.approverGroupId,
     };
 
     await onSubmit(requestData);
     onClose();
   };
 
-  const handleChange = (field: keyof CreateAssignmentRequest, value: any) => {
+  const handleChange = (field: keyof CreateAssignmentRequest, value: string | number | undefined) => {
     setFormData(prev => {
       const updated = { ...prev, [field]: value };
 

@@ -129,7 +129,7 @@ export function CostRatesPage() {
         toast.success('Cost rate created');
       }
       handleCloseModal();
-    } catch (error) {
+    } catch {
       toast.error(editingRate ? 'Failed to update cost rate' : 'Failed to create cost rate');
     }
   };
@@ -141,7 +141,7 @@ export function CostRatesPage() {
     try {
       await deleteMutation.mutateAsync(rate.id);
       toast.success('Cost rate deleted');
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete cost rate');
     }
   };
@@ -156,7 +156,7 @@ export function CostRatesPage() {
       if (result.errors.length > 0) {
         console.error('Import errors:', result.errors);
       }
-    } catch (error) {
+    } catch {
       toast.error('Failed to import cost rates');
     }
 
@@ -170,7 +170,7 @@ export function CostRatesPage() {
     try {
       await exportMutation.mutateAsync({ includeInactive: showInactive });
       toast.success('Cost rates exported');
-    } catch (error) {
+    } catch {
       toast.error('Failed to export cost rates');
     }
   };

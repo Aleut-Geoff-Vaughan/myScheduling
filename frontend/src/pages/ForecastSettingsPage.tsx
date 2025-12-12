@@ -144,7 +144,7 @@ export function ForecastSettingsPage() {
         toast.success('Cost type created');
       }
       handleCloseCostTypeModal();
-    } catch (error) {
+    } catch {
       toast.error(editingCostType ? 'Failed to update cost type' : 'Failed to create cost type');
     }
   };
@@ -156,7 +156,7 @@ export function ForecastSettingsPage() {
         request: { isActive: !costType.isActive },
       });
       toast.success(costType.isActive ? 'Cost type deactivated' : 'Cost type activated');
-    } catch (error) {
+    } catch {
       toast.error('Failed to update cost type');
     }
   };
@@ -168,7 +168,7 @@ export function ForecastSettingsPage() {
     try {
       await deleteCostTypeMutation.mutateAsync(costType.id);
       toast.success('Cost type deleted');
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete cost type. It may be in use by forecasts.');
     }
   };

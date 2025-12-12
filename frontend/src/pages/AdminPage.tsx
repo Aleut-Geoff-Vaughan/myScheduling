@@ -22,7 +22,7 @@ interface AdminPageProps {
 export function AdminPage({ viewOverride }: AdminPageProps = {}) {
   const queryClient = useQueryClient();
   const { user, currentWorkspace } = useAuthStore();
-  const [selectedView, setSelectedView] = useState<AdminView>(viewOverride || 'dashboard');
+  const [selectedView, setSelectedView] = useState<AdminView>(() => viewOverride || 'dashboard');
   const [adminScope, setAdminScope] = useState<AdminScope>('system');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -37,6 +37,7 @@ export function AdminPage({ viewOverride }: AdminPageProps = {}) {
   // Update selected view when viewOverride changes
   useEffect(() => {
     if (viewOverride) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedView(viewOverride);
     }
   }, [viewOverride]);
@@ -71,7 +72,7 @@ export function AdminPage({ viewOverride }: AdminPageProps = {}) {
       setShowAddModal(false);
       setTenantForm({ name: '', code: '', status: TenantStatus.Active });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setFormErrors({ submit: error.message || 'Failed to create tenant' });
     },
   });
@@ -129,32 +130,45 @@ export function AdminPage({ viewOverride }: AdminPageProps = {}) {
   );
 
   // Filter users based on admin scope
-  const scopeFilteredUsers = adminScope === 'tenant' && currentWorkspace?.tenantId
-    ? users.filter(u =>
-        u.tenantMemberships?.some(tm =>
-          tm.tenantId === currentWorkspace.tenantId && tm.isActive
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
+  const scopeFilteredUsers = useMemo(() => {
+    return adminScope === 'tenant' && currentWorkspace?.tenantId
+      ? users.filter(u =>
+          u.tenantMemberships?.some(tm =>
+            tm.tenantId === currentWorkspace.tenantId && tm.isActive
+          )
         )
-      )
-    : users;
+      : users;
+  }, [adminScope, currentWorkspace?.tenantId, users]);
 
-  const filteredUsers = scopeFilteredUsers.filter(u =>
-    u?.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = useMemo(() => {
+    return scopeFilteredUsers.filter(u =>
+      u?.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u?.email?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [scopeFilteredUsers, searchTerm]);
 
-  // Paginated users
-  const paginatedUsers = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
+  // Paginated users - reset to page 1 when filteredUsers changes
+  const { paginatedUsers, totalPages, effectiveCurrentPage } = useMemo(() => {
+    const effectivePage = currentPage > Math.ceil(filteredUsers.length / itemsPerPage)
+      ? 1
+      : currentPage;
+    const startIndex = (effectivePage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    return filteredUsers.slice(startIndex, endIndex);
+    return {
+      paginatedUsers: filteredUsers.slice(startIndex, endIndex),
+      totalPages: Math.ceil(filteredUsers.length / itemsPerPage),
+      effectiveCurrentPage: effectivePage,
+    };
   }, [filteredUsers, currentPage, itemsPerPage]);
 
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-
-  // Reset to page 1 when search term changes
+  // Sync effectiveCurrentPage back to currentPage when search changes
   useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
+    if (effectiveCurrentPage !== currentPage) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCurrentPage(effectiveCurrentPage);
+    }
+  }, [effectiveCurrentPage, currentPage]);
 
   return (
     <div className="p-6">

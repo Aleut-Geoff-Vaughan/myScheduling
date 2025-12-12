@@ -48,6 +48,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClos
     })) || []
   );
 
+  // Initialize items when template type changes - ONLY run on initial mount
   useEffect(() => {
     if (templateType === TemplateType.Week && items.length === 0) {
       const weekItems = DAYS_OF_WEEK.map((_, index) => ({
@@ -79,6 +80,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClos
         },
       ]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [templateType]);
 
   const handleAddItem = () => {
@@ -110,7 +112,7 @@ export const TemplateEditor: React.FC<TemplateEditorProps> = ({ template, onClos
   const handleItemChange = (
     index: number,
     field: keyof Omit<WorkLocationTemplateItem, 'id' | 'templateId' | 'createdAt' | 'updatedAt'>,
-    value: any
+    value: string | number | undefined
   ) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };

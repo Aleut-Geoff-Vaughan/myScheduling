@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { Card, CardHeader, CardBody, Button, Input, StatusBadge } from '../../components/ui';
@@ -6,7 +6,6 @@ import { emailTestService, type SendTestEmailRequest, type EmailTestResult } fro
 
 export function EmailTestPage() {
   const [selectedUserId, setSelectedUserId] = useState('');
-  const [toEmail, setToEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('This is a test email to verify email deliverability from the MyScheduling application.');
   const [testHistory, setTestHistory] = useState<EmailTestResult[]>([]);
@@ -23,15 +22,9 @@ export function EmailTestPage() {
     queryFn: () => emailTestService.getEmailConfig(),
   });
 
-  // Handle user selection
-  useEffect(() => {
-    if (selectedUserId) {
-      const user = users.find(u => u.id === selectedUserId);
-      if (user) {
-        setToEmail(user.email);
-      }
-    }
-  }, [selectedUserId, users]);
+  // Derive toEmail from selectedUserId
+  const toEmail = selectedUserId ? users.find(u => u.id === selectedUserId)?.email || '' : '';
+  const [manualEmail, setManualEmail] = useState('');
 
   // Send test email mutation
   const sendEmailMutation = useMutation({
@@ -50,13 +43,14 @@ export function EmailTestPage() {
   });
 
   const handleSendTest = () => {
-    if (!toEmail) {
+    const emailToSend = manualEmail || toEmail;
+    if (!emailToSend) {
       toast.error('Please enter or select a recipient email');
       return;
     }
 
     sendEmailMutation.mutate({
-      toEmail,
+      toEmail: emailToSend,
       subject: subject || undefined,
       body: body || undefined,
     });
@@ -149,9 +143,13 @@ export function EmailTestPage() {
                 <div className="flex gap-3">
                   <select
                     value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    onChange={(e) => {
+                      setSelectedUserId(e.target.value);
+                      setManualEmail('');
+                    }}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
                     disabled={usersLoading}
+                    aria-label="Select recipient user"
                   >
                     <option value="">-- Select a user --</option>
                     {users.map(user => (
@@ -170,9 +168,9 @@ export function EmailTestPage() {
                 </label>
                 <Input
                   type="email"
-                  value={toEmail}
+                  value={manualEmail}
                   onChange={(e) => {
-                    setToEmail(e.target.value);
+                    setManualEmail(e.target.value);
                     setSelectedUserId('');
                   }}
                   placeholder="email@example.com"
@@ -236,7 +234,7 @@ export function EmailTestPage() {
                 <Button
                   variant="primary"
                   onClick={handleSendTest}
-                  disabled={!toEmail || sendEmailMutation.isPending || !emailConfig?.isConfigured}
+                  disabled={(!manualEmail && !toEmail) || sendEmailMutation.isPending || !emailConfig?.isConfigured}
                   className="w-full"
                 >
                   {sendEmailMutation.isPending ? (

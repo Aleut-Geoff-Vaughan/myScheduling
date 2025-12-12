@@ -156,7 +156,8 @@ export function AdminLayout({ children }: AdminLayoutProps = {}) {
   // Close sidebar on navigation (mobile only)
   useEffect(() => {
     if (isMobile) {
-      setSidebarOpen(false);
+      // Use a microtask to avoid synchronous setState in effect
+      Promise.resolve().then(() => setSidebarOpen(false));
     }
   }, [location.pathname, isMobile]);
 

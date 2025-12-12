@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useTenantSettings } from '../hooks/useTenantSettings';
 
 interface NotificationBannerProps {
@@ -7,18 +7,19 @@ interface NotificationBannerProps {
 
 export function NotificationBanner({ className = '' }: NotificationBannerProps) {
   const { data: settings } = useTenantSettings();
-  const [dismissedEnvironment, setDismissedEnvironment] = useState(false);
+
+  // Initialize environment dismissed state from sessionStorage
+  const [dismissedEnvironment, setDismissedEnvironment] = useState(() => {
+    return sessionStorage.getItem('dismissedEnvironmentBanner') === 'true';
+  });
+
   const [dismissedNotification, setDismissedNotification] = useState(false);
 
-  // Reset dismissed state when notification changes
-  useEffect(() => {
-    if (settings?.notificationBannerMessage) {
-      // Check if this specific message was dismissed (stored in sessionStorage)
-      const dismissedMessage = sessionStorage.getItem('dismissedNotificationMessage');
-      if (dismissedMessage !== settings.notificationBannerMessage) {
-        setDismissedNotification(false);
-      }
-    }
+  // Check if notification was dismissed for this specific message
+  const isNotificationDismissed = useMemo(() => {
+    if (!settings?.notificationBannerMessage) return false;
+    const dismissedMessage = sessionStorage.getItem('dismissedNotificationMessage');
+    return dismissedMessage === settings.notificationBannerMessage;
   }, [settings?.notificationBannerMessage]);
 
   // Check if notification has expired
@@ -36,7 +37,8 @@ export function NotificationBanner({ className = '' }: NotificationBannerProps) 
     settings?.notificationBannerEnabled &&
     settings?.notificationBannerMessage &&
     !isNotificationExpired &&
-    !dismissedNotification;
+    !dismissedNotification &&
+    !isNotificationDismissed;
 
   const handleDismissEnvironment = () => {
     setDismissedEnvironment(true);
@@ -49,19 +51,6 @@ export function NotificationBanner({ className = '' }: NotificationBannerProps) 
       sessionStorage.setItem('dismissedNotificationMessage', settings.notificationBannerMessage);
     }
   };
-
-  // Load dismissed state from sessionStorage on mount
-  useEffect(() => {
-    const envDismissed = sessionStorage.getItem('dismissedEnvironmentBanner');
-    if (envDismissed === 'true') {
-      setDismissedEnvironment(true);
-    }
-
-    const dismissedMessage = sessionStorage.getItem('dismissedNotificationMessage');
-    if (dismissedMessage && dismissedMessage === settings?.notificationBannerMessage) {
-      setDismissedNotification(true);
-    }
-  }, [settings?.notificationBannerMessage]);
 
   if (!showEnvironmentBanner && !showNotificationBanner) {
     return null;

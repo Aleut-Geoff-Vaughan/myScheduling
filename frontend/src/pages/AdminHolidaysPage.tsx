@@ -89,7 +89,7 @@ export function AdminHolidaysPage() {
 
   useEffect(() => {
     loadHolidays();
-  }, [tenantId, selectedYear, filterType, filterActive]);
+  }, [tenantId, selectedYear, filterType, filterActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSeedUSHolidays = async () => {
     if (!tenantId) return;

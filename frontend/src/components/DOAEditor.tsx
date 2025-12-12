@@ -8,6 +8,7 @@ import {
 } from '../hooks/useDOA';
 import type { CreateDOALetterRequest } from '../types/doa';
 import { useUsers } from '../hooks/useTenants';
+import type { User } from '../types/api';
 
 interface DOAEditorProps {
   doaId: string | null;
@@ -25,7 +26,7 @@ export function DOAEditor({ doaId, onClose }: DOAEditorProps) {
   // Search state for designee
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const [formData, setFormData] = useState<CreateDOALetterRequest>(() => {
     const today = new Date();
@@ -52,28 +53,41 @@ export function DOAEditor({ doaId, onClose }: DOAEditorProps) {
   });
 
   useEffect(() => {
-    if (doa) {
-      setFormData({
+    if (!doa || users.length === 0) return;
+    
+    // Only populate form if it's currently empty (initial load)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFormData(prev => {
+      // If form already has data, don't override
+      if (prev.designeeUserId !== '' && prev.designeeUserId !== doa.designeeUserId) {
+        return prev;
+      }
+      
+      return {
         designeeUserId: doa.designeeUserId,
         subjectLine: doa.subjectLine || '',
         letterContent: doa.letterContent,
         effectiveStartDate: format(new Date(doa.effectiveStartDate), 'yyyy-MM-dd'),
         effectiveEndDate: format(new Date(doa.effectiveEndDate), 'yyyy-MM-dd'),
         notes: doa.notes || '',
+      };
+    });
+    
+    // Set the selected user for display
+    const user = users.find(u => u.id === doa.designeeUserId);
+    if (user) {
+      setSelectedUser(prev => prev?.id === user.id ? prev : user);
+      setSearchTerm(prev => {
+        const userDisplay = user.displayName || user.name || user.email;
+        return prev === userDisplay ? prev : userDisplay;
       });
-      // Set the selected user for display
-      const user = users.find(u => u.id === doa.designeeUserId);
-      if (user) {
-        setSelectedUser(user);
-        setSearchTerm(user.displayName || user.name || user.email);
-      }
     }
   }, [doa, users]);
 
-  const handleSelectUser = (user: any) => {
+  const handleSelectUser = (user: User) => {
     setSelectedUser(user);
     setSearchTerm(user.displayName || user.name || user.email);
-    setFormData({ ...formData, designeeUserId: user.id });
+    setFormData(prev => ({ ...prev, designeeUserId: user.id }));
     setShowDropdown(false);
   };
 
@@ -117,7 +131,7 @@ export function DOAEditor({ doaId, onClose }: DOAEditorProps) {
         toast.success('DOA letter created successfully');
       }
       onClose();
-    } catch (error) {
+    } catch {
       toast.error(
         isEdit ? 'Failed to update DOA letter' : 'Failed to create DOA letter'
       );
@@ -220,7 +234,7 @@ export function DOAEditor({ doaId, onClose }: DOAEditorProps) {
                 type="date"
                 value={formData.effectiveStartDate}
                 onChange={(e) =>
-                  setFormData({ ...formData, effectiveStartDate: e.target.value })
+                  setFormData(prev => ({ ...prev, effectiveStartDate: e.target.value }))
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 required
@@ -234,7 +248,7 @@ export function DOAEditor({ doaId, onClose }: DOAEditorProps) {
                 type="date"
                 value={formData.effectiveEndDate}
                 onChange={(e) =>
-                  setFormData({ ...formData, effectiveEndDate: e.target.value })
+                  setFormData(prev => ({ ...prev, effectiveEndDate: e.target.value }))
                 }
                 min={formData.effectiveStartDate}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -252,7 +266,7 @@ export function DOAEditor({ doaId, onClose }: DOAEditorProps) {
               type="text"
               value={formData.subjectLine}
               onChange={(e) =>
-                setFormData({ ...formData, subjectLine: e.target.value })
+                setFormData(prev => ({ ...prev, subjectLine: e.target.value }))
               }
               placeholder="e.g., Financial Authority, Operational Authority, Signing Authority..."
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -271,7 +285,7 @@ export function DOAEditor({ doaId, onClose }: DOAEditorProps) {
             <textarea
               value={formData.letterContent}
               onChange={(e) =>
-                setFormData({ ...formData, letterContent: e.target.value })
+                setFormData(prev => ({ ...prev, letterContent: e.target.value }))
               }
               rows={12}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
@@ -291,7 +305,7 @@ export function DOAEditor({ doaId, onClose }: DOAEditorProps) {
             <textarea
               value={formData.notes}
               onChange={(e) =>
-                setFormData({ ...formData, notes: e.target.value })
+                setFormData(prev => ({ ...prev, notes: e.target.value }))
               }
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"

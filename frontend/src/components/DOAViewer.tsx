@@ -32,7 +32,7 @@ export function DOAViewer({ doaId, onClose }: DOAViewerProps) {
       });
       toast.success('DOA letter signed successfully');
       setShowSignaturePad(false);
-    } catch (error) {
+    } catch {
       toast.error('Failed to sign DOA letter');
     }
   };

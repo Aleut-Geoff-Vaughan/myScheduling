@@ -182,14 +182,14 @@ export function AdminForecastsPage() {
       setIsLoading(false);
     };
     loadInitialData();
-  }, [tenantId]);
+  }, [tenantId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (selectedVersionId) {
       loadForecasts();
       loadSummary();
     }
-  }, [selectedVersionId, filterProjectId, filterStatus]);
+  }, [selectedVersionId, filterProjectId, filterStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Version handlers
   const handleCreateVersion = () => {

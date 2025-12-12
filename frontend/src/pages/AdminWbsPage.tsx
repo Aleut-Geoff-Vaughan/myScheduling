@@ -47,7 +47,7 @@ export function AdminWbsPage() {
       toast.success('WBS element created successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to create WBS element');
     },
   });
@@ -61,7 +61,7 @@ export function AdminWbsPage() {
       toast.success('WBS element updated successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update WBS element');
     },
   });

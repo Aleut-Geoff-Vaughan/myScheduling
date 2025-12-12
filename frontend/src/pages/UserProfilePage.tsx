@@ -40,7 +40,7 @@ export function UserProfilePage() {
   const [cropImage, setCropImage] = useState<string | null>(null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [isCropping, setIsCropping] = useState(false);
 
   useEffect(() => {
@@ -70,8 +70,9 @@ export function UserProfilePage() {
         executiveAssistantId: data.executiveAssistantId || '',
         standardDelegateIds: data.standardDelegateIds || [],
       });
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load profile');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to load profile');
     } finally {
       setIsLoading(false);
     }
@@ -91,8 +92,9 @@ export function UserProfilePage() {
       }
 
       toast.success('Profile updated successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to update profile');
     } finally {
       setIsSaving(false);
     }
@@ -151,8 +153,9 @@ export function UserProfilePage() {
         confirmPassword: '',
       });
       setPasswordErrors([]);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to change password');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to change password');
     } finally {
       setIsSaving(false);
     }
@@ -195,12 +198,13 @@ export function UserProfilePage() {
       }
 
       toast.success('Profile photo removed successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to remove photo');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to remove photo');
     }
   };
 
-  const onCropComplete = (_: any, croppedPixels: any) => {
+  const onCropComplete = (_croppedArea: unknown, croppedPixels: { x: number; y: number; width: number; height: number }) => {
     setCroppedAreaPixels(croppedPixels);
   };
 
@@ -216,8 +220,9 @@ export function UserProfilePage() {
         setUser({ ...user, profilePhotoUrl: response.profilePhotoUrl });
       }
       toast.success('Profile photo updated successfully');
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload photo');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to upload photo');
     } finally {
       setIsSaving(false);
       setIsCropping(false);

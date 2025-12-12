@@ -5,6 +5,16 @@ import { RoleTemplates } from './RoleTemplates';
 import type { User as ApiUser } from '../types/api';
 import { AppRole } from '../types/api';
 
+interface LoginHistoryEntry {
+  id: string;
+  email?: string;
+  isSuccess: boolean;
+  ipAddress?: string;
+  userAgent?: string;
+  timestamp?: string;
+  createdAt: string;
+}
+
 interface AdminUserRowProps {
   user: ApiUser;
   userColumns: Array<{ key: string; header: string; render: (user: ApiUser) => React.ReactNode }>;
@@ -37,7 +47,7 @@ interface AdminUserRowProps {
   onDeactivateUser: (userId: string) => void;
   onReactivateUser: (userId: string) => void;
   onLoadLoginHistory: (userId: string) => void;
-  loginHistory: Record<string, any>;
+  loginHistory: Record<string, LoginHistoryEntry[]>;
   isUpdatingRoles: boolean;
   isCreatingMembership: boolean;
   isSettingPassword: boolean;
@@ -349,9 +359,9 @@ export const AdminUserRow = memo(function AdminUserRow({
                     <div className="mt-4 border-t pt-4">
                       <h5 className="text-sm font-semibold text-gray-700 mb-2">Recent Login History</h5>
                       <div className="space-y-1">
-                        {loginHistory[user.id].map((entry: any, idx: number) => (
+                        {loginHistory[user.id].map((entry: LoginHistoryEntry, idx: number) => (
                           <div key={idx} className="text-xs text-gray-600">
-                            {new Date(entry.timestamp).toLocaleString()} - {entry.ipAddress}
+                            {new Date(entry.timestamp || entry.createdAt).toLocaleString()} - {entry.ipAddress}
                           </div>
                         ))}
                       </div>

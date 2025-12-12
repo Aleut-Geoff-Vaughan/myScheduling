@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { Card, CardBody } from '../components/ui';
 import { teamCalendarService } from '../services/teamCalendarService';
@@ -42,14 +42,7 @@ export function TeamCalendarAdminPage() {
   const [selectedPeople, setSelectedPeople] = useState<string[]>([]);
   const [membershipType, setMembershipType] = useState<MembershipType>(0); // OptIn
 
-  useEffect(() => {
-    if (currentWorkspace?.tenantId) {
-      fetchCalendars();
-      fetchPeople();
-    }
-  }, [currentWorkspace?.tenantId, includeInactive]);
-
-  const fetchCalendars = async () => {
+  const fetchCalendars = useCallback(async () => {
     if (!currentWorkspace?.tenantId) return;
 
     setIsLoading(true);
@@ -59,14 +52,15 @@ export function TeamCalendarAdminPage() {
         includeInactive,
       });
       setCalendars(data);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load calendars');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to load calendars');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentWorkspace?.tenantId, includeInactive]);
 
-  const fetchPeople = async () => {
+  const fetchPeople = useCallback(async () => {
     if (!currentWorkspace?.tenantId) return;
 
     try {
@@ -78,10 +72,18 @@ export function TeamCalendarAdminPage() {
           email: u.email,
         }))
       );
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load users');
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to load users');
     }
-  };
+  }, [currentWorkspace?.tenantId]);
+
+  useEffect(() => {
+    if (currentWorkspace?.tenantId) {
+      void fetchCalendars();
+      void fetchPeople();
+    }
+  }, [currentWorkspace?.tenantId, fetchCalendars, fetchPeople]);
 
   const handleCreate = async () => {
     if (!currentWorkspace?.tenantId || !user?.id) return;
@@ -95,9 +97,10 @@ export function TeamCalendarAdminPage() {
       toast.success('Team calendar created successfully');
       setShowCreateModal(false);
       resetForm();
-      fetchCalendars();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create calendar');
+      void fetchCalendars();
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to create calendar');
     }
   };
 
@@ -117,9 +120,10 @@ export function TeamCalendarAdminPage() {
       toast.success('Team calendar updated successfully');
       setShowEditModal(false);
       resetForm();
-      fetchCalendars();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update calendar');
+      void fetchCalendars();
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to update calendar');
     }
   };
 
@@ -130,9 +134,10 @@ export function TeamCalendarAdminPage() {
     try {
       await teamCalendarService.delete(calendarId, user.id);
       toast.success('Team calendar deleted successfully');
-      fetchCalendars();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete calendar');
+      void fetchCalendars();
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to delete calendar');
     }
   };
 
@@ -151,9 +156,10 @@ export function TeamCalendarAdminPage() {
       toast.success(`Added ${selectedPeople.length} member(s) successfully`);
       setShowMembersModal(false);
       setSelectedPeople([]);
-      fetchCalendars();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to add members');
+      void fetchCalendars();
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to add members');
     }
   };
 
@@ -164,9 +170,10 @@ export function TeamCalendarAdminPage() {
     try {
       await teamCalendarService.removeMember(calendarId, memberId, user.id);
       toast.success('Member removed successfully');
-      fetchCalendars();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to remove member');
+      void fetchCalendars();
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to remove member');
     }
   };
 
@@ -413,7 +420,11 @@ export function TeamCalendarAdminPage() {
             <div className="flex items-center justify-end gap-3 mt-6">
               <button
                 onClick={() => {
-                  showCreateModal ? setShowCreateModal(false) : setShowEditModal(false);
+                  if (showCreateModal) {
+                    setShowCreateModal(false);
+                  } else {
+                    setShowEditModal(false);
+                  }
                   resetForm();
                 }}
                 className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"

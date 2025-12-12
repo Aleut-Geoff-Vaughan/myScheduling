@@ -5,6 +5,12 @@ import { useAuthStore } from '../stores/authStore';
 import { staffingReportsService, type ProjectsSummaryItem } from '../services/forecastService';
 import { AddPositionModal } from '../components/AddPositionModal';
 
+// Move SortIcon outside of render function to fix react-hooks/static-components
+function SortIcon({ field, sortField, sortDirection }: { field: string; sortField: string; sortDirection: 'asc' | 'desc' }) {
+  if (sortField !== field) return <span className="text-gray-300 ml-1">↕</span>;
+  return <span className="text-emerald-600 ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+}
+
 export function ForecastProjectsPage() {
   const { currentWorkspace, availableTenants } = useAuthStore();
   // Use workspace tenantId, or fall back to first available tenant for admin users
@@ -48,11 +54,6 @@ export function ForecastProjectsPage() {
       setSortField(field);
       setSortDirection('asc');
     }
-  };
-
-  const SortIcon = ({ field }: { field: string }) => {
-    if (sortField !== field) return <span className="text-gray-300 ml-1">↕</span>;
-    return <span className="text-emerald-600 ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
   };
 
   if (isLoading) {
@@ -115,7 +116,7 @@ export function ForecastProjectsPage() {
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('name')}
                 >
-                  Project <SortIcon field="name" />
+                  Project <SortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Program Code
@@ -124,13 +125,13 @@ export function ForecastProjectsPage() {
                   className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('assignments')}
                 >
-                  Assignments <SortIcon field="assignments" />
+                  Assignments <SortIcon field="assignments" sortField={sortField} sortDirection={sortDirection} />
                 </th>
                 <th
                   className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('hours')}
                 >
-                  Forecasted Hours <SortIcon field="hours" />
+                  Forecasted Hours <SortIcon field="hours" sortField={sortField} sortDirection={sortDirection} />
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Forecasts

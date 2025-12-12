@@ -62,9 +62,10 @@ export function ResumesPage() {
       const newResume = await createResume({ userId: user.id });
       toast.success('Resume created successfully!');
       navigate(`/resumes/${newResume.id}`);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error creating resume:', err);
-      if (err?.response?.status === 409) {
+      const errorResponse = err as { response?: { status?: number } };
+      if (errorResponse?.response?.status === 409) {
         toast.error('You already have a resume');
         loadMyResume();
       } else {

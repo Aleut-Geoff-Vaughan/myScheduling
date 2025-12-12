@@ -58,7 +58,7 @@ export function DOACard({ doa, onView, onEdit }: DOACardProps) {
     try {
       await deleteMutation.mutateAsync(doa.id);
       toast.success('DOA letter deleted successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete DOA letter');
     }
   };
@@ -71,7 +71,7 @@ export function DOACard({ doa, onView, onEdit }: DOACardProps) {
     try {
       await revokeMutation.mutateAsync(doa.id);
       toast.success('DOA letter revoked successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to revoke DOA letter');
     }
   };

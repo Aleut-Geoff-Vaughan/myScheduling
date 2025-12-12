@@ -41,7 +41,7 @@ export default function AdminGroupsPage() {
       setNewGroup({ name: '', description: '' });
       qc.invalidateQueries({ queryKey: ['groups'] });
     },
-    onError: (err: any) => toast.error(err?.message ?? 'Failed to create group'),
+    onError: (err: Error) => toast.error(err?.message ?? 'Failed to create group'),
   });
 
   const updateGroup = useMutation({

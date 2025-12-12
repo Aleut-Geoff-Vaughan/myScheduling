@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup } from './ui';
 import { projectsService } from '../services/projectsService';
@@ -34,6 +34,7 @@ export function ProjectAssignmentModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+
   // Fetch projects
   const { data: projects = [] } = useQuery({
     queryKey: ['projects', currentWorkspace?.tenantId],
@@ -41,28 +42,33 @@ export function ProjectAssignmentModal({
     enabled: !!currentWorkspace?.tenantId && isOpen,
   });
 
+  const initialData = useMemo(() => {
+   
+    if (existingAssignment) {
+      return {
+        ...existingAssignment,
+        startDate: existingAssignment.startDate.split('T')[0],
+        endDate: existingAssignment.endDate?.split('T')[0],
+      };
+    }
+    return {
+      projectId: '',
+      tenantId: currentWorkspace?.tenantId || '',
+      userId: user?.id || '',
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: undefined,
+      status: ProjectAssignmentStatus.Draft,
+      notes: '',
+    };
+  }, [existingAssignment, currentWorkspace?.tenantId, user?.id]);
+
   useEffect(() => {
     if (isOpen) {
-      if (existingAssignment) {
-        setFormData({
-          ...existingAssignment,
-          startDate: existingAssignment.startDate.split('T')[0],
-          endDate: existingAssignment.endDate?.split('T')[0],
-        });
-      } else {
-        setFormData({
-          projectId: '',
-          tenantId: currentWorkspace?.tenantId || '',
-          userId: user?.id || '',
-          startDate: new Date().toISOString().split('T')[0],
-          endDate: undefined,
-          status: ProjectAssignmentStatus.Draft,
-          notes: '',
-        });
-      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormData(initialData);
       setErrors({});
     }
-  }, [isOpen, currentWorkspace?.tenantId, user?.id, existingAssignment]);
+  }, [isOpen, initialData]);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};

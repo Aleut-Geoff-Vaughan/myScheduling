@@ -849,7 +849,7 @@ export interface ValidationError {
   message: string;
   ruleType: ValidationRuleType;
   severity: ValidationSeverity;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 export interface ValidationResult {
@@ -861,14 +861,14 @@ export interface ValidationResult {
 
 export interface ValidateEntityRequest {
   entityType: string;
-  entityData: Record<string, any>;
+  entityData: Record<string, unknown>;
 }
 
 export interface ValidateFieldRequest {
   entityType: string;
   fieldName: string;
-  fieldValue: any;
-  entityData?: Record<string, any>;
+  fieldValue: unknown;
+  entityData?: Record<string, unknown>;
 }
 
 export interface ValidateExpressionRequest {

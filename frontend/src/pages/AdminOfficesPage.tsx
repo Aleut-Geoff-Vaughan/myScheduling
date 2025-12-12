@@ -142,7 +142,7 @@ export function AdminOfficesPage() {
         toast.success('Office created successfully');
       }
       handleCloseModal();
-    } catch (error) {
+    } catch {
       toast.error(editingOffice ? 'Failed to update office' : 'Failed to create office');
     }
   };

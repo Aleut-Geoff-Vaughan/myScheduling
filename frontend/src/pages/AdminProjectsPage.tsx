@@ -39,8 +39,9 @@ export function AdminProjectsPage() {
       toast.success('Project created successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to create project');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to create project';
+      toast.error(message);
     },
   });
 
@@ -53,8 +54,9 @@ export function AdminProjectsPage() {
       toast.success('Project updated successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to update project');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to update project';
+      toast.error(message);
     },
   });
 
@@ -65,8 +67,9 @@ export function AdminProjectsPage() {
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       toast.success('Project deleted successfully');
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Failed to delete project');
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : 'Failed to delete project';
+      toast.error(message);
     },
   });
 

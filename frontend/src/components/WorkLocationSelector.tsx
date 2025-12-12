@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup, TextArea } from './ui';
 import { WorkLocationType, DayPortion, type WorkLocationPreference } from '../types/api';
@@ -32,99 +32,79 @@ export function WorkLocationSelector({
   const createMutation = useCreateWorkLocationPreference();
   const updateMutation = useUpdateWorkLocationPreference();
 
+  // Compute initial values with useMemo to avoid setState in useEffect
+  const initialScheduleMode = useMemo<ScheduleMode>(() => {
+    if (!existingPreference) return 'fullDay';
+    const isAmPreference = existingPreference.dayPortion === DayPortion.AM;
+    const isPmPreference = existingPreference.dayPortion === DayPortion.PM;
+    return ((isAmPreference || isPmPreference) || existingPmPreference) ? 'splitDay' : 'fullDay';
+  }, [existingPreference, existingPmPreference]);
+
+  const initialAmData = useMemo(() => ({
+    locationType: existingPreference?.locationType ?? WorkLocationType.Remote,
+    officeId: existingPreference?.officeId ?? '',
+    remoteLocation: existingPreference?.remoteLocation ?? '',
+    city: existingPreference?.city ?? '',
+    state: existingPreference?.state ?? '',
+    country: existingPreference?.country ?? '',
+    notes: existingPreference?.notes ?? '',
+  }), [existingPreference]);
+
+  const initialPmData = useMemo(() => ({
+    locationType: existingPmPreference?.locationType ?? WorkLocationType.Remote,
+    officeId: existingPmPreference?.officeId ?? '',
+    remoteLocation: existingPmPreference?.remoteLocation ?? '',
+    city: existingPmPreference?.city ?? '',
+    state: existingPmPreference?.state ?? '',
+    country: existingPmPreference?.country ?? '',
+    notes: existingPmPreference?.notes ?? '',
+  }), [existingPmPreference]);
+
   // Schedule mode: fullDay or splitDay
-  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>('fullDay');
+  const [scheduleMode, setScheduleMode] = useState<ScheduleMode>(initialScheduleMode);
 
   // AM (or full day) location state
-  const [locationType, setLocationType] = useState<WorkLocationType>(
-    existingPreference?.locationType ?? WorkLocationType.Remote
-  );
-  const [selectedOfficeId, setSelectedOfficeId] = useState<string>(
-    existingPreference?.officeId ?? ''
-  );
-  const [remoteLocation, setRemoteLocation] = useState(
-    existingPreference?.remoteLocation ?? ''
-  );
-  const [city, setCity] = useState(existingPreference?.city ?? '');
-  const [state, setState] = useState(existingPreference?.state ?? '');
-  const [country, setCountry] = useState(existingPreference?.country ?? '');
-  const [notes, setNotes] = useState(existingPreference?.notes ?? '');
+  const [locationType, setLocationType] = useState<WorkLocationType>(initialAmData.locationType);
+  const [selectedOfficeId, setSelectedOfficeId] = useState<string>(initialAmData.officeId);
+  const [remoteLocation, setRemoteLocation] = useState(initialAmData.remoteLocation);
+  const [city, setCity] = useState(initialAmData.city);
+  const [state, setState] = useState(initialAmData.state);
+  const [country, setCountry] = useState(initialAmData.country);
+  const [notes, setNotes] = useState(initialAmData.notes);
 
   // PM location state (for split day mode)
-  const [pmLocationType, setPmLocationType] = useState<WorkLocationType>(
-    existingPmPreference?.locationType ?? WorkLocationType.Remote
-  );
-  const [pmSelectedOfficeId, setPmSelectedOfficeId] = useState<string>(
-    existingPmPreference?.officeId ?? ''
-  );
-  const [pmRemoteLocation, setPmRemoteLocation] = useState(
-    existingPmPreference?.remoteLocation ?? ''
-  );
-  const [pmCity, setPmCity] = useState(existingPmPreference?.city ?? '');
-  const [pmState, setPmState] = useState(existingPmPreference?.state ?? '');
-  const [pmCountry, setPmCountry] = useState(existingPmPreference?.country ?? '');
-  const [pmNotes, setPmNotes] = useState(existingPmPreference?.notes ?? '');
+  const [pmLocationType, setPmLocationType] = useState<WorkLocationType>(initialPmData.locationType);
+  const [pmSelectedOfficeId, setPmSelectedOfficeId] = useState<string>(initialPmData.officeId);
+  const [pmRemoteLocation, setPmRemoteLocation] = useState(initialPmData.remoteLocation);
+  const [pmCity, setPmCity] = useState(initialPmData.city);
+  const [pmState, setPmState] = useState(initialPmData.state);
+  const [pmCountry, setPmCountry] = useState(initialPmData.country);
+  const [pmNotes, setPmNotes] = useState(initialPmData.notes);
+
+  // Sync state when initial values change
+  useEffect(() => {
+    setScheduleMode(initialScheduleMode);
+  }, [initialScheduleMode]);
 
   useEffect(() => {
-    if (existingPreference) {
-      // Determine schedule mode based on existing preferences
-      const isAmPreference = existingPreference.dayPortion === DayPortion.AM;
-      const isPmPreference = existingPreference.dayPortion === DayPortion.PM;
+    setLocationType(initialAmData.locationType);
+    setSelectedOfficeId(initialAmData.officeId);
+    setRemoteLocation(initialAmData.remoteLocation);
+    setCity(initialAmData.city);
+    setState(initialAmData.state);
+    setCountry(initialAmData.country);
+    setNotes(initialAmData.notes);
+  }, [initialAmData]);
 
-      if ((isAmPreference || isPmPreference) || existingPmPreference) {
-        setScheduleMode('splitDay');
-      } else {
-        setScheduleMode('fullDay');
-      }
-
-      // Set AM/full day location state
-      setLocationType(existingPreference.locationType);
-      setSelectedOfficeId(existingPreference.officeId ?? '');
-      setRemoteLocation(existingPreference.remoteLocation ?? '');
-      setCity(existingPreference.city ?? '');
-      setState(existingPreference.state ?? '');
-      setCountry(existingPreference.country ?? '');
-      setNotes(existingPreference.notes ?? '');
-
-      // Set PM location state if exists
-      if (existingPmPreference) {
-        setPmLocationType(existingPmPreference.locationType);
-        setPmSelectedOfficeId(existingPmPreference.officeId ?? '');
-        setPmRemoteLocation(existingPmPreference.remoteLocation ?? '');
-        setPmCity(existingPmPreference.city ?? '');
-        setPmState(existingPmPreference.state ?? '');
-        setPmCountry(existingPmPreference.country ?? '');
-        setPmNotes(existingPmPreference.notes ?? '');
-      } else {
-        // Reset PM fields
-        setPmLocationType(WorkLocationType.Remote);
-        setPmSelectedOfficeId('');
-        setPmRemoteLocation('');
-        setPmCity('');
-        setPmState('');
-        setPmCountry('');
-        setPmNotes('');
-      }
-    } else {
-      // Reset form for new preference
-      setScheduleMode('fullDay');
-      setLocationType(WorkLocationType.Remote);
-      setSelectedOfficeId('');
-      setRemoteLocation('');
-      setCity('');
-      setState('');
-      setCountry('');
-      setNotes('');
-      // Reset PM fields
-      setPmLocationType(WorkLocationType.Remote);
-      setPmSelectedOfficeId('');
-      setPmRemoteLocation('');
-      setPmCity('');
-      setPmState('');
-      setPmCountry('');
-      setPmNotes('');
-    }
-  }, [existingPreference, existingPmPreference, isOpen]);
+  useEffect(() => {
+    setPmLocationType(initialPmData.locationType);
+    setPmSelectedOfficeId(initialPmData.officeId);
+    setPmRemoteLocation(initialPmData.remoteLocation);
+    setPmCity(initialPmData.city);
+    setPmState(initialPmData.state);
+    setPmCountry(initialPmData.country);
+    setPmNotes(initialPmData.notes);
+  }, [initialPmData]);
 
   const companyOffices = allOffices.filter(o => !o.isClientSite);
   const clientSites = allOffices.filter(o => o.isClientSite);
@@ -171,6 +151,7 @@ export function WorkLocationSelector({
       existingPref?: WorkLocationPreference
     ) => {
       if (existingPref) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { user, office, booking, ...cleanPreference } = existingPref;
         await updateMutation.mutateAsync({
           id: existingPref.id,
@@ -179,14 +160,16 @@ export function WorkLocationSelector({
       } else {
         try {
           await createMutation.mutateAsync(preferenceData);
-        } catch (createError: any) {
-          if (createError?.status === 409 || createError?.message?.includes('409')) {
+        } catch (createError) {
+          const error = createError as { status?: number; message?: string };
+          if (error?.status === 409 || error?.message?.includes('409')) {
             console.log('Preference already exists, fetching and updating instead');
             const preferences = await workLocationService.getAll({ userId: preferenceData.userId });
             const existing = preferences.find(
               (p) => p.workDate === preferenceData.workDate && p.dayPortion === preferenceData.dayPortion
             );
             if (existing) {
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
               const { user, office, booking, ...cleanExisting } = existing;
               await updateMutation.mutateAsync({
                 id: existing.id,

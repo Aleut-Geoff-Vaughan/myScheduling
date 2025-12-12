@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup } from './ui';
 import { projectsService } from '../services/projectsService';
@@ -23,22 +23,10 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
     staleTime: 60_000,
   });
 
-  const [formData, setFormData] = useState({
-    tenantId: '',
-    name: '',
-    programCode: '',
-    customer: '',
-    startDate: '',
-    endDate: '',
-    status: ProjectStatus.Draft,
-    approverGroupId: '',
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
+  // Initialize form data with useMemo to avoid setState in useEffect
+  const initialFormData = useMemo(() => {
     if (project && mode === 'edit') {
-      setFormData({
+      return {
         tenantId: project.tenantId,
         name: project.name,
         programCode: project.programCode || '',
@@ -46,18 +34,40 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
         startDate: project.startDate.split('T')[0],
         endDate: project.endDate ? project.endDate.split('T')[0] : '',
         status: project.status,
-        approverGroupId: (project as any).approverGroupId || '',
-      });
-    } else if (mode === 'create' && tenants.length > 0 && !formData.tenantId) {
-      // Only set default tenant once when creating
-      setFormData(prev => ({
-        ...prev,
+        approverGroupId: (project as Project & { approverGroupId?: string }).approverGroupId || '',
+      };
+    } else if (mode === 'create' && tenants.length > 0) {
+      return {
         tenantId: tenants[0].id,
+        name: '',
+        programCode: '',
+        customer: '',
         startDate: new Date().toISOString().split('T')[0],
+        endDate: '',
+        status: ProjectStatus.Draft,
         approverGroupId: '',
-      }));
+      };
     }
-  }, [project, mode, tenants, formData.tenantId]);
+    return {
+      tenantId: '',
+      name: '',
+      programCode: '',
+      customer: '',
+      startDate: '',
+      endDate: '',
+      status: ProjectStatus.Draft,
+      approverGroupId: '',
+    };
+  }, [project, mode, tenants]);
+
+  const [formData, setFormData] = useState(initialFormData);
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update formData when initialFormData changes
+  useEffect(() => {
+    setFormData(initialFormData);
+  }, [initialFormData]);
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) =>
@@ -66,7 +76,7 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrors({ submit: error.message || 'Failed to create project' });
     },
   });
@@ -77,7 +87,7 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
       queryClient.invalidateQueries({ queryKey: ['projects'] });
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrors({ submit: error.message || 'Failed to update project' });
     },
   });
@@ -115,7 +125,7 @@ export function ProjectModal({ isOpen, onClose, project, mode }: ProjectModalPro
     }
   };
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => {

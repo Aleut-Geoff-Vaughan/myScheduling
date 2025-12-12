@@ -98,9 +98,10 @@ export function PTODateRangeModal({
 
         try {
           await createMutation.mutateAsync(preferenceData);
-        } catch (createError: any) {
+        } catch (createError) {
           // If preference already exists, update it
-          if (createError?.status === 409 || createError?.message?.includes('409')) {
+          const error = createError as { status?: number; message?: string };
+          if (error?.status === 409 || error?.message?.includes('409')) {
             try {
               const preferences = await workLocationService.getAll({ userId });
               const existing = preferences.find((p) => p.workDate === workDate);

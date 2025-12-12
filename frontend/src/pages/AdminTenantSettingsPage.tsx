@@ -18,6 +18,7 @@ export function AdminTenantSettingsPage() {
 
   useEffect(() => {
     if (settings) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional sync from settings prop
       setFormData({
         logoUrl: settings.logoUrl,
         logoFileName: settings.logoFileName,
@@ -78,7 +79,7 @@ export function AdminTenantSettingsPage() {
       setLogoPreview(result.logoUrl);
       setFormData({ ...formData, logoUrl: result.logoUrl });
       toast.success('Logo uploaded successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to upload logo');
     }
   };
@@ -89,7 +90,7 @@ export function AdminTenantSettingsPage() {
     try {
       await updateMutation.mutateAsync(formData);
       toast.success('Settings updated successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to update settings');
     }
   };

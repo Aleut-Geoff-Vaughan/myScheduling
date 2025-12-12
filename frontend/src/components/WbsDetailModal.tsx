@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup, StatusBadge, Card, CardBody } from './ui';
 import wbsService from '../services/wbsService';
@@ -37,23 +37,10 @@ export function WbsDetailModal({ isOpen, onClose, wbs, mode }: WbsDetailModalPro
     enabled: !!wbs?.id && activeTab === 'history',
   });
 
-  const [formData, setFormData] = useState({
-    projectId: '',
-    code: '',
-    description: '',
-    validFrom: '',
-    validTo: '',
-    type: WbsType.TaskOrder,
-    ownerUserId: '',
-    approverUserId: '',
-    approverGroupId: '',
-  });
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  useEffect(() => {
+  // Initialize form data with useMemo to avoid setState in useEffect
+  const initialFormData = useMemo(() => {
     if (wbs && (mode === 'edit' || mode === 'view')) {
-      setFormData({
+      return {
         projectId: wbs.projectId,
         code: wbs.code,
         description: wbs.description,
@@ -63,34 +50,61 @@ export function WbsDetailModal({ isOpen, onClose, wbs, mode }: WbsDetailModalPro
         ownerUserId: wbs.ownerUserId || '',
         approverUserId: wbs.approverUserId || '',
         approverGroupId: wbs.approverGroupId || '',
-      });
-    } else if (mode === 'create' && projects.length > 0 && !formData.projectId) {
-      // Only set default project once when creating
-      setFormData(prev => ({
-        ...prev,
+      };
+    } else if (mode === 'create' && projects.length > 0) {
+      return {
         projectId: projects[0].id,
-      }));
+        code: '',
+        description: '',
+        validFrom: '',
+        validTo: '',
+        type: WbsType.TaskOrder,
+        ownerUserId: '',
+        approverUserId: '',
+        approverGroupId: '',
+      };
     }
-  }, [wbs, mode, projects, formData.projectId]);
+    return {
+      projectId: '',
+      code: '',
+      description: '',
+      validFrom: '',
+      validTo: '',
+      type: WbsType.TaskOrder,
+      ownerUserId: '',
+      approverUserId: '',
+      approverGroupId: '',
+    };
+  }, [wbs, mode, projects]);
+
+  const [formData, setFormData] = useState(initialFormData);
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Update formData when initialFormData changes
+  useEffect(() => {
+    setFormData(initialFormData);
+  }, [initialFormData]);
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => wbsService.createWbs(data),
+    mutationFn: (data: Omit<WbsElement, 'id' | 'tenantId' | 'approvalStatus' | 'approvalNotes' | 'createdAt' | 'updatedAt'>) =>
+      wbsService.createWbs(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wbs'] });
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrors({ submit: error.message || 'Failed to create WBS element' });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) => wbsService.updateWbs(wbs!.id, data),
+    mutationFn: (data: Partial<WbsElement>) => wbsService.updateWbs(wbs!.id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wbs'] });
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrors({ submit: error.message || 'Failed to update WBS element' });
     },
   });
@@ -167,13 +181,14 @@ export function WbsDetailModal({ isOpen, onClose, wbs, mode }: WbsDetailModalPro
     };
 
     if (mode === 'create') {
-      createMutation.mutate(wbsData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createMutation.mutate(wbsData as any);
     } else if (mode === 'edit' && wbs) {
       updateMutation.mutate(wbsData);
     }
   };
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => {

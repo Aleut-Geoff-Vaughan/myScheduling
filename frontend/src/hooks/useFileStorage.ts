@@ -35,8 +35,13 @@ export const useUploadFile = () => {
       queryClient.invalidateQueries({ queryKey: ['files'] });
       toast.success('File uploaded successfully');
     },
-    onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Failed to upload file';
+    onError: (error: unknown) => {
+      const message =
+        (error && typeof error === 'object' && 'response' in error &&
+         error.response && typeof error.response === 'object' && 'data' in error.response &&
+         error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data)
+          ? String(error.response.data.message)
+          : 'Failed to upload file';
       toast.error(message);
     },
   });
@@ -51,8 +56,13 @@ export const useDeleteFile = () => {
       queryClient.invalidateQueries({ queryKey: ['files'] });
       toast.success('File deleted successfully');
     },
-    onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Failed to delete file';
+    onError: (error: unknown) => {
+      const message =
+        (error && typeof error === 'object' && 'response' in error &&
+         error.response && typeof error.response === 'object' && 'data' in error.response &&
+         error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data)
+          ? String(error.response.data.message)
+          : 'Failed to delete file';
       toast.error(message);
     },
   });
@@ -61,8 +71,13 @@ export const useDeleteFile = () => {
 export const useDownloadFile = () => {
   return useMutation({
     mutationFn: (fileId: string) => downloadFile(fileId),
-    onError: (error: any) => {
-      const message = error?.response?.data?.message || 'Failed to download file';
+    onError: (error: unknown) => {
+      const message =
+        (error && typeof error === 'object' && 'response' in error &&
+         error.response && typeof error.response === 'object' && 'data' in error.response &&
+         error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data)
+          ? String(error.response.data.message)
+          : 'Failed to download file';
       toast.error(message);
     },
   });

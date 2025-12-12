@@ -32,11 +32,11 @@ export function MagicLinkVerifyPage() {
         setTimeout(() => {
           navigate('/select-workspace');
         }, 1500);
-      } catch (error: any) {
+      } catch (error) {
         setStatus('error');
-        const message = error?.response?.data?.message
-          || error?.message
-          || 'Failed to verify magic link. Please request a new one.';
+        const message = error instanceof Error
+          ? error.message
+          : 'Failed to verify magic link. Please request a new one.';
         setErrorMessage(message);
         toast.error('Failed to verify login link');
       }

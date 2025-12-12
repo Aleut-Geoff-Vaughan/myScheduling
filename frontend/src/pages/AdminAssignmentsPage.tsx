@@ -58,7 +58,7 @@ export function AdminAssignmentsPage() {
       toast.success('WBS assignment created successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to create WBS assignment');
     },
   });
@@ -72,7 +72,7 @@ export function AdminAssignmentsPage() {
       toast.success('WBS assignment updated successfully');
       handleCloseModal();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update WBS assignment');
     },
   });
@@ -84,7 +84,7 @@ export function AdminAssignmentsPage() {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
       toast.success('WBS assignment deleted successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete WBS assignment');
     },
   });

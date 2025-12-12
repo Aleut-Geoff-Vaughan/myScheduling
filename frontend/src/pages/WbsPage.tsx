@@ -38,13 +38,13 @@ export function WbsPage() {
     staleTime: 60_000,
   });
 
-  const wbsElements = paginatedData?.items || [];
   const totalCount = paginatedData?.totalCount || 0;
   const totalPages = paginatedData?.totalPages || 0;
   const hasPreviousPage = paginatedData?.hasPreviousPage || false;
   const hasNextPage = paginatedData?.hasNextPage || false;
 
   const filteredWbsElements = useMemo(() => {
+    const wbsElements = paginatedData?.items || [];
     const term = searchTerm.toLowerCase();
     return wbsElements.filter(wbs => {
       const matchesSearch =
@@ -59,7 +59,7 @@ export function WbsPage() {
 
       return matchesSearch && matchesGroup;
     });
-  }, [wbsElements, searchTerm, selectedApproverGroupFilter]);
+  }, [paginatedData?.items, searchTerm, selectedApproverGroupFilter]);
 
   const getTypeLabel = (type: WbsType): string => {
     switch (type) {

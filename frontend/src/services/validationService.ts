@@ -100,7 +100,7 @@ export const validationService = {
   /**
    * Test a validation rule against sample data
    */
-  async testRule(id: string, tenantId: string, testData: Record<string, any>): Promise<ValidationResult> {
+  async testRule(id: string, tenantId: string, testData: Record<string, unknown>): Promise<ValidationResult> {
     const response = await http.post(`/validation/rules/${id}/test`, testData, {
       params: { tenantId },
     });

@@ -12,7 +12,7 @@ interface NonLaborCostsGridProps {
   year: number;
 }
 
-export function NonLaborCostsGrid({ projectId, months, versionId: _versionId, year }: NonLaborCostsGridProps) {
+export function NonLaborCostsGrid({ projectId, months, year }: NonLaborCostsGridProps) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [cellValues, setCellValues] = useState<Record<string, number>>({});
   const [expanded, setExpanded] = useState(true);
@@ -155,6 +155,8 @@ export function NonLaborCostsGrid({ projectId, months, versionId: _versionId, ye
     }
 
     setEditingCell(null);
+    // getCellForecast is intentionally excluded as it's a stable function
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cellValues, forecastMap, upsertMutation, projectId]);
 
   const handleKeyDown = (e: React.KeyboardEvent, costTypeId: string, year: number, month: number) => {

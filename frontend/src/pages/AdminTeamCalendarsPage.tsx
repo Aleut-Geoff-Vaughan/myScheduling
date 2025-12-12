@@ -65,6 +65,7 @@ export function AdminTeamCalendarsPage() {
   useEffect(() => {
     if (!selectedTenantId && tenants.length > 0) {
       if (isSystemAdmin) {
+                // eslint-disable-next-line react-hooks/set-state-in-effect -- Init from props
         setSelectedTenantId('all');
       } else if (currentWorkspace?.tenantId) {
         setSelectedTenantId(currentWorkspace.tenantId);
@@ -168,6 +169,7 @@ export function AdminTeamCalendarsPage() {
 
   // Reset page when filters change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional reset on filter change
     setCurrentPage(1);
   }, [filterType, filterStatus, searchOwner, selectedTenantId]);
 
@@ -186,7 +188,7 @@ export function AdminTeamCalendarsPage() {
       setShowCreateModal(false);
       resetForm();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to create calendar');
     },
   });
@@ -202,7 +204,7 @@ export function AdminTeamCalendarsPage() {
       setShowEditModal(false);
       resetForm();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to update calendar');
     },
   });
@@ -216,7 +218,7 @@ export function AdminTeamCalendarsPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-team-calendars'] });
       toast.success('Team calendar deleted successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to delete calendar');
     },
   });
@@ -232,7 +234,7 @@ export function AdminTeamCalendarsPage() {
       setShowMembersModal(false);
       setSelectedPeople([]);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to add members');
     },
   });
@@ -246,7 +248,7 @@ export function AdminTeamCalendarsPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-team-calendars'] });
       toast.success('Member removed successfully');
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to remove member');
     },
   });

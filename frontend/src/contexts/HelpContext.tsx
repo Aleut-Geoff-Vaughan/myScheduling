@@ -96,6 +96,7 @@ export function HelpProvider({ children }: { children: ReactNode }) {
   return <HelpContext.Provider value={value}>{children}</HelpContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useHelpContext() {
   const context = useContext(HelpContext);
   if (context === undefined) {

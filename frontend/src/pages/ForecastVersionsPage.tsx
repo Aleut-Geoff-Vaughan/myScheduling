@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import {
   forecastVersionsService,
@@ -36,7 +36,7 @@ export function ForecastVersionsPage() {
     type: ForecastVersionType.WhatIf,
   });
 
-  const loadVersions = async () => {
+  const loadVersions = useCallback(async () => {
     if (!tenantId) return;
     setIsLoading(true);
     try {
@@ -47,11 +47,11 @@ export function ForecastVersionsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [tenantId, includeArchived]);
 
   useEffect(() => {
     loadVersions();
-  }, [tenantId, includeArchived]);
+  }, [loadVersions]);
 
   const handleCreate = async () => {
     if (!tenantId || !createForm.name.trim()) {

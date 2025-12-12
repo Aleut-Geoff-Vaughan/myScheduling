@@ -89,7 +89,7 @@ export function AdminDOATemplatesPage() {
         toast.success('Template created successfully');
       }
       handleCloseModal();
-    } catch (error) {
+    } catch {
       toast.error(
         editingTemplate
           ? 'Failed to update template'
@@ -106,7 +106,7 @@ export function AdminDOATemplatesPage() {
     try {
       await deleteMutation.mutateAsync(id);
       toast.success('Template deleted successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to delete template');
     }
   };

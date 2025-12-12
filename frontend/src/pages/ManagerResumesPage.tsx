@@ -38,6 +38,7 @@ export function ManagerResumesPage() {
 
   useEffect(() => {
     loadTeamResumes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamFilter, statusFilter]);
 
   const loadTeamResumes = async () => {

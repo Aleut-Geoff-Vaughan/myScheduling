@@ -47,7 +47,7 @@ export function LoginPage() {
         } else {
           setHealthError('API is unavailable');
         }
-      } catch (err) {
+      } catch {
         setHealthError('Cannot connect to API');
       }
     };
@@ -69,8 +69,8 @@ export function LoginPage() {
       try {
         const enabled = await checkSsoEnabled();
         setSsoEnabled(enabled);
-      } catch (err) {
-        console.warn('Failed to check SSO status:', err);
+      } catch (error) {
+        console.warn('Failed to check SSO status:', error);
         setSsoEnabled(false);
       }
     };
@@ -110,7 +110,7 @@ export function LoginPage() {
       toast.success('Login successful!');
       // After login, redirect to workspace selector
       navigate('/select-workspace');
-    } catch (err) {
+    } catch {
       const errorMessage = 'Invalid credentials. Please try again.';
       setError(errorMessage);
       toast.error(errorMessage);
@@ -134,7 +134,7 @@ export function LoginPage() {
       await authService.requestMagicLink(email);
       setMagicLinkSent(true);
       toast.success('Check your email for the login link!');
-    } catch (err) {
+    } catch {
       // Always show success message to prevent email enumeration
       setMagicLinkSent(true);
       toast.success('If an account exists, a login link has been sent.');

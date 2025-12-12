@@ -336,7 +336,7 @@ export function ApprovalWorkflow({ resumeId, onApprovalChange }: ApprovalWorkflo
       {/* Action Modal */}
       {showActionModal && selectedApproval && (
         <ApprovalActionModal
-
+          approval={selectedApproval}
           actionType={actionType}
           onSubmit={(reviewNotes) => {
             if (actionType === 'approve') {
@@ -359,7 +359,7 @@ export function ApprovalWorkflow({ resumeId, onApprovalChange }: ApprovalWorkflo
 
 // Approval Action Modal Component
 interface ApprovalActionModalProps {
-
+  approval: ResumeApproval;
   actionType: 'approve' | 'reject' | 'changes';
   onSubmit: (reviewNotes: string) => void;
   onClose: () => void;

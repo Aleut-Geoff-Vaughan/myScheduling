@@ -49,6 +49,20 @@ interface ProjectWithBudgetInfo extends Project {
   variance: number;
 }
 
+// Move SortIcon component outside to avoid re-creation during render
+function SortIcon({
+  field,
+  sortField,
+  sortDirection
+}: {
+  field: string;
+  sortField: string;
+  sortDirection: 'asc' | 'desc';
+}) {
+  if (sortField !== field) return <span className="text-gray-300 ml-1">↕</span>;
+  return <span className="text-emerald-600 ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
+}
+
 export function BudgetManagementPage() {
   const navigate = useNavigate();
   const { currentWorkspace, availableTenants } = useAuthStore();
@@ -266,11 +280,6 @@ export function BudgetManagementPage() {
     return '▼';
   };
 
-  const SortIcon = ({ field }: { field: string }) => {
-    if (sortField !== field) return <span className="text-gray-300 ml-1">↕</span>;
-    return <span className="text-emerald-600 ml-1">{sortDirection === 'asc' ? '↑' : '↓'}</span>;
-  };
-
   const getFiscalYearLabel = () => {
     if (!fiscalYearInfo) return '';
     const startMonth = fiscalYearInfo.startMonth || 1;
@@ -362,7 +371,7 @@ export function BudgetManagementPage() {
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('name')}
                 >
-                  Project <SortIcon field="name" />
+                  Project <SortIcon field="name" sortField={sortField} sortDirection={sortDirection} />
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Budget Version
@@ -371,19 +380,19 @@ export function BudgetManagementPage() {
                   className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('budget')}
                 >
-                  Budget (hrs) <SortIcon field="budget" />
+                  Budget (hrs) <SortIcon field="budget" sortField={sortField} sortDirection={sortDirection} />
                 </th>
                 <th
                   className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('forecast')}
                 >
-                  Forecast (hrs) <SortIcon field="forecast" />
+                  Forecast (hrs) <SortIcon field="forecast" sortField={sortField} sortDirection={sortDirection} />
                 </th>
                 <th
                   className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('variance')}
                 >
-                  Variance <SortIcon field="variance" />
+                  Variance <SortIcon field="variance" sortField={sortField} sortDirection={sortDirection} />
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions

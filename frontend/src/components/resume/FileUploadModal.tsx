@@ -42,7 +42,7 @@ export function FileUploadModal({
     setSelectedFile(file);
   };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragActive(false);
 
@@ -50,7 +50,7 @@ export function FileUploadModal({
     if (file) {
       handleFile(file);
     }
-  }, []);
+  };
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -75,7 +75,7 @@ export function FileUploadModal({
     try {
       await onUpload(selectedFile, setUploadProgress);
       handleClose();
-    } catch (err) {
+    } catch {
       // Error handled by mutation
     }
   };

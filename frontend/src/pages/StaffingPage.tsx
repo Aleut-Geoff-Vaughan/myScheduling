@@ -60,8 +60,6 @@ export function StaffingPage() {
     refetchOnMount: false, // Use cached data if available and fresh
   });
 
-  const wbsElements = wbsResponse?.items || [];
-
   // Create lookup maps for quick access
   const projectMap = useMemo(() => {
     const map = new Map();
@@ -70,10 +68,11 @@ export function StaffingPage() {
   }, [projects]);
 
   const wbsMap = useMemo(() => {
+    const wbsElements = wbsResponse?.items || [];
     const map = new Map();
     wbsElements.forEach(w => map.set(w.id, w));
     return map;
-  }, [wbsElements]);
+  }, [wbsResponse?.items]);
 
   const toggleProject = (projectId: string) => {
     setExpandedProjects(prev => {
@@ -109,8 +108,9 @@ export function StaffingPage() {
       setRequesting(true);
       await assignmentRequestService.create(payload);
       toast.success('Assignment request submitted');
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to submit request');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error?.message ?? 'Failed to submit request');
     } finally {
       setRequesting(false);
     }
@@ -140,8 +140,9 @@ export function StaffingPage() {
       toast.success('Assignment updated successfully');
       setEditingAssignment(null);
       setEditedDates(null);
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to update assignment');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error?.message ?? 'Failed to update assignment');
     }
   };
 
@@ -157,19 +158,21 @@ export function StaffingPage() {
       await assignmentsService.delete(assignmentId);
       await queryClient.invalidateQueries({ queryKey: ['assignments'] });
       toast.success('Assignment deleted successfully');
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to delete assignment');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error?.message ?? 'Failed to delete assignment');
     }
   };
 
   const handleCreateProjectAssignment = async (projectAssignment: Partial<ProjectAssignment>) => {
     try {
-      await projectAssignmentsService.create(projectAssignment as any);
+      await projectAssignmentsService.create(projectAssignment as ProjectAssignment);
       await queryClient.invalidateQueries({ queryKey: ['projectAssignments'] });
       toast.success('Project assignment created successfully');
       setShowProjectAssignmentModal(false);
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to create project assignment');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error?.message ?? 'Failed to create project assignment');
       throw err;
     }
   };
@@ -186,8 +189,9 @@ export function StaffingPage() {
       toast.success('Project assignment updated successfully');
       setShowProjectAssignmentModal(false);
       setEditingProjectAssignment(null);
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to update project assignment');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error?.message ?? 'Failed to update project assignment');
       throw err;
     }
   };
@@ -199,8 +203,9 @@ export function StaffingPage() {
       await projectAssignmentsService.delete(projectAssignmentId);
       await queryClient.invalidateQueries({ queryKey: ['projectAssignments'] });
       toast.success('Project assignment deleted successfully');
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to delete project assignment');
+    } catch (err) {
+      const error = err as Error;
+      toast.error(error?.message ?? 'Failed to delete project assignment');
     }
   };
 

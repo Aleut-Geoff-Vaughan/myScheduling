@@ -162,6 +162,7 @@ export function AdminProjectRoleAssignmentsPage() {
 
   useEffect(() => {
     loadAssignments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, filterProject, filterStatus, filterType]);
 
   const filteredAssignments = useMemo(() => {

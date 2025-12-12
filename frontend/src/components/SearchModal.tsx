@@ -131,14 +131,12 @@ function SearchResultSection({
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Debounced search
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
@@ -154,6 +152,14 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     enabled: debouncedQuery.length >= 2,
     staleTime: 30000,
   });
+
+  // Track selected index, reset to 0 when query changes
+  const [currentSelectedIndex, setCurrentSelectedIndex] = useState(0);
+
+  // Reset selection when query changes
+  useEffect(() => {
+    setCurrentSelectedIndex(0);
+  }, [debouncedQuery]);
 
   // Build flat list of all results for keyboard navigation
   const allResults = useCallback(() => {
@@ -207,19 +213,21 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     return items;
   }, [results]);
 
-  // Reset selection when results change
+  // Focus input and reset query when opened
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [debouncedQuery]);
-
-  // Focus input when opened
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-      setQuery('');
-      setDebouncedQuery('');
-      setSelectedIndex(0);
+    if (isOpen) {
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+      // Clear query when modal opens - this is fine since it's conditional on isOpen changing
+      if (query !== '') {
+        setQuery('');
+      }
+      if (debouncedQuery !== '') {
+        setDebouncedQuery('');
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Handle keyboard navigation
@@ -232,16 +240,16 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedIndex((prev) => Math.min(prev + 1, items.length - 1));
+          setCurrentSelectedIndex((prev) => Math.min(prev + 1, items.length - 1));
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setSelectedIndex((prev) => Math.max(prev - 1, 0));
+          setCurrentSelectedIndex((prev) => Math.max(prev - 1, 0));
           break;
         case 'Enter':
           e.preventDefault();
-          if (items[selectedIndex]) {
-            navigate(items[selectedIndex].url);
+          if (items[currentSelectedIndex]) {
+            navigate(items[currentSelectedIndex].url);
             onClose();
           }
           break;
@@ -251,7 +259,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
           break;
       }
     },
-    [isOpen, allResults, selectedIndex, navigate, onClose]
+    [isOpen, allResults, currentSelectedIndex, navigate, onClose]
   );
 
   useEffect(() => {
@@ -386,7 +394,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="people"
                     results={results.people}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('people')}
                     renderItem={(item, _index, isSelected) => {
                       const person = item as PersonSearchResult;
@@ -412,7 +420,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="projects"
                     results={results.projects}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('projects')}
                     renderItem={(item, _index, isSelected) => {
                       const project = item as ProjectSearchResult;
@@ -438,7 +446,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="wbs"
                     results={results.wbsElements}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('wbs')}
                     renderItem={(item, _index, isSelected) => {
                       const wbs = item as WbsSearchResult;
@@ -464,7 +472,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="resumes"
                     results={results.resumes}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('resumes')}
                     renderItem={(item, _index, isSelected) => {
                       const resume = item as ResumeSearchResult;
@@ -494,7 +502,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="offices"
                     results={results.offices}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('offices')}
                     renderItem={(item, _index, isSelected) => {
                       const office = item as OfficeSearchResult;
@@ -524,7 +532,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="spaces"
                     results={results.spaces}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('spaces')}
                     renderItem={(item, _index, isSelected) => {
                       const space = item as SpaceSearchResult;
@@ -550,7 +558,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="groups"
                     results={results.groups}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('groups')}
                     renderItem={(item, _index, isSelected) => {
                       const group = item as GroupSearchResult;
@@ -576,7 +584,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="skills"
                     results={results.skills}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('skills')}
                     renderItem={(item, _index, isSelected) => {
                       const skill = item as SkillSearchResult;
@@ -602,7 +610,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="certifications"
                     results={results.certifications}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('certifications')}
                     renderItem={(item, _index, isSelected) => {
                       const cert = item as CertificationSearchResult;
@@ -628,7 +636,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="subcontractors"
                     results={results.subcontractors}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('subcontractors')}
                     renderItem={(item, _index, isSelected) => {
                       const sub = item as SubcontractorSearchResult;
@@ -655,7 +663,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     <SearchResultSection
                       type="companies"
                       results={results.subcontractorCompanies}
-                      selectedIndex={selectedIndex}
+                      selectedIndex={currentSelectedIndex}
                       startIndex={getStartIndex('companies')}
                       renderItem={(item, _index, isSelected) => {
                         const company = item as SubcontractorCompanySearchResult;
@@ -685,7 +693,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <SearchResultSection
                     type="leases"
                     results={results.leases}
-                    selectedIndex={selectedIndex}
+                    selectedIndex={currentSelectedIndex}
                     startIndex={getStartIndex('leases')}
                     renderItem={(item, _index, isSelected) => {
                       const lease = item as LeaseSearchResult;
@@ -750,6 +758,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 }
 
 // Hook for global keyboard shortcut
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSearchModal() {
   const [isOpen, setIsOpen] = useState(false);
 

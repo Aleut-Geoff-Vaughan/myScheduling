@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -35,8 +35,12 @@ export function CreateBudgetPage() {
   const [inputMethod, setInputMethod] = useState<BudgetInputMethod>('monthly');
   const [totalBudgetHours, setTotalBudgetHours] = useState<number>(0);
   const [distributionMethod, setDistributionMethod] = useState<DistributionMethod>('even');
-  // Project-level: key is "year-month"
-  const [monthlyHours, setMonthlyHours] = useState<Record<string, number>>({});
+
+  // Initialize monthly hours with a function to avoid useEffect
+  const [monthlyHours, setMonthlyHours] = useState<Record<string, number>>(() => {
+    return {};
+  });
+
   // WBS-level: key is "wbsId-year-month"
   const [wbsHours, setWbsHours] = useState<Record<string, number>>({});
   const [importError, setImportError] = useState<string | null>(null);
@@ -64,96 +68,93 @@ export function CreateBudgetPage() {
 
   const wbsElements = wbsResponse?.items || [];
 
-  // Initialize monthly hours based on fiscal year
-  useEffect(() => {
-    if (fiscalYearInfo?.months) {
+  // Compute effective monthly hours - handles both initial state and distribution
+  const effectiveMonthlyHours = useMemo(() => {
+    if (!fiscalYearInfo?.months) return monthlyHours;
+
+    // If we're in total budget mode and have a distribution, compute it
+    if (inputMethod === 'total' && entryMode === 'project' && totalBudgetHours > 0) {
+      const monthCount = fiscalYearInfo.months.length;
+      const distributed: Record<string, number> = {};
+
+      if (distributionMethod === 'even') {
+        const perMonth = Math.floor(totalBudgetHours / monthCount);
+        const remainder = totalBudgetHours - (perMonth * monthCount);
+        fiscalYearInfo.months.forEach((m, index) => {
+          const key = `${m.year}-${m.month}`;
+          distributed[key] = perMonth + (index < remainder ? 1 : 0);
+        });
+      } else if (distributionMethod === 'front') {
+        const firstHalfCount = Math.ceil(monthCount / 2);
+        const secondHalfCount = monthCount - firstHalfCount;
+        const firstHalfTotal = Math.round(totalBudgetHours * 0.6);
+        const secondHalfTotal = totalBudgetHours - firstHalfTotal;
+        const perFirstHalf = Math.floor(firstHalfTotal / firstHalfCount);
+        const perSecondHalf = Math.floor(secondHalfTotal / secondHalfCount);
+        const firstRemainder = firstHalfTotal - (perFirstHalf * firstHalfCount);
+        const secondRemainder = secondHalfTotal - (perSecondHalf * secondHalfCount);
+        fiscalYearInfo.months.forEach((m, index) => {
+          const key = `${m.year}-${m.month}`;
+          if (index < firstHalfCount) {
+            distributed[key] = perFirstHalf + (index < firstRemainder ? 1 : 0);
+          } else {
+            const secondHalfIndex = index - firstHalfCount;
+            distributed[key] = perSecondHalf + (secondHalfIndex < secondRemainder ? 1 : 0);
+          }
+        });
+      } else if (distributionMethod === 'back') {
+        const firstHalfCount = Math.ceil(monthCount / 2);
+        const secondHalfCount = monthCount - firstHalfCount;
+        const firstHalfTotal = Math.round(totalBudgetHours * 0.4);
+        const secondHalfTotal = totalBudgetHours - firstHalfTotal;
+        const perFirstHalf = Math.floor(firstHalfTotal / firstHalfCount);
+        const perSecondHalf = Math.floor(secondHalfTotal / secondHalfCount);
+        const firstRemainder = firstHalfTotal - (perFirstHalf * firstHalfCount);
+        const secondRemainder = secondHalfTotal - (perSecondHalf * secondHalfCount);
+        fiscalYearInfo.months.forEach((m, index) => {
+          const key = `${m.year}-${m.month}`;
+          if (index < firstHalfCount) {
+            distributed[key] = perFirstHalf + (index < firstRemainder ? 1 : 0);
+          } else {
+            const secondHalfIndex = index - firstHalfCount;
+            distributed[key] = perSecondHalf + (secondHalfIndex < secondRemainder ? 1 : 0);
+          }
+        });
+      } else {
+        const perMonth = Math.floor(totalBudgetHours / monthCount);
+        const remainder = totalBudgetHours - (perMonth * monthCount);
+        fiscalYearInfo.months.forEach((m, index) => {
+          const key = `${m.year}-${m.month}`;
+          distributed[key] = perMonth + (index < remainder ? 1 : 0);
+        });
+      }
+      return distributed;
+    }
+
+    // Initialize if empty
+    if (Object.keys(monthlyHours).length === 0) {
       const initial: Record<string, number> = {};
       fiscalYearInfo.months.forEach(m => {
         initial[`${m.year}-${m.month}`] = 0;
       });
-      setMonthlyHours(initial);
-    }
-  }, [fiscalYearInfo]);
-
-  // Distribute total budget hours across months when using 'total' input method
-  const distributeBudget = (total: number, method: DistributionMethod) => {
-    if (!fiscalYearInfo?.months || total <= 0) return;
-
-    const monthCount = fiscalYearInfo.months.length;
-    const distributed: Record<string, number> = {};
-
-    if (method === 'even') {
-      // Distribute evenly
-      const perMonth = Math.floor(total / monthCount);
-      const remainder = total - (perMonth * monthCount);
-
-      fiscalYearInfo.months.forEach((m, index) => {
-        const key = `${m.year}-${m.month}`;
-        // Add remainder to first months
-        distributed[key] = perMonth + (index < remainder ? 1 : 0);
-      });
-    } else if (method === 'front') {
-      // Front-loaded: 60% first half, 40% second half
-      const firstHalfCount = Math.ceil(monthCount / 2);
-      const secondHalfCount = monthCount - firstHalfCount;
-      const firstHalfTotal = Math.round(total * 0.6);
-      const secondHalfTotal = total - firstHalfTotal;
-
-      const perFirstHalf = Math.floor(firstHalfTotal / firstHalfCount);
-      const perSecondHalf = Math.floor(secondHalfTotal / secondHalfCount);
-      const firstRemainder = firstHalfTotal - (perFirstHalf * firstHalfCount);
-      const secondRemainder = secondHalfTotal - (perSecondHalf * secondHalfCount);
-
-      fiscalYearInfo.months.forEach((m, index) => {
-        const key = `${m.year}-${m.month}`;
-        if (index < firstHalfCount) {
-          distributed[key] = perFirstHalf + (index < firstRemainder ? 1 : 0);
-        } else {
-          const secondHalfIndex = index - firstHalfCount;
-          distributed[key] = perSecondHalf + (secondHalfIndex < secondRemainder ? 1 : 0);
-        }
-      });
-    } else if (method === 'back') {
-      // Back-loaded: 40% first half, 60% second half
-      const firstHalfCount = Math.ceil(monthCount / 2);
-      const secondHalfCount = monthCount - firstHalfCount;
-      const firstHalfTotal = Math.round(total * 0.4);
-      const secondHalfTotal = total - firstHalfTotal;
-
-      const perFirstHalf = Math.floor(firstHalfTotal / firstHalfCount);
-      const perSecondHalf = Math.floor(secondHalfTotal / secondHalfCount);
-      const firstRemainder = firstHalfTotal - (perFirstHalf * firstHalfCount);
-      const secondRemainder = secondHalfTotal - (perSecondHalf * secondHalfCount);
-
-      fiscalYearInfo.months.forEach((m, index) => {
-        const key = `${m.year}-${m.month}`;
-        if (index < firstHalfCount) {
-          distributed[key] = perFirstHalf + (index < firstRemainder ? 1 : 0);
-        } else {
-          const secondHalfIndex = index - firstHalfCount;
-          distributed[key] = perSecondHalf + (secondHalfIndex < secondRemainder ? 1 : 0);
-        }
-      });
-    } else {
-      // Custom - just do even for now, user can modify
-      const perMonth = Math.floor(total / monthCount);
-      const remainder = total - (perMonth * monthCount);
-
-      fiscalYearInfo.months.forEach((m, index) => {
-        const key = `${m.year}-${m.month}`;
-        distributed[key] = perMonth + (index < remainder ? 1 : 0);
-      });
+      return initial;
     }
 
-    setMonthlyHours(distributed);
-  };
+    return monthlyHours;
+  }, [fiscalYearInfo, inputMethod, entryMode, totalBudgetHours, distributionMethod, monthlyHours]);
 
-  // Effect to distribute when total or method changes
+  // Sync effectiveMonthlyHours to state when it changes (only when different)
   useEffect(() => {
-    if (inputMethod === 'total' && entryMode === 'project' && totalBudgetHours > 0) {
-      distributeBudget(totalBudgetHours, distributionMethod);
+    const effectiveKeys = Object.keys(effectiveMonthlyHours).sort().join(',');
+    const currentKeys = Object.keys(monthlyHours).sort().join(',');
+    const effectiveValues = Object.values(effectiveMonthlyHours).join(',');
+    const currentValues = Object.values(monthlyHours).join(',');
+
+    if (effectiveKeys !== currentKeys || effectiveValues !== currentValues) {
+      // Use queueMicrotask to avoid setState during render warning
+      queueMicrotask(() => setMonthlyHours(effectiveMonthlyHours));
     }
-  }, [totalBudgetHours, distributionMethod, inputMethod, entryMode, fiscalYearInfo]);
+  }, [effectiveMonthlyHours, monthlyHours]);
 
   // Calculate totals
   const projectTotalHours = Object.values(monthlyHours).reduce((sum, h) => sum + (h || 0), 0);
@@ -196,14 +197,14 @@ export function CreateBudgetPage() {
 
     if (entryMode === 'project') {
       budgetLines = Object.entries(monthlyHours)
-        .filter(([_, hours]) => hours > 0)
+        .filter(([, hours]) => hours > 0)
         .map(([key, hours]) => {
           const [year, month] = key.split('-').map(Number);
           return { year, month, budgetedHours: hours };
         });
     } else {
       budgetLines = Object.entries(wbsHours)
-        .filter(([_, hours]) => hours > 0)
+        .filter(([, hours]) => hours > 0)
         .map(([key, hours]) => {
           const [wbsId, year, month] = key.split('-');
           return {

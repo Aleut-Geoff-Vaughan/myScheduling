@@ -78,29 +78,30 @@ const PersonCard = ({
   </div>
 );
 
-const PeopleTree = ({ nodes, depth = 0, onOpenDashboard }: { nodes: PeopleTreeNode[]; depth?: number; onOpenDashboard: (id: string) => void }) => (
-  <div className={depth === 0 ? 'space-y-4' : 'space-y-3'}>
-    {nodes.map((node) => (
-      <div key={node.id} className="border-l-2 border-gray-200 pl-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-gray-800">{node.displayName}</span>
-          <span className="text-xs text-gray-500">{node.jobTitle || '—'}</span>
-          <button
-            onClick={() => onOpenDashboard(node.id)}
-            className="text-xs text-indigo-600 hover:text-indigo-800"
-          >
-            View
-          </button>
-        </div>
-        {node.reports.length > 0 && (
-          <div className="mt-2">
-            <PeopleTree nodes={node.reports} depth={depth + 1} onOpenDashboard={onOpenDashboard} />
-          </div>
-        )}
-      </div>
-    ))}
-  </div>
-);
+// Unused component - kept for future org chart feature
+// const PeopleTree = ({ nodes, depth = 0, onOpenDashboard }: { nodes: PeopleTreeNode[]; depth?: number; onOpenDashboard: (id: string) => void }) => (
+//   <div className={depth === 0 ? 'space-y-4' : 'space-y-3'}>
+//     {nodes.map((node) => (
+//       <div key={node.id} className="border-l-2 border-gray-200 pl-4">
+//         <div className="flex items-center gap-2">
+//           <span className="text-sm font-semibold text-gray-800">{node.displayName}</span>
+//           <span className="text-xs text-gray-500">{node.jobTitle || '—'}</span>
+//           <button
+//             onClick={() => onOpenDashboard(node.id)}
+//             className="text-xs text-indigo-600 hover:text-indigo-800"
+//           >
+//             View
+//           </button>
+//         </div>
+//         {node.reports.length > 0 && (
+//           <div className="mt-2">
+//             <PeopleTree nodes={node.reports} depth={depth + 1} onOpenDashboard={onOpenDashboard} />
+//           </div>
+//         )}
+//       </div>
+//     ))}
+//   </div>
+// );
 
 export default function PeoplePage() {
   const { currentWorkspace, user } = useAuthStore();
@@ -223,8 +224,9 @@ export default function PeoplePage() {
       setEditingId(null);
       setEditForm({});
       queryClient.invalidateQueries({ queryKey: ['people'] });
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to update');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update';
+      toast.error(message);
     }
   };
 
@@ -282,7 +284,7 @@ export default function PeoplePage() {
             <select
               className="text-sm border border-gray-300 rounded px-2 py-1"
               value={pageSize}
-              onChange={(e) => setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value) as any)}
+              onChange={(e) => setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value) as 25 | 50 | 100)}
             >
               <option value={25}>25</option>
               <option value={50}>50</option>

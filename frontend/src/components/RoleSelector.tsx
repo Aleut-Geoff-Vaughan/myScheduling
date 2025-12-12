@@ -16,23 +16,23 @@ export function RoleSelector({ selectedRoles, onChange, disabled = false, showSy
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadRoles();
-  }, []);
+    const loadRoles = async () => {
+      try {
+        const roles = await tenantMembershipsService.getRoles();
+        // Filter out system roles unless explicitly requested
+        const filteredRoles = showSystemRoles
+          ? roles
+          : roles.filter(r => r.level === 'tenant');
+        setAvailableRoles(filteredRoles);
+      } catch (error) {
+        console.error('Failed to load roles:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const loadRoles = async () => {
-    try {
-      const roles = await tenantMembershipsService.getRoles();
-      // Filter out system roles unless explicitly requested
-      const filteredRoles = showSystemRoles
-        ? roles
-        : roles.filter(r => r.level === 'tenant');
-      setAvailableRoles(filteredRoles);
-    } catch (error) {
-      console.error('Failed to load roles:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadRoles();
+  }, [showSystemRoles]);
 
   const toggleRole = (role: AppRole) => {
     if (disabled) return;

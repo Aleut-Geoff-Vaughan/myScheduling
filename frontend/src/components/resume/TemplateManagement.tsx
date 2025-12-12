@@ -11,6 +11,27 @@ import { type ResumeTemplate, ResumeTemplateType } from '../../types/api';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 
+
+interface CreateTemplateData {
+  tenantId: string;
+  name: string;
+  description: string;
+  type: ResumeTemplateType;
+  templateContent: string;
+  storedFileId?: string;
+  isDefault?: boolean;
+}
+
+interface UpdateTemplateData {
+  name?: string;
+  description?: string;
+  type?: ResumeTemplateType;
+  templateContent?: string;
+  storedFileId?: string;
+  isDefault?: boolean;
+  isActive?: boolean;
+}
+
 interface TemplateManagementProps {
   tenantId?: string;
   onTemplateSelect?: (template: ResumeTemplate) => void;
@@ -47,7 +68,7 @@ export function TemplateManagement({ tenantId, onTemplateSelect }: TemplateManag
     }
   };
 
-  const handleCreateTemplate = async (templateData: any) => {
+  const handleCreateTemplate = async (templateData: CreateTemplateData) => {
     try {
       await createTemplate(templateData);
       await loadTemplates();
@@ -58,7 +79,7 @@ export function TemplateManagement({ tenantId, onTemplateSelect }: TemplateManag
     }
   };
 
-  const handleUpdateTemplate = async (templateId: string, templateData: any) => {
+  const handleUpdateTemplate = async (templateId: string, templateData: UpdateTemplateData) => {
     try {
       await updateTemplate(templateId, templateData);
       await loadTemplates();
@@ -275,7 +296,7 @@ export function TemplateManagement({ tenantId, onTemplateSelect }: TemplateManag
             if (editingTemplate) {
               handleUpdateTemplate(editingTemplate.id, data);
             } else {
-              handleCreateTemplate(data);
+              handleCreateTemplate(data as CreateTemplateData);
             }
           }}
           onClose={() => {
@@ -292,7 +313,7 @@ export function TemplateManagement({ tenantId, onTemplateSelect }: TemplateManag
 interface TemplateModalProps {
   template: ResumeTemplate | null;
   tenantId?: string;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: CreateTemplateData | UpdateTemplateData) => void;
   onClose: () => void;
 }
 

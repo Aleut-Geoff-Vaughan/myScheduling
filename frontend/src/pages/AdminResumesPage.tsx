@@ -147,7 +147,7 @@ export function AdminResumesPage() {
   const [issuerFilter, setIssuerFilter] = useState('');
   const [showAddCertificationModal, setShowAddCertificationModal] = useState(false);
   const [editingCertification, setEditingCertification] = useState<Certification | null>(null);
-  const [_certificationsStats, setCertificationsStats] = useState<CertificationsAdminStats | null>(null);
+  const [, setCertificationsStats] = useState<CertificationsAdminStats | null>(null);
 
   // Skills review state
   const [pendingSkills, setPendingSkills] = useState<SkillWithUsers[]>([]);
@@ -159,6 +159,7 @@ export function AdminResumesPage() {
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const loadData = async () => {
@@ -225,9 +226,10 @@ export function AdminResumesPage() {
       await deleteSkill(id);
       toast.success('Skill deleted successfully');
       loadData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete skill:', err);
-      toast.error(err.message || 'Failed to delete skill');
+      const message = err instanceof Error ? err.message : 'Failed to delete skill';
+      toast.error(message);
     }
   };
 
@@ -262,9 +264,10 @@ export function AdminResumesPage() {
       await deleteCertification(id);
       toast.success('Certification deleted successfully');
       loadData();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to delete certification:', err);
-      toast.error(err.message || 'Failed to delete certification');
+      const message = err instanceof Error ? err.message : 'Failed to delete certification';
+      toast.error(message);
     }
   };
 
@@ -460,7 +463,6 @@ export function AdminResumesPage() {
               onApprove={handleApproveSkill}
               onReject={handleRejectSkill}
               onBulkApprove={handleBulkApproveSkills}
-              approvedSkills={skills}
             />
           )}
           {activeTab === 'approvals' && (
@@ -817,7 +819,6 @@ function SkillsReviewTab({
   onApprove,
   onReject,
   onBulkApprove,
-  approvedSkills: _approvedSkills
 }: {
   pendingSkills: SkillWithUsers[];
   selectedIds: Set<string>;
@@ -826,7 +827,6 @@ function SkillsReviewTab({
   onApprove: (id: string, name?: string, category?: SkillCategory) => void;
   onReject: (id: string, replacementId?: string) => void;
   onBulkApprove: () => void;
-  approvedSkills: Skill[];
 }) {
   const [expandedSkills, setExpandedSkills] = useState<Set<string>>(new Set());
 

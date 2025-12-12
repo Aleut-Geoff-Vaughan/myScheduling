@@ -32,6 +32,7 @@ type ModalType = 'schedule' | 'booking' | 'doa' | 'assignment' | 'forecast';
 interface ModalState {
   isOpen: boolean;
   type: ModalType;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
   date?: Date;
 }
@@ -310,7 +311,7 @@ export function MyHubPage() {
   };
 
   // Modal handlers
-  const openModal = (type: ModalType, data: any, date?: Date) => {
+  const openModal = (type: ModalType, data: unknown, date?: Date) => {
     setModalState({ isOpen: true, type, data, date });
   };
 
@@ -951,7 +952,7 @@ interface MonthCalendarViewProps {
   getForecastsForDate: (date: Date) => Forecast[];
   displayMonth: Date | null;
   user: { id: string; displayName: string } | null;
-  onItemClick: (type: ModalType, data: any, date: Date) => void;
+  onItemClick: (type: ModalType, data: unknown, date: Date) => void;
 }
 
 function MonthCalendarView({

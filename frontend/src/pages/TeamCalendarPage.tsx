@@ -87,8 +87,9 @@ export function TeamCalendarPage() {
           });
           setCalendarData(response);
         }
-      } catch (err: any) {
-        setError(err.message || 'Failed to load calendar data');
+      } catch (err) {
+        const error = err as Error;
+        setError(error.message || 'Failed to load calendar data');
         console.error('Failed to fetch calendar data:', err);
       } finally {
         setIsLoading(false);
@@ -170,9 +171,10 @@ export function TeamCalendarPage() {
       setShowCreateModal(false);
       resetForm();
       // Refresh available calendars
-      fetchAvailableCalendarsCallback();
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create calendar');
+      void fetchAvailableCalendarsCallback();
+    } catch (error) {
+      const err = error as Error;
+      toast.error(err.message || 'Failed to create calendar');
     }
   };
 

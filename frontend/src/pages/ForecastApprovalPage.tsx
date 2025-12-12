@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import {
   forecastVersionsService,
@@ -57,8 +57,8 @@ export function ForecastApprovalPage() {
     return result;
   }, [forecasts, filterProjectId]);
 
-  // Load data
-  const loadVersions = async () => {
+  // Load data - wrapped in useCallback to prevent unnecessary re-renders
+  const loadVersions = useCallback(async () => {
     if (!tenantId) return;
     try {
       const data = await forecastVersionsService.getAll({ tenantId, includeArchived: false });
@@ -70,9 +70,9 @@ export function ForecastApprovalPage() {
     } catch {
       toast.error('Failed to load forecast versions');
     }
-  };
+  }, [tenantId, selectedVersionId]);
 
-  const loadForecasts = async () => {
+  const loadForecasts = useCallback(async () => {
     if (!tenantId || !selectedVersionId) return;
     setIsLoading(true);
     try {
@@ -89,9 +89,9 @@ export function ForecastApprovalPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [tenantId, selectedVersionId, filterStatus]);
 
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
     if (!tenantId || !selectedVersionId) return;
     try {
       const data = await forecastsService.getSummary({
@@ -102,18 +102,18 @@ export function ForecastApprovalPage() {
     } catch {
       // Summary is optional
     }
-  };
+  }, [tenantId, selectedVersionId]);
 
   useEffect(() => {
     loadVersions();
-  }, [tenantId]);
+  }, [loadVersions]);
 
   useEffect(() => {
     if (selectedVersionId) {
       loadForecasts();
       loadSummary();
     }
-  }, [selectedVersionId, filterStatus]);
+  }, [selectedVersionId, loadForecasts, loadSummary]);
 
   // Selection handlers
   const handleSelectAll = () => {

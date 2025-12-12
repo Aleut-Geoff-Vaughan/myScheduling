@@ -91,6 +91,7 @@ export function ResumeProfilePage() {
         loadResume(id);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user?.id]);
 
   const handleNewResume = async () => {

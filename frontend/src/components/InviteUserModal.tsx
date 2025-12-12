@@ -34,12 +34,15 @@ export function InviteUserModal({ isOpen, onClose, tenantId, tenantName }: Invit
   const queryClient = useQueryClient();
   const { data: tenants, isLoading: tenantsLoading } = useTenants();
 
-  // Update selectedTenantId when tenantId prop changes
+
+
+  // Sync selectedTenantId with tenantId prop when modal opens
   useEffect(() => {
-    if (tenantId) {
+    if (isOpen && tenantId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedTenantId(tenantId);
     }
-  }, [tenantId]);
+  }, [isOpen, tenantId]);
 
   const createInvitationMutation = useMutation({
     mutationFn: (request: CreateInvitationRequest) => userInvitationsService.createInvitation(request),

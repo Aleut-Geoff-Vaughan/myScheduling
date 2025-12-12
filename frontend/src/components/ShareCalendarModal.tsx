@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Modal, Button } from './ui';
 import { WorkLocationType, DayPortion, type WorkLocationPreference, type User } from '../types/api';
 
@@ -22,7 +22,8 @@ export function ShareCalendarModal({
   const [copied, setCopied] = useState(false);
   const [format, setFormat] = useState<'detailed' | 'summary'>('detailed');
 
-  const getLocationTypeLabel = (type: WorkLocationType): string => {
+  // Memoize helper functions to avoid useMemo dependency issues
+  const getLocationTypeLabel = useCallback((type: WorkLocationType): string => {
     switch (type) {
       case WorkLocationType.Remote:
         return 'Remote';
@@ -43,9 +44,9 @@ export function ShareCalendarModal({
       default:
         return 'Unknown';
     }
-  };
+  }, []);
 
-  const getLocationEmoji = (type: WorkLocationType): string => {
+  const getLocationEmoji = useCallback((type: WorkLocationType): string => {
     switch (type) {
       case WorkLocationType.Remote:
       case WorkLocationType.RemotePlus:
@@ -64,9 +65,9 @@ export function ShareCalendarModal({
       default:
         return '📍';
     }
-  };
+  }, []);
 
-  const getDayPortionLabel = (portion: DayPortion): string => {
+  const getDayPortionLabel = useCallback((portion: DayPortion): string => {
     switch (portion) {
       case DayPortion.AM:
         return 'AM';
@@ -75,7 +76,7 @@ export function ShareCalendarModal({
       default:
         return '';
     }
-  };
+  }, []);
 
   // Group preferences by date for handling split days
   const groupPreferencesByDate = (prefs: WorkLocationPreference[]): Map<string, { am?: WorkLocationPreference; pm?: WorkLocationPreference; fullDay?: WorkLocationPreference }> => {
@@ -119,7 +120,7 @@ export function ShareCalendarModal({
   };
 
   // Helper to format a single preference entry
-  const formatPreferenceEntry = (pref: WorkLocationPreference, showPortionLabel: boolean = false): string => {
+  const formatPreferenceEntry = useCallback((pref: WorkLocationPreference, showPortionLabel: boolean = false): string => {
     const emoji = getLocationEmoji(pref.locationType);
     const label = getLocationTypeLabel(pref.locationType);
     const portionLabel = showPortionLabel && pref.dayPortion !== DayPortion.FullDay
@@ -143,7 +144,7 @@ export function ShareCalendarModal({
     }
 
     return entry;
-  };
+  }, [getLocationEmoji, getLocationTypeLabel, getDayPortionLabel]);
 
   const generatedContent = useMemo(() => {
     // Filter and group preferences by date
@@ -266,7 +267,7 @@ export function ShareCalendarModal({
 
       return content;
     }
-  }, [preferences, user, startDate, endDate, format]);
+  }, [preferences, user, startDate, endDate, format, formatPreferenceEntry, getLocationEmoji, getLocationTypeLabel]);
 
   const handleCopy = async () => {
     try {

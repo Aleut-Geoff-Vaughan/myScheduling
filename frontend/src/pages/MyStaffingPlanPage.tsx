@@ -72,21 +72,18 @@ export function MyStaffingPlanPage() {
   }, [selectedFiscalYear, selectedQuarter, fiscalYear]);
 
   // Build forecast lookup map: projectId -> year/month -> hours (will be used for future feature)
-  // @ts-expect-error - Keeping for future use when displaying forecast vs actual on staffing grid
-  const _forecastsByProject = useMemo(() => {
-    const map: Record<string, Record<string, number>> = {};
-
-    forecasts.forEach(f => {
-      const projectId = f.projectId || 'unknown';
-      if (!map[projectId]) {
-        map[projectId] = {};
-      }
-      const key = `${f.year}-${f.month}`;
-      map[projectId][key] = (map[projectId][key] || 0) + f.forecastedHours;
-    });
-
-    return map;
-  }, [forecasts]);
+  // const forecastsByProject = useMemo(() => {
+  //   const map: Record<string, Record<string, number>> = {};
+  //   forecasts.forEach(f => {
+  //     const projectId = f.projectId || 'unknown';
+  //     if (!map[projectId]) {
+  //       map[projectId] = {};
+  //     }
+  //     const key = `${f.year}-${f.month}`;
+  //     map[projectId][key] = (map[projectId][key] || 0) + f.forecastedHours;
+  //   });
+  //   return map;
+  // }, [forecasts]);
 
   // Group forecasts by project for the charge code view
   const chargeCodeGroups = useMemo(() => {
@@ -200,8 +197,9 @@ export function MyStaffingPlanPage() {
       await assignmentRequestService.create(payload);
       toast.success('Assignment request submitted');
       setShowRequestModal(false);
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to submit request');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to submit request';
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

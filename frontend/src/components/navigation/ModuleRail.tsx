@@ -42,7 +42,8 @@ interface ModuleButtonProps {
   expanded: boolean;
 }
 
-function ModuleButton({ moduleId: _moduleId, isActive, onClick, label, icon, color, expanded }: ModuleButtonProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function ModuleButton({ moduleId: _, isActive, onClick, label, icon, color, expanded }: ModuleButtonProps) {
   // Dynamic classes based on module color
   const activeClasses = isActive
     ? `bg-${color.name}-50 text-${color.name}-600 border-l-4 border-${color.name}-600`

@@ -5,6 +5,7 @@ interface IconProps {
   className?: string;
 }
 
+/* eslint-disable react-refresh/only-export-components */
 export const NavIcons: Record<string, React.FC<IconProps>> = {
   dashboard: ({ className = 'w-5 h-5' }) => (
     <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">

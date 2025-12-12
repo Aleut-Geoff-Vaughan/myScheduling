@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, Input, Select, FormGroup } from './ui';
 import { bookingsService } from '../services/bookingsService';
@@ -72,11 +72,10 @@ export function BookingModal({
     officeId: formData.officeId || undefined
   });
 
-  // Initialize form for edit mode
-  useEffect(() => {
+  // Initialize form for edit mode - compute values with useMemo
+  const editModeData = useMemo(() => {
     if (booking && mode === 'edit') {
       const startDT = new Date(booking.startDatetime);
-
       let endDate = '';
       let endTime = '17:00';
       if (booking.endDatetime) {
@@ -84,31 +83,42 @@ export function BookingModal({
         endDate = endDT.toISOString().split('T')[0];
         endTime = endDT.toTimeString().substring(0, 5);
       }
-
-      // Check if this was booked on behalf of someone else
       const isOnBehalf = booking.bookedByUserId && booking.bookedByUserId !== booking.userId;
-      setBookingOnBehalf(!!isOnBehalf);
-
-      setFormData({
-        tenantId: booking.tenantId,
-        spaceId: booking.spaceId,
-        userId: booking.userId,
-        officeId: '',  // We don't have this on the booking object
-        startDate: startDT.toISOString().split('T')[0],
-        startTime: startDT.toTimeString().substring(0, 5),
-        endDate,
-        endTime,
-        status: booking.status,
-        isPermanent: booking.isPermanent || false,
-      });
+      return {
+        formData: {
+          tenantId: booking.tenantId,
+          spaceId: booking.spaceId,
+          userId: booking.userId,
+          officeId: '',
+          startDate: startDT.toISOString().split('T')[0],
+          startTime: startDT.toTimeString().substring(0, 5),
+          endDate,
+          endTime,
+          status: booking.status,
+          isPermanent: booking.isPermanent || false,
+        },
+        isOnBehalf: !!isOnBehalf,
+      };
     }
+    return null;
   }, [booking, mode]);
 
+  useEffect(() => {
+    if (editModeData) {
+       
+      setFormData(editModeData.formData);
+       
+      setBookingOnBehalf(editModeData.isOnBehalf);
+    }
+  }, [editModeData]);
+
   // Set default values for create mode when data becomes available
+   
   useEffect(() => {
     if (mode === 'create' && isOpen) {
       const today = new Date().toISOString().split('T')[0];
 
+       
       setFormData(prev => {
         // Use props if provided, otherwise use first available or existing value
         const newTenantId = defaultTenantId || prev.tenantId || tenants[0]?.id || '';
@@ -137,13 +147,16 @@ export function BookingModal({
         };
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, isOpen, tenants.length, offices.length, defaultTenantId, defaultOfficeId, user?.id]);
 
   // Set default space when officeId changes and defaultSpaceId is provided
+   
   useEffect(() => {
     if (mode === 'create' && defaultSpaceId && spaces.length > 0) {
       const spaceExists = spaces.some(s => s.id === defaultSpaceId);
       if (spaceExists && formData.spaceId !== defaultSpaceId) {
+         
         setFormData(prev => ({
           ...prev,
           spaceId: defaultSpaceId,
@@ -161,7 +174,7 @@ export function BookingModal({
       queryClient.invalidateQueries({ queryKey: ['space-bookings'] });
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrors({ submit: error.message || 'Failed to create booking' });
     },
   });
@@ -174,7 +187,7 @@ export function BookingModal({
       queryClient.invalidateQueries({ queryKey: ['space-bookings'] });
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       setErrors({ submit: error.message || 'Failed to update booking' });
     },
   });
@@ -210,7 +223,7 @@ export function BookingModal({
 
     if (!validate()) return;
 
-    const bookingData: any = {
+    const bookingData: Partial<Booking> = {
       tenantId: formData.tenantId,
       spaceId: formData.spaceId,
       userId: formData.userId,
@@ -225,17 +238,18 @@ export function BookingModal({
     if (!formData.isPermanent && formData.endDate) {
       bookingData.endDatetime = `${formData.endDate}T${formData.endTime}:00`;
     } else {
-      bookingData.endDatetime = null;
+      bookingData.endDatetime = undefined;
     }
 
     if (mode === 'create') {
-      createMutation.mutate(bookingData);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createMutation.mutate(bookingData as any);
     } else if (booking) {
       updateMutation.mutate({ ...booking, ...bookingData });
     }
   };
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = (field: string, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => {

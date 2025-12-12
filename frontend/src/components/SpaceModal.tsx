@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Modal, Button, Input } from './ui';
 import { facilitiesService } from '../services/facilitiesService';
@@ -45,23 +45,13 @@ export function SpaceModal({ isOpen, onClose, space, offices }: SpaceModalProps)
   const queryClient = useQueryClient();
   const isEditing = !!space;
 
-  const [formData, setFormData] = useState<SpaceFormData>({
-    officeId: '',
-    name: '',
-    type: SpaceType.HotDesk,
-    capacity: 1,
-    requiresApproval: false,
-    isActive: true,
-    dailyCost: undefined,
-    maxBookingDays: undefined,
-    equipment: '',
-    features: '',
-  });
+  // Create a stable key to force re-initialization when space or modal state changes
+  const formKey = useMemo(() => `${space?.id || 'new'}-${isOpen}`, [space?.id, isOpen]);
 
-  // Reset form when space changes or modal opens
-  useEffect(() => {
+  // Initialize form data based on space or default values
+  const getInitialFormData = useCallback((): SpaceFormData => {
     if (space) {
-      setFormData({
+      return {
         officeId: space.officeId,
         name: space.name,
         type: space.type,
@@ -72,9 +62,9 @@ export function SpaceModal({ isOpen, onClose, space, offices }: SpaceModalProps)
         maxBookingDays: space.maxBookingDays,
         equipment: space.equipment || '',
         features: space.features || '',
-      });
+      };
     } else {
-      setFormData({
+      return {
         officeId: offices[0]?.id || '',
         name: '',
         type: SpaceType.HotDesk,
@@ -85,9 +75,17 @@ export function SpaceModal({ isOpen, onClose, space, offices }: SpaceModalProps)
         maxBookingDays: undefined,
         equipment: '',
         features: '',
-      });
+      };
     }
-  }, [space, offices, isOpen]);
+  }, [space, offices]);
+
+  const [formData, setFormData] = useState<SpaceFormData>(getInitialFormData);
+
+  // Reset form when key changes
+  useEffect(() => {
+    setFormData(getInitialFormData());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formKey]);
 
   const createMutation = useMutation({
     mutationFn: (data: Omit<Space, 'id' | 'createdAt' | 'updatedAt'>) =>

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardHeader, CardBody, Button, Table, StatusBadge, Input } from '../components/ui';
 import { facilitiesService } from '../services/facilitiesService';
@@ -87,7 +87,7 @@ export function FacilitiesPage() {
   };
 
   // Filter spaces by search term
-  const filteredSpaces = useMemo(() => {
+  const filteredSpaces = (() => {
     if (!searchTerm) return spaces;
 
     const term = searchTerm.toLowerCase();
@@ -95,18 +95,16 @@ export function FacilitiesPage() {
       space.name.toLowerCase().includes(term) ||
       getSpaceTypeLabel(space.type).toLowerCase().includes(term)
     );
-  }, [spaces, searchTerm]);
+  })();
 
   // Statistics
-  const stats = useMemo(() => {
-    return {
-      totalSpaces: spaces.length,
-      activeSpaces: spaces.filter(s => s.isActive).length,
-      inactiveSpaces: spaces.filter(s => !s.isActive).length,
-      requiresApproval: spaces.filter(s => s.requiresApproval).length,
-      pendingMaintenance: maintenanceLogs.filter(m => m.status === MaintenanceStatus.Reported || m.status === MaintenanceStatus.Scheduled).length,
-    };
-  }, [spaces, maintenanceLogs]);
+  const stats = {
+    totalSpaces: spaces.length,
+    activeSpaces: spaces.filter(s => s.isActive).length,
+    inactiveSpaces: spaces.filter(s => !s.isActive).length,
+    requiresApproval: spaces.filter(s => s.requiresApproval).length,
+    pendingMaintenance: maintenanceLogs.filter(m => m.status === MaintenanceStatus.Reported || m.status === MaintenanceStatus.Scheduled).length,
+  };
 
   // Helper functions
   const getSpaceTypeLabel = (type: SpaceType): string => {

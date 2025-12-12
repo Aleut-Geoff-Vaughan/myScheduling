@@ -60,6 +60,7 @@ export function ResumeSharePage() {
     if (token) {
       checkLink();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const checkLink = async () => {
@@ -116,9 +117,10 @@ export function ResumeSharePage() {
       setResume(data);
       setRequiresPassword(false);
       setError(null);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading resume:', err);
-      setError(err.message || 'Failed to load resume');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load resume';
+      setError(errorMessage);
     } finally {
       setLoading(false);
       setAuthenticating(false);

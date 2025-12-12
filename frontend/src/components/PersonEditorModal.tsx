@@ -46,8 +46,9 @@ export function PersonEditorModal({ person, isOpen, onClose, onSaved }: PersonEd
       toast.success('Person updated');
       onSaved();
       onClose();
-    } catch (err: any) {
-      toast.error(err?.message ?? 'Failed to update');
+    } catch (err) {
+      const error = err as { message?: string };
+      toast.error(error?.message ?? 'Failed to update');
     } finally {
       setSaving(false);
     }
