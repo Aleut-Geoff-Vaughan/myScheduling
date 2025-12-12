@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AdminLayout } from '../components/layout/AdminLayout';
 import {
   useDOATemplates,
   useCreateDOATemplate,
@@ -112,8 +111,8 @@ export function AdminDOATemplatesPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
+    <>
+      <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -363,6 +362,6 @@ export function AdminDOATemplatesPage() {
           </div>
         </div>
       )}
-    </AdminLayout>
+    </>
   );
 }

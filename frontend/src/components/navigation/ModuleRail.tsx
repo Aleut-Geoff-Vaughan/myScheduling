@@ -89,7 +89,7 @@ export function ModuleRail({ expanded = false, onExpandedChange }: ModuleRailPro
   const { currentModule, navigateToModule, openAdmin, isAdminOpen } = useModule();
   const { hasForecastAccess, hasAdminAccess } = useModuleAccess();
 
-  const isOnHub = location.pathname === '/';
+  const isOnHub = location.pathname === '/apps';
   const isOnFeedback = location.pathname === '/feedback';
 
   const handleMouseEnter = () => {
@@ -131,7 +131,7 @@ export function ModuleRail({ expanded = false, onExpandedChange }: ModuleRailPro
         {/* App Hub - always at top */}
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/apps')}
           className={`
             w-full flex items-center gap-3 px-3 py-3 transition-all duration-200
             ${isOnHub && !isAdminOpen

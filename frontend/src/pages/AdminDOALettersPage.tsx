@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { AdminLayout } from '../components/layout/AdminLayout';
 import {
   useDOALetters,
   useDeleteDOALetter,
@@ -145,8 +144,8 @@ export function AdminDOALettersPage() {
   };
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
+    <>
+      <div className="p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -450,6 +449,6 @@ export function AdminDOALettersPage() {
       {isViewerOpen && selectedDOAId && (
         <DOAViewer doaId={selectedDOAId} onClose={handleCloseViewer} />
       )}
-    </AdminLayout>
+    </>
   );
 }

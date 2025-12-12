@@ -184,23 +184,27 @@ function App() {
             {/* Public shared resume view (no auth required) */}
             <Route path="/resume/share/:token" element={<ResumeSharePage />} />
 
-            {/* App Launcher and Feedback (protected, standalone pages) */}
+            {/* App Launcher and Feedback (protected, with unified layout) */}
             <Route
               path="/apps"
               element={
                 <ProtectedRoute>
-                  <AppLauncherPage />
+                  <UnifiedLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<AppLauncherPage />} />
+            </Route>
             <Route
               path="/feedback"
               element={
                 <ProtectedRoute>
-                  <FeedbackPage />
+                  <UnifiedLayout />
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<FeedbackPage />} />
+            </Route>
 
             {/* Admin Portal Routes */}
             <Route
