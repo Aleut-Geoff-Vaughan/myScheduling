@@ -417,7 +417,7 @@ export function MyHubPage() {
   const shareViaEmail = () => {
     const subject = encodeURIComponent(`My Schedule - ${getDisplayTitle()}`);
     const body = encodeURIComponent(generateEmailContent());
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    window.open(`mailto:?subject=${subject}&body=${body}`, '_self');
   };
 
   // Get display title for current view

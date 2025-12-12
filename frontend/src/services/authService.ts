@@ -26,7 +26,7 @@ export interface MagicLinkRequestResponse {
   message: string;
 }
 
-export interface MagicLinkVerifyResponse extends LoginResponse {}
+export type MagicLinkVerifyResponse = LoginResponse;
 
 // Impersonation Types
 export interface ImpersonatedUserInfo {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAuthStore, AppRole } from './authStore';
-import type { LoginResponse, TenantAccessInfo } from '../services/authService';
+import type { LoginResponse } from '../services/authService';
 
 // Mock the services
 vi.mock('../services/authService', () => ({

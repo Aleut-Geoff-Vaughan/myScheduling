@@ -57,7 +57,7 @@ export const handlers = [
     return HttpResponse.json({ message: 'Logged out successfully' });
   }),
 
-  http.post('/api/auth/magic-link/request', async ({ request }) => {
+  http.post('/api/auth/magic-link/request', async () => {
     return HttpResponse.json({
       message: 'If an account exists with this email, a login link has been sent.'
     });

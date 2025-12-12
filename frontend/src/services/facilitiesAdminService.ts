@@ -116,7 +116,7 @@ export interface CreateBookingRuleRequest {
   priority: number;
 }
 
-export interface UpdateBookingRuleRequest extends CreateBookingRuleRequest {}
+export type UpdateBookingRuleRequest = CreateBookingRuleRequest;
 
 export const facilitiesAdminService = {
   // ==================== FLOORS ====================

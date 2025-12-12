@@ -27,16 +27,17 @@ export function DOAEditor({ doaId, onClose }: DOAEditorProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  const [formData, setFormData] = useState<CreateDOALetterRequest>({
-    designeeUserId: '',
-    subjectLine: '',
-    letterContent: '',
-    effectiveStartDate: format(new Date(), 'yyyy-MM-dd'),
-    effectiveEndDate: format(
-      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Default to 7 days (1 week)
-      'yyyy-MM-dd'
-    ),
-    notes: '',
+  const [formData, setFormData] = useState<CreateDOALetterRequest>(() => {
+    const today = new Date();
+    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    return {
+      designeeUserId: '',
+      subjectLine: '',
+      letterContent: '',
+      effectiveStartDate: format(today, 'yyyy-MM-dd'),
+      effectiveEndDate: format(nextWeek, 'yyyy-MM-dd'),
+      notes: '',
+    };
   });
 
   // Filter users based on search term

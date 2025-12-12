@@ -8,6 +8,42 @@ export function WorkspaceSelectorPage() {
   const availableTenants = useAuthStore((state) => state.availableTenants);
   const selectWorkspace = useAuthStore((state) => state.selectWorkspace);
   const logout = useAuthStore((state) => state.logout);
+  const hasAutoSelected = useRef(false);
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
+  // Determine if admin workspace should be shown (system admin flag or roles include system admin)
+  const hasSystemAdminAccess =
+    user?.isSystemAdmin ||
+    availableTenants.some((tenant) =>
+      (tenant.roles || []).some(
+        (role) =>
+          role === 'SystemAdmin' ||
+          role === 'SysAdmin' ||
+          role.toLowerCase() === 'systemadmin' ||
+          role.toLowerCase() === 'sysadmin'
+      )
+    );
+
+  // Auto-select if user only has access to one tenant and no admin access
+  useEffect(() => {
+    if (hasAutoSelected.current) return;
+    if (user && !hasSystemAdminAccess && availableTenants.length === 1) {
+      hasAutoSelected.current = true;
+      const tenant = availableTenants[0];
+      selectWorkspace({
+        type: 'tenant',
+        tenantId: tenant.tenantId,
+        tenantName: tenant.tenantName,
+        roles: (tenant.roles as string[]).map((r) => r as AppRole),
+      });
+      navigate('/');
+    }
+  }, [user, hasSystemAdminAccess, availableTenants, selectWorkspace, navigate]);
 
   const handleWorkspaceSelect = (workspace: { type: 'admin' | 'tenant'; tenantId?: string; tenantName?: string; roles?: AppRole[] }) => {
     selectWorkspace(workspace);
@@ -25,41 +61,15 @@ export function WorkspaceSelectorPage() {
   };
 
   if (!user) {
-    navigate('/login');
-    return null;
-  }
-
-  // Determine if admin workspace should be shown (system admin flag or roles include system admin)
-  const hasSystemAdminAccess =
-    user.isSystemAdmin ||
-    availableTenants.some((tenant) =>
-      (tenant.roles || []).some(
-        (role) =>
-          role === 'SystemAdmin' ||
-          role === 'SysAdmin' ||
-          role.toLowerCase() === 'systemadmin' ||
-          role.toLowerCase() === 'sysadmin'
-      )
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
     );
-
-  // Track if we've already auto-selected to prevent double execution
-  const hasAutoSelected = useRef(false);
-
-  // Auto-select if user only has access to one tenant and no admin access
-  useEffect(() => {
-    if (hasAutoSelected.current) return;
-    if (!hasSystemAdminAccess && availableTenants.length === 1) {
-      hasAutoSelected.current = true;
-      const tenant = availableTenants[0];
-      selectWorkspace({
-        type: 'tenant',
-        tenantId: tenant.tenantId,
-        tenantName: tenant.tenantName,
-        roles: (tenant.roles as string[]).map((r) => r as AppRole),
-      });
-      navigate('/');
-    }
-  }, [hasSystemAdminAccess, availableTenants, selectWorkspace, navigate]);
+  }
 
   // Show loading while auto-selecting
   if (!hasSystemAdminAccess && availableTenants.length === 1) {
@@ -72,6 +82,7 @@ export function WorkspaceSelectorPage() {
       </div>
     );
   }
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
