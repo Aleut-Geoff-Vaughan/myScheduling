@@ -23,6 +23,7 @@ import { AdminAssignmentsPage } from './pages/AdminAssignmentsPage';
 import { TeamCalendarPage } from './pages/TeamCalendarPage';
 import { TeamCalendarAdminPage } from './pages/TeamCalendarAdminPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import SetPasswordPage from './pages/SetPasswordPage';
 import { MagicLinkVerifyPage } from './pages/MagicLinkVerifyPage';
 import DOAPage from './pages/DOAPage';
 import { useAuthStore } from './stores/authStore';
@@ -178,6 +179,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/set-password" element={<SetPasswordPage />} />
             <Route path="/auth/magic-link" element={<MagicLinkVerifyPage />} />
             <Route path="/select-workspace" element={<WorkspaceSelectorPage />} />
 

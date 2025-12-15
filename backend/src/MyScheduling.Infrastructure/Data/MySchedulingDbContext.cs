@@ -211,6 +211,25 @@ public class MySchedulingDbContext : DbContext
                 .WithMany(e => e.DirectReports)
                 .HasForeignKey(e => e.ManagerId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            // Home Office relationship
+            entity.HasOne(e => e.HomeOffice)
+                .WithMany()
+                .HasForeignKey(e => e.HomeOfficeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Executive Assistant relationship
+            entity.HasOne(e => e.ExecutiveAssistant)
+                .WithMany()
+                .HasForeignKey(e => e.ExecutiveAssistantId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Store StandardDelegateIds as JSON array
+            entity.Property(e => e.StandardDelegateIds)
+                .HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions)null!),
+                    v => System.Text.Json.JsonSerializer.Deserialize<List<Guid>>(v, (System.Text.Json.JsonSerializerOptions)null!) ?? new List<Guid>())
+                .HasColumnType("jsonb");
         });
 
         modelBuilder.Entity<TenantMembership>(entity =>

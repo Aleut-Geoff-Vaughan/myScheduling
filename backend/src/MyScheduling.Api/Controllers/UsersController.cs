@@ -72,6 +72,42 @@ public class UsersController : AuthorizedControllerBase
             {
                 user.IsSystemAdmin = request.IsSystemAdmin.Value;
             }
+
+            // Home Office
+            if (Guid.TryParse(request.HomeOfficeId, out var homeOfficeId))
+            {
+                user.HomeOfficeId = homeOfficeId;
+            }
+            else if (string.IsNullOrWhiteSpace(request.HomeOfficeId))
+            {
+                user.HomeOfficeId = null;
+            }
+
+            // Executive Assistant
+            if (Guid.TryParse(request.ExecutiveAssistantId, out var executiveAssistantId))
+            {
+                user.ExecutiveAssistantId = executiveAssistantId;
+            }
+            else if (string.IsNullOrWhiteSpace(request.ExecutiveAssistantId))
+            {
+                user.ExecutiveAssistantId = null;
+            }
+
+            // Standard Delegates
+            if (request.StandardDelegateIds != null)
+            {
+                user.StandardDelegateIds = request.StandardDelegateIds
+                    .Where(id => Guid.TryParse(id, out _))
+                    .Select(id => Guid.Parse(id))
+                    .ToList();
+            }
+
+            // Entra Object ID
+            if (!string.IsNullOrWhiteSpace(request.EntraObjectId))
+            {
+                user.EntraObjectId = request.EntraObjectId;
+            }
+
             user.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();

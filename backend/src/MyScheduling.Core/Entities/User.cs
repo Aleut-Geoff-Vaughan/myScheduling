@@ -28,6 +28,9 @@ public class User : BaseEntity
     public PersonStatus Status { get; set; } = PersonStatus.Active;
     public Guid? ManagerId { get; set; }
     public Guid? DefaultDelegateUserId { get; set; }  // Default delegate for DOA letters
+    public Guid? HomeOfficeId { get; set; }  // User's home office for facilities
+    public Guid? ExecutiveAssistantId { get; set; }  // User's executive assistant
+    public List<Guid> StandardDelegateIds { get; set; } = new();  // Standard delegates for this user
 
     // Staffing/Career fields
     public string? PositionTitle { get; set; }
@@ -41,6 +44,8 @@ public class User : BaseEntity
     public virtual User? Manager { get; set; }
     public virtual ICollection<User> DirectReports { get; set; } = new List<User>();
     public virtual User? DefaultDelegate { get; set; }
+    public virtual Office? HomeOffice { get; set; }
+    public virtual User? ExecutiveAssistant { get; set; }
     public virtual CareerJobFamily? CareerJobFamily { get; set; }
     public virtual ICollection<ProjectRoleAssignment> ProjectRoleAssignments { get; set; } = new List<ProjectRoleAssignment>();
 

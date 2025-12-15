@@ -1459,21 +1459,57 @@ export function AdminUserEditPage() {
         title="Set Password"
       >
         <div className="space-y-4">
+          {/* Generate Password Button */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                const guid = crypto.randomUUID().replace(/-/g, '').substring(0, 16);
+                setNewPassword(guid);
+                setConfirmPassword(guid);
+                toast.success('Generated password - copy it before saving!');
+              }}
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+              Generate Temporary Password
+            </Button>
+          </div>
+
           <Input
             label="New Password"
-            type="password"
+            type="text"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             placeholder="Enter new password"
           />
+          {newPassword && (
+            <div className="flex items-center gap-2">
+              <code className="flex-1 px-3 py-2 bg-gray-100 rounded text-sm font-mono break-all">{newPassword}</code>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(newPassword);
+                  toast.success('Password copied to clipboard');
+                }}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                </svg>
+              </Button>
+            </div>
+          )}
           <Input
             label="Confirm Password"
-            type="password"
+            type="text"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             placeholder="Confirm new password"
           />
-          <p className="text-sm text-gray-500">Password must be at least 8 characters.</p>
+          <p className="text-sm text-gray-500">Password must be at least 8 characters. Copy the password before saving - you won't be able to see it again.</p>
         </div>
         <div className="flex justify-end gap-2 mt-6">
           <Button variant="secondary" onClick={() => setShowPasswordModal(false)}>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { ModuleProvider } from '../../contexts/ModuleContext';
 import { ModuleRail, ContextSidebar, GlobalTopBar, MobileBottomTabs } from '../navigation';
 import { NotificationBanner } from '../NotificationBanner';
@@ -14,13 +14,17 @@ import { SearchModal, useSearchModal } from '../SearchModal';
  * - NotificationBanner (top, conditional)
  * - Main container with:
  *   - ModuleRail (left edge, 60px collapsed / 200px expanded)
- *   - ContextSidebar (left, 240px)
+ *   - ContextSidebar (left, 240px) - hidden on standalone pages like /apps, /feedback
  *   - Main content area with GlobalTopBar
  */
 function UnifiedLayoutInner() {
+  const location = useLocation();
   const [railExpanded, setRailExpanded] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const searchModal = useSearchModal();
+
+  // Check if we're on a standalone page (hub, feedback) where we shouldn't show the context sidebar
+  const isStandalonePage = location.pathname === '/apps' || location.pathname === '/feedback';
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col pb-16 lg:pb-0">
@@ -40,10 +44,12 @@ function UnifiedLayoutInner() {
           />
         </div>
 
-        {/* Context Sidebar - Hidden on mobile by default */}
-        <div className="hidden lg:flex flex-shrink-0">
-          <ContextSidebar />
-        </div>
+        {/* Context Sidebar - Hidden on mobile by default and on standalone pages (hub, feedback) */}
+        {!isStandalonePage && (
+          <div className="hidden lg:flex flex-shrink-0">
+            <ContextSidebar />
+          </div>
+        )}
 
         {/* Mobile Sidebar Overlay */}
         {mobileSidebarOpen && (
@@ -77,10 +83,12 @@ function UnifiedLayoutInner() {
                   <MobileModuleSelector onClose={() => setMobileSidebarOpen(false)} />
                 </div>
 
-                {/* Context Sidebar */}
-                <div className="flex-1 overflow-y-auto">
-                  <ContextSidebar />
-                </div>
+                {/* Context Sidebar - Hidden on standalone pages */}
+                {!isStandalonePage && (
+                  <div className="flex-1 overflow-y-auto">
+                    <ContextSidebar />
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -12,4 +12,8 @@ public class UpdateUserProfileRequest
     public string? Department { get; set; }
     public bool? IsSystemAdmin { get; set; }
     public string? ManagerId { get; set; }
+    public string? HomeOfficeId { get; set; }
+    public string? ExecutiveAssistantId { get; set; }
+    public List<string>? StandardDelegateIds { get; set; }
+    public string? EntraObjectId { get; set; }
 }
