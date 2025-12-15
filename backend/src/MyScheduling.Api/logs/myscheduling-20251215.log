@@ -1,0 +1,167 @@
+2025-12-15 09:57:45.706 -05:00 [WRN] [] [] Entity 'Tenant' has a global query filter defined and is the required end of a relationship with the entity 'UserInvitation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-15 09:57:45.802 -05:00 [WRN] [] [] The property 'TenantMembership.Roles' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-15 09:57:45.805 -05:00 [WRN] [] [] The property 'User.StandardDelegateIds' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-15 09:57:48.465 -05:00 [WRN] [] [] Entity 'Tenant' has a global query filter defined and is the required end of a relationship with the entity 'UserInvitation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-15 09:57:48.488 -05:00 [WRN] [] [] The property 'TenantMembership.Roles' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-15 09:57:48.490 -05:00 [WRN] [] [] The property 'User.StandardDelegateIds' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-15 09:58:18.959 -05:00 [WRN] [] [] Entity 'Tenant' has a global query filter defined and is the required end of a relationship with the entity 'UserInvitation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-15 09:58:19.061 -05:00 [WRN] [] [] The property 'TenantMembership.Roles' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-15 09:58:19.063 -05:00 [WRN] [] [] The property 'User.StandardDelegateIds' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-15 10:00:08.381 -05:00 [WRN] [] [] Entity 'Tenant' has a global query filter defined and is the required end of a relationship with the entity 'UserInvitation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-15 10:00:08.442 -05:00 [WRN] [] [] The property 'TenantMembership.Roles' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-15 10:00:08.443 -05:00 [WRN] [] [] The property 'User.StandardDelegateIds' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-15 10:00:09.602 -05:00 [INF] [] [] Role permission templates checked/seeded successfully
+2025-12-15 10:00:09.873 -05:00 [INF] [] [] Starting MyScheduling API
+2025-12-15 10:00:32.304 -05:00 [WRN] [rz2pzq86of] [anonymous] Failed to determine the https port for redirect.
+2025-12-15 10:00:32.357 -05:00 [WRN] [rz2pzq86of] [anonymous] HTTP GET /api/helparticles responded 401 in 104ms
+2025-12-15 10:00:32.357 -05:00 [WRN] [rz2pzq86of] [anonymous] HTTP GET /api/certifications/expiring responded 401 in 104ms
+2025-12-15 10:00:32.389 -05:00 [WRN] [rz2pzq86of] [anonymous] HTTP GET /api/bookings responded 401 in 137ms
+2025-12-15 10:00:32.389 -05:00 [WRN] [rz2pzq86of] [anonymous] HTTP GET /api/dashboard responded 401 in 137ms
+2025-12-15 10:00:32.389 -05:00 [WRN] [rz2pzq86of] [anonymous] HTTP GET /api/assignmentrequests responded 401 in 137ms
+2025-12-15 10:00:32.389 -05:00 [WRN] [rz2pzq86of] [anonymous] HTTP GET /api/tenantsettings responded 401 in 137ms
+2025-12-15 10:00:32.400 -05:00 [WRN] [rz2pzq86of] [anonymous] HTTP GET /api/delegationofauthority/letters/range responded 401 in 7ms
+2025-12-15 10:00:32.403 -05:00 [WRN] [rz2pzq86of] [anonymous] HTTP GET /api/projectassignments responded 401 in 10ms
+2025-12-15 10:00:32.416 -05:00 [WRN] [rz2pzq86of] [anonymous] HTTP GET /api/helparticles responded 401 in 3ms
+2025-12-15 10:00:32.817 -05:00 [INF] [83c8520cee3d] [anonymous] Azure Email Service initialized with sender: DoNotReply@3a748adb-2be6-4d17-9c63-b4f7b9fc0043.azurecomm.net
+2025-12-15 10:00:32.834 -05:00 [INF] [83c8520cee3d] [anonymous] HTTP GET /api/auth/sso/config responded 200 in 59ms
+2025-12-15 10:08:45.514 -05:00 [INF] [op1hx35jk3l] [anonymous] Azure Email Service initialized with sender: DoNotReply@3a748adb-2be6-4d17-9c63-b4f7b9fc0043.azurecomm.net
+2025-12-15 10:08:46.336 -05:00 [ERR] [op1hx35jk3l] [anonymous] An exception occurred while iterating over the results of a query for context type 'MyScheduling.Infrastructure.Data.MySchedulingDbContext'.
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2025-12-15 10:08:46.339 -05:00 [ERR] [op1hx35jk3l] [anonymous] Error during login for email: admin@admin.com
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at MyScheduling.Api.Controllers.AuthController.Login(LoginRequest request) in C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Api\Controllers\AuthController.cs:line 55
+2025-12-15 10:08:46.565 -05:00 [ERR] [op1hx35jk3l] [anonymous] HTTP POST /api/auth/login responded 500 in 1063ms
+2025-12-15 10:08:54.245 -05:00 [INF] [op1hx35jk3l] [anonymous] Azure Email Service initialized with sender: DoNotReply@3a748adb-2be6-4d17-9c63-b4f7b9fc0043.azurecomm.net
+2025-12-15 10:08:54.287 -05:00 [ERR] [op1hx35jk3l] [anonymous] An exception occurred while iterating over the results of a query for context type 'MyScheduling.Infrastructure.Data.MySchedulingDbContext'.
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2025-12-15 10:08:54.288 -05:00 [ERR] [op1hx35jk3l] [anonymous] Error during login for email: admin@admin.com
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at MyScheduling.Api.Controllers.AuthController.Login(LoginRequest request) in C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Api\Controllers\AuthController.cs:line 55
+2025-12-15 10:08:54.327 -05:00 [ERR] [op1hx35jk3l] [anonymous] HTTP POST /api/auth/login responded 500 in 85ms
+2025-12-15 10:09:09.175 -05:00 [INF] [571385dc2ab2] [anonymous] Azure Email Service initialized with sender: DoNotReply@3a748adb-2be6-4d17-9c63-b4f7b9fc0043.azurecomm.net
+2025-12-15 10:09:09.176 -05:00 [INF] [571385dc2ab2] [anonymous] HTTP GET /api/auth/sso/config responded 200 in 4ms
+2025-12-15 10:09:23.853 -05:00 [INF] [ezw7pi05a4d] [anonymous] Azure Email Service initialized with sender: DoNotReply@3a748adb-2be6-4d17-9c63-b4f7b9fc0043.azurecomm.net
+2025-12-15 10:09:23.890 -05:00 [ERR] [ezw7pi05a4d] [anonymous] An exception occurred while iterating over the results of a query for context type 'MyScheduling.Infrastructure.Data.MySchedulingDbContext'.
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2025-12-15 10:09:23.891 -05:00 [ERR] [ezw7pi05a4d] [anonymous] Error during login for email: admin@admin.com
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at MyScheduling.Api.Controllers.AuthController.Login(LoginRequest request) in C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Api\Controllers\AuthController.cs:line 55
+2025-12-15 10:09:23.929 -05:00 [ERR] [ezw7pi05a4d] [anonymous] HTTP POST /api/auth/login responded 500 in 76ms
+2025-12-15 10:09:49.006 -05:00 [INF] [ezw7pi05a4d] [anonymous] Azure Email Service initialized with sender: DoNotReply@3a748adb-2be6-4d17-9c63-b4f7b9fc0043.azurecomm.net
+2025-12-15 10:09:49.041 -05:00 [ERR] [ezw7pi05a4d] [anonymous] An exception occurred while iterating over the results of a query for context type 'MyScheduling.Infrastructure.Data.MySchedulingDbContext'.
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+2025-12-15 10:09:49.042 -05:00 [ERR] [ezw7pi05a4d] [anonymous] Error during login for email: admin@admin.com
+System.Text.Json.JsonException: The JSON value could not be converted to System.Collections.Generic.List`1[System.Guid]. Path: $ | LineNumber: 0 | BytePositionInLine: 1.
+   at System.Text.Json.ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type propertyType)
+   at System.Text.Json.Serialization.JsonCollectionConverter`2.OnTryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, TCollection& value)
+   at System.Text.Json.Serialization.JsonConverter`1.TryRead(Utf8JsonReader& reader, Type typeToConvert, JsonSerializerOptions options, ReadStack& state, T& value, Boolean& isPopulatedValue)
+   at System.Text.Json.Serialization.JsonConverter`1.ReadCore(Utf8JsonReader& reader, JsonSerializerOptions options, ReadStack& state)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 utf8Json, JsonTypeInfo`1 jsonTypeInfo, Nullable`1 actualByteCount)
+   at System.Text.Json.JsonSerializer.ReadFromSpan[TValue](ReadOnlySpan`1 json, JsonTypeInfo`1 jsonTypeInfo)
+   at lambda_method254(Closure, QueryContext, DbDataReader, ResultContext, SplitQueryResultCoordinator)
+   at Microsoft.EntityFrameworkCore.Query.Internal.SplitQueryingEnumerable`1.AsyncEnumerator.MoveNextAsync()
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Query.ShapedQueryCompilingExpressionVisitor.SingleOrDefaultAsync[TSource](IAsyncEnumerable`1 asyncEnumerable, CancellationToken cancellationToken)
+   at MyScheduling.Api.Controllers.AuthController.Login(LoginRequest request) in C:\Users\GeoffVaughan\.vscode\Workspace\myScheduling\backend\src\MyScheduling.Api\Controllers\AuthController.cs:line 55
+2025-12-15 10:09:49.081 -05:00 [ERR] [ezw7pi05a4d] [anonymous] HTTP POST /api/auth/login responded 500 in 76ms
+2025-12-15 13:08:59.981 -05:00 [WRN] [] [] Entity 'Tenant' has a global query filter defined and is the required end of a relationship with the entity 'UserInvitation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-15 13:09:00.068 -05:00 [WRN] [] [] The property 'TenantMembership.Roles' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-15 13:09:00.069 -05:00 [WRN] [] [] The property 'User.StandardDelegateIds' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
