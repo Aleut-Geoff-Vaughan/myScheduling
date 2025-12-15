@@ -160,7 +160,16 @@ public class AuthController : ControllerBase
         {
             _logger.LogError(ex, "Error during login for email: {Email}", request.Email);
             await LogLoginAsync(null, false, request.Email);
-            return StatusCode(500, new { message = "An error occurred during login" });
+
+            // Return detailed error info to help diagnose production issues
+            var errorDetails = new
+            {
+                message = "An error occurred during login",
+                error = ex.Message,
+                innerError = ex.InnerException?.Message,
+                stackTrace = ex.StackTrace?.Split('\n').Take(5).ToArray()
+            };
+            return StatusCode(500, errorDetails);
         }
     }
 
