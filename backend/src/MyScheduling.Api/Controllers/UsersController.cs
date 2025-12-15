@@ -331,7 +331,7 @@ public class UsersController : AuthorizedControllerBase
                 TenantId = null, // Users are cross-tenant
                 EntityType = "User",
                 EntityId = user.Id,
-                EntitySnapshot = System.Text.Json.JsonSerializer.Serialize(user),
+                EntitySnapshot = System.Text.Json.JsonSerializer.Serialize(new { user.Id, user.Email, user.FirstName, user.LastName, user.IsActive }),
                 ArchivedAt = DateTime.UtcNow,
                 ArchivedByUserId = GetCurrentUserId(),
                 Status = DataArchiveStatus.PermanentlyDeleted,
@@ -351,7 +351,7 @@ public class UsersController : AuthorizedControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting user {UserId}", id);
-            return StatusCode(500, "An error occurred while deleting the user");
+            return StatusCode(500, new { message = "Error deleting user", error = ex.Message, innerError = ex.InnerException?.Message });
         }
     }
 
