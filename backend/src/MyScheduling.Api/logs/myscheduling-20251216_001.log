@@ -783,3 +783,26 @@ POSITION: 851
 2025-12-16 19:06:34.861 -05:00 [INF] [6pfnbucl0n] [anonymous] HTTP POST /api/salesops/picklists/seed-defaults responded 200 in 194ms
 2025-12-16 19:06:34.960 -05:00 [INF] [6pfnbucl0n] [anonymous] HTTP GET /api/salesops/picklists?includeInactive=true responded 200 in 95ms
 2025-12-16 19:06:45.944 -05:00 [INF] [6pfnbucl0n] [anonymous] HTTP GET /api/salesops/stages?includeInactive=true responded 200 in 71ms
+2025-12-16 19:11:48.398 -05:00 [INF] [6pfnbucl0n] [anonymous] HTTP GET /api/certifications/expiring responded 200 in 61ms
+2025-12-16 19:16:48.481 -05:00 [INF] [6pfnbucl0n] [anonymous] HTTP GET /api/certifications/expiring responded 200 in 61ms
+2025-12-16 19:21:48.565 -05:00 [INF] [6pfnbucl0n] [anonymous] HTTP GET /api/certifications/expiring responded 200 in 59ms
+2025-12-16 19:26:48.946 -05:00 [INF] [6pfnbucl0n] [anonymous] HTTP GET /api/certifications/expiring responded 200 in 372ms
+2025-12-16 19:31:49.030 -05:00 [INF] [6pfnbucl0n] [anonymous] HTTP GET /api/certifications/expiring responded 200 in 58ms
+2025-12-16 20:45:51.385 -05:00 [INF] [6pfnbucl0n] [anonymous] HTTP GET /api/certifications/expiring responded 200 in 376ms
+2025-12-16 20:45:51.980 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/tenantsettings responded 200 in 135ms
+2025-12-16 20:45:52.045 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/delegationofauthority/letters/range?startDate=2025-12-15&endDate=2025-12-28 responded 200 in 62ms
+2025-12-16 20:45:52.112 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/certifications/expiring responded 200 in 263ms
+2025-12-16 20:45:52.114 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/projectassignments?userId=b10dac11-72fb-44ce-accb-c4074fba045b&status=2 responded 200 in 65ms
+2025-12-16 20:45:52.149 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/helparticles?contextKey=work responded 200 in 32ms
+2025-12-16 20:45:52.181 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/bookings?userId=b10dac11-72fb-44ce-accb-c4074fba045b&startDate=2025-12-15T05%3A00%3A00.000Z&endDate=2025-12-28T05%3A00%3A00.000Z responded 200 in 329ms
+2025-12-16 20:45:52.186 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/forecasts/my-forecasts?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 71ms
+2025-12-16 20:45:52.232 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/assignmentrequests responded 200 in 387ms
+2025-12-16 20:45:52.242 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/assignmentrequests?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&status=0 responded 200 in 396ms
+2025-12-16 20:45:52.245 -05:00 [INF] [0zcaoxxw3byr] [b10dac11-72fb-44ce-accb-c4074fba045b] Dashboard data retrieved for user "b10dac11-72fb-44ce-accb-c4074fba045b"
+2025-12-16 20:45:52.245 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/dashboard?userId=b10dac11-72fb-44ce-accb-c4074fba045b&startDate=2025-12-15&endDate=2025-12-28 responded 200 in 394ms
+2025-12-16 20:46:11.379 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/teamcalendar/manager-view?userId=b10dac11-72fb-44ce-accb-c4074fba045b&startDate=2025-12-15&endDate=2025-12-26 responded 200 in 133ms
+2025-12-16 20:46:11.425 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/teamcalendar/available?userId=b10dac11-72fb-44ce-accb-c4074fba045b responded 200 in 179ms
+2025-12-16 20:46:11.481 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/teamcalendar/manager-view?userId=b10dac11-72fb-44ce-accb-c4074fba045b&startDate=2025-12-15&endDate=2025-12-26 responded 200 in 98ms
+2025-12-16 20:46:11.554 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/teamcalendar/available?userId=b10dac11-72fb-44ce-accb-c4074fba045b responded 200 in 126ms
+2025-12-16 20:46:13.964 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/teamcalendar/d4bcde52-3c65-401e-9c10-6280d8fe52d3/view?startDate=2025-12-15&endDate=2025-12-26 responded 200 in 173ms
+2025-12-16 20:46:15.198 -05:00 [INF] [0zcaoxxw3byr] [anonymous] HTTP GET /api/teamcalendar/d4bcde52-3c65-401e-9c10-6280d8fe52d3/view?startDate=2025-12-15&endDate=2026-03-26 responded 200 in 164ms
