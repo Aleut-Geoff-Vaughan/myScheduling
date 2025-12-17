@@ -142,6 +142,117 @@ public class FacilitiesPortalController : AuthorizedControllerBase
         }
     }
 
+    /// <summary>
+    /// Get facilities usage analytics
+    /// </summary>
+    [HttpGet("analytics")]
+    [RequiresPermission(Resource = "Facility", Action = PermissionAction.Read)]
+    public async Task<ActionResult<FacilitiesAnalytics>> GetAnalytics(
+        [FromQuery] int days = 30,
+        [FromQuery] Guid? officeId = null)
+    {
+        try
+        {
+            var tenantId = GetCurrentTenantId();
+            if (!tenantId.HasValue)
+                return BadRequest(new { message = "Invalid tenant context" });
+
+            var since = DateTime.UtcNow.AddDays(-days);
+            var todayStart = DateTime.UtcNow.Date;
+            var todayEnd = todayStart.AddDays(1);
+
+            // Total spaces and their types
+            var spacesQuery = _context.Spaces
+                .Where(s => s.TenantId == tenantId.Value && s.IsActive);
+            if (officeId.HasValue)
+                spacesQuery = spacesQuery.Where(s => s.OfficeId == officeId.Value);
+
+            var spacesByType = await spacesQuery
+                .GroupBy(s => s.Type)
+                .Select(g => new SpaceTypeStats
+                {
+                    Type = g.Key.ToString(),
+                    Total = g.Count(),
+                    Capacity = g.Sum(s => s.Capacity > 0 ? s.Capacity : 1)
+                })
+                .ToListAsync();
+
+            // Check-ins in date range
+            var checkInsQuery = _context.FacilityCheckIns
+                .Where(c => c.TenantId == tenantId.Value && c.CheckInTime >= since);
+            if (officeId.HasValue)
+                checkInsQuery = checkInsQuery.Where(c => c.OfficeId == officeId.Value);
+
+            var checkIns = await checkInsQuery.ToListAsync();
+
+            // Bookings in date range
+            var bookingsQuery = _context.Bookings
+                .Where(b => b.TenantId == tenantId.Value && b.StartDatetime >= since);
+            if (officeId.HasValue)
+                bookingsQuery = bookingsQuery.Where(b => b.Space != null && b.Space.OfficeId == officeId.Value);
+
+            var bookings = await bookingsQuery.ToListAsync();
+
+            // Daily check-in trend (last 7 days)
+            var dailyTrend = Enumerable.Range(0, 7)
+                .Select(i =>
+                {
+                    var date = DateTime.UtcNow.Date.AddDays(-6 + i);
+                    return new DailyTrendItem
+                    {
+                        Date = date.ToString("yyyy-MM-dd"),
+                        DayName = date.DayOfWeek.ToString().Substring(0, 3),
+                        CheckIns = checkIns.Count(c => c.CheckInTime.Date == date),
+                        Bookings = bookings.Count(b => b.StartDatetime.Date == date)
+                    };
+                })
+                .ToList();
+
+            // Top offices by activity
+            var topOffices = await _context.Offices
+                .Where(o => o.TenantId == tenantId.Value && o.Status == OfficeStatus.Active)
+                .Select(o => new TopOfficeItem
+                {
+                    OfficeId = o.Id,
+                    Name = o.Name,
+                    CheckIns = checkIns.Count(c => c.OfficeId == o.Id),
+                    Bookings = bookings.Count(b => b.Space != null && b.Space.OfficeId == o.Id)
+                })
+                .OrderByDescending(o => o.CheckIns + o.Bookings)
+                .Take(5)
+                .ToListAsync();
+
+            // Calculate averages
+            var totalCheckIns = checkIns.Count;
+            var totalBookings = bookings.Count;
+            var avgDailyCheckIns = days > 0 ? (double)totalCheckIns / days : 0;
+            var avgDailyBookings = days > 0 ? (double)totalBookings / days : 0;
+
+            // Calculate today's utilization (simplified - based on bookings vs capacity)
+            var todayBookings = bookings.Count(b => b.StartDatetime.Date == todayStart);
+            var totalCapacity = spacesByType.Sum(s => s.Capacity);
+            var currentOccupancy = totalCapacity > 0 ? (double)todayBookings / totalCapacity * 100 : 0;
+
+            return Ok(new FacilitiesAnalytics
+            {
+                DateRange = days,
+                TotalCheckIns = totalCheckIns,
+                TotalBookings = totalBookings,
+                AverageDailyCheckIns = Math.Round(avgDailyCheckIns, 1),
+                AverageDailyBookings = Math.Round(avgDailyBookings, 1),
+                CurrentOccupancyPercent = Math.Round(currentOccupancy, 1),
+                SpacesByType = spacesByType,
+                DailyTrend = dailyTrend,
+                TopOffices = topOffices
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving facilities analytics");
+            return StatusCode(500, "An error occurred while retrieving analytics");
+        }
+    }
+
     // ==================== ANNOUNCEMENTS ====================
 
     /// <summary>
@@ -802,7 +913,10 @@ public class FacilitiesPortalController : AuthorizedControllerBase
 
     private new Guid? GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst("UserId")?.Value ?? User.FindFirst("sub")?.Value;
+        // Check multiple claim types for user ID
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst("UserId")?.Value
+            ?? User.FindFirst("sub")?.Value;
         if (!string.IsNullOrEmpty(userIdClaim) && Guid.TryParse(userIdClaim, out var userId))
             return userId;
         return null;
@@ -834,6 +948,42 @@ public class AnnouncementSummary
     public AnnouncementPriority Priority { get; set; }
     public string OfficeName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+}
+
+public class FacilitiesAnalytics
+{
+    public int DateRange { get; set; }
+    public int TotalCheckIns { get; set; }
+    public int TotalBookings { get; set; }
+    public double AverageDailyCheckIns { get; set; }
+    public double AverageDailyBookings { get; set; }
+    public double CurrentOccupancyPercent { get; set; }
+    public List<SpaceTypeStats> SpacesByType { get; set; } = new();
+    public List<DailyTrendItem> DailyTrend { get; set; } = new();
+    public List<TopOfficeItem> TopOffices { get; set; } = new();
+}
+
+public class SpaceTypeStats
+{
+    public string Type { get; set; } = string.Empty;
+    public int Total { get; set; }
+    public int Capacity { get; set; }
+}
+
+public class DailyTrendItem
+{
+    public string Date { get; set; } = string.Empty;
+    public string DayName { get; set; } = string.Empty;
+    public int CheckIns { get; set; }
+    public int Bookings { get; set; }
+}
+
+public class TopOfficeItem
+{
+    public Guid OfficeId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int CheckIns { get; set; }
+    public int Bookings { get; set; }
 }
 
 public class CreateAnnouncementRequest

@@ -1,6 +1,14 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { facilitiesPortalService } from '../../services/facilitiesPortalService';
+
+// Map date range selector values to number of days
+const dateRangeToDays: Record<string, number> = {
+  '7d': 7,
+  '30d': 30,
+  '90d': 90,
+  '1y': 365,
+};
 
 export function UsageAnalyticsPage() {
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
@@ -11,36 +19,70 @@ export function UsageAnalyticsPage() {
     queryFn: () => facilitiesPortalService.getOfficeDirectory(),
   });
 
-  const { data: dashboard } = useQuery({
-    queryKey: ['facilities-dashboard'],
-    queryFn: () => facilitiesPortalService.getDashboard(),
+  // Fetch analytics data based on selected date range and office
+  const { data: analytics, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['facilities-analytics', dateRange, selectedOffice],
+    queryFn: () => facilitiesPortalService.getAnalytics({
+      days: dateRangeToDays[dateRange],
+      officeId: selectedOffice !== 'all' ? selectedOffice : undefined,
+    }),
   });
 
-  // Placeholder metrics - would come from analytics API
-  const metrics = {
-    averageOccupancy: 68,
-    peakUtilization: 92,
-    totalCheckIns: dashboard?.todayCheckIns || 0,
-    totalBookings: dashboard?.todayBookings || 0,
-    spaceUtilization: [
-      { name: 'Hot Desks', utilization: 78, total: 50, used: 39 },
-      { name: 'Conference Rooms', utilization: 65, total: 20, used: 13 },
-      { name: 'Private Offices', utilization: 85, total: 30, used: 26 },
-      { name: 'Huddle Rooms', utilization: 55, total: 15, used: 8 },
-    ],
-    dailyTrend: [
-      { day: 'Mon', checkIns: 145 },
-      { day: 'Tue', checkIns: 168 },
-      { day: 'Wed', checkIns: 175 },
-      { day: 'Thu', checkIns: 162 },
-      { day: 'Fri', checkIns: 98 },
-    ],
-    topOffices: [
-      { name: 'Headquarters', checkIns: 524, bookings: 312 },
-      { name: 'Denver Office', checkIns: 234, bookings: 145 },
-      { name: 'Austin Office', checkIns: 189, bookings: 98 },
-    ],
-  };
+  // Transform analytics data for display
+  const metrics = useMemo(() => {
+    if (!analytics) {
+      return {
+        averageOccupancy: 0,
+        peakUtilization: 0,
+        totalCheckIns: 0,
+        totalBookings: 0,
+        spaceUtilization: [],
+        dailyTrend: [],
+        topOffices: [],
+      };
+    }
+
+    // Calculate peak utilization from daily trend
+    const peakCheckIns = analytics.dailyTrend.length > 0
+      ? Math.max(...analytics.dailyTrend.map(d => d.checkIns))
+      : 0;
+    const avgCheckIns = analytics.averageDailyCheckIns || 1;
+    const peakUtilization = avgCheckIns > 0 ? Math.round((peakCheckIns / avgCheckIns) * 100) : 0;
+
+    // Transform space stats for utilization display
+    const spaceUtilization = analytics.spacesByType.map(space => ({
+      name: space.type,
+      total: space.total,
+      capacity: space.capacity,
+      utilization: space.total > 0
+        ? Math.round((analytics.totalBookings / analytics.dateRange / space.total) * 100)
+        : 0,
+    }));
+
+    // Transform daily trend
+    const dailyTrend = analytics.dailyTrend.map(d => ({
+      day: d.dayOfWeek.substring(0, 3),
+      checkIns: d.checkIns,
+      bookings: d.bookings,
+    }));
+
+    // Transform top offices
+    const topOffices = analytics.topOffices.map(o => ({
+      name: o.officeName,
+      checkIns: o.checkIns,
+      bookings: o.bookings,
+    }));
+
+    return {
+      averageOccupancy: Math.round(analytics.currentOccupancyPercent),
+      peakUtilization: Math.min(peakUtilization, 100),
+      totalCheckIns: analytics.totalCheckIns,
+      totalBookings: analytics.totalBookings,
+      spaceUtilization,
+      dailyTrend,
+      topOffices,
+    };
+  }, [analytics]);
 
   return (
     <div className="p-6 space-y-6">
@@ -134,7 +176,7 @@ export function UsageAnalyticsPage() {
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-blue-600 text-sm font-medium">Today</span>
+            <span className="text-blue-600 text-sm font-medium">{dateRange === '7d' ? '7 days' : dateRange === '30d' ? '30 days' : dateRange === '90d' ? '90 days' : '1 year'}</span>
           </div>
         </div>
 
@@ -151,7 +193,7 @@ export function UsageAnalyticsPage() {
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-purple-600 text-sm font-medium">Today</span>
+            <span className="text-purple-600 text-sm font-medium">{dateRange === '7d' ? '7 days' : dateRange === '30d' ? '30 days' : dateRange === '90d' ? '90 days' : '1 year'}</span>
           </div>
         </div>
       </div>
@@ -161,46 +203,62 @@ export function UsageAnalyticsPage() {
         {/* Space Utilization */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Space Utilization by Type</h2>
-          <div className="space-y-4">
-            {metrics.spaceUtilization.map((space) => (
-              <div key={space.name}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">{space.name}</span>
-                  <span className="text-sm text-gray-500">{space.used}/{space.total} ({space.utilization}%)</span>
+          {analyticsLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+            </div>
+          ) : metrics.spaceUtilization.length === 0 ? (
+            <p className="text-gray-500 text-center py-8">No space data available</p>
+          ) : (
+            <div className="space-y-4">
+              {metrics.spaceUtilization.map((space) => (
+                <div key={space.name}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm font-medium text-gray-700">{space.name}</span>
+                    <span className="text-sm text-gray-500">{space.total} spaces (capacity: {space.capacity})</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`h-2 rounded-full ${
+                        space.utilization >= 80 ? 'bg-red-500' :
+                        space.utilization >= 60 ? 'bg-yellow-500' : 'bg-teal-500'
+                      }`}
+                      style={{ width: `${Math.min(space.utilization, 100)}%` }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full ${
-                      space.utilization >= 80 ? 'bg-red-500' :
-                      space.utilization >= 60 ? 'bg-yellow-500' : 'bg-teal-500'
-                    }`}
-                    style={{ width: `${space.utilization}%` }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Weekly Trend */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Weekly Check-In Trend</h2>
-          <div className="flex items-end justify-between h-48 px-4">
-            {metrics.dailyTrend.map((day) => {
-              const maxCheckIns = Math.max(...metrics.dailyTrend.map(d => d.checkIns));
-              const height = (day.checkIns / maxCheckIns) * 100;
-              return (
-                <div key={day.day} className="flex flex-col items-center gap-2">
-                  <span className="text-xs text-gray-600">{day.checkIns}</span>
-                  <div
-                    className="w-12 bg-teal-500 rounded-t-lg transition-all hover:bg-teal-600"
-                    style={{ height: `${height}%` }}
-                  ></div>
-                  <span className="text-sm font-medium text-gray-700">{day.day}</span>
-                </div>
-              );
-            })}
-          </div>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Daily Check-In Trend</h2>
+          {analyticsLoading ? (
+            <div className="flex items-center justify-center h-48">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+            </div>
+          ) : metrics.dailyTrend.length === 0 ? (
+            <p className="text-gray-500 text-center py-16">No trend data available</p>
+          ) : (
+            <div className="flex items-end justify-between h-48 px-4">
+              {metrics.dailyTrend.map((day) => {
+                const maxCheckIns = Math.max(...metrics.dailyTrend.map(d => d.checkIns), 1);
+                const height = (day.checkIns / maxCheckIns) * 100;
+                return (
+                  <div key={day.day} className="flex flex-col items-center gap-2">
+                    <span className="text-xs text-gray-600">{day.checkIns}</span>
+                    <div
+                      className="w-12 bg-teal-500 rounded-t-lg transition-all hover:bg-teal-600"
+                      style={{ height: `${Math.max(height, 2)}%` }}
+                    ></div>
+                    <span className="text-sm font-medium text-gray-700">{day.day}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -209,49 +267,62 @@ export function UsageAnalyticsPage() {
         <div className="px-6 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">Top Offices by Activity</h2>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Office</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Check-Ins</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Bookings</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Activity Score</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {metrics.topOffices.map((office, index) => (
-                <tr key={office.name} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                        index === 0 ? 'bg-yellow-100 text-yellow-800' :
-                        index === 1 ? 'bg-gray-200 text-gray-700' :
-                        'bg-orange-100 text-orange-800'
-                      }`}>
-                        {index + 1}
-                      </span>
-                      <span className="font-medium text-gray-900">{office.name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right text-gray-700">{office.checkIns.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-right text-gray-700">{office.bookings.toLocaleString()}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="font-medium text-gray-900">{Math.round((office.checkIns + office.bookings) / 10)}</span>
-                      <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                        <div
-                          className="bg-teal-500 h-1.5 rounded-full"
-                          style={{ width: `${Math.min(100, (office.checkIns + office.bookings) / 10)}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </td>
+        {analyticsLoading ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+          </div>
+        ) : metrics.topOffices.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No office activity data available</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Office</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Check-Ins</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Bookings</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Activity Score</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {metrics.topOffices.map((office, index) => {
+                  const maxActivity = Math.max(...metrics.topOffices.map(o => o.checkIns + o.bookings), 1);
+                  const activityScore = office.checkIns + office.bookings;
+                  const activityPercent = (activityScore / maxActivity) * 100;
+                  return (
+                    <tr key={office.name} className="hover:bg-gray-50">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium ${
+                            index === 0 ? 'bg-yellow-100 text-yellow-800' :
+                            index === 1 ? 'bg-gray-200 text-gray-700' :
+                            'bg-orange-100 text-orange-800'
+                          }`}>
+                            {index + 1}
+                          </span>
+                          <span className="font-medium text-gray-900">{office.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right text-gray-700">{office.checkIns.toLocaleString()}</td>
+                      <td className="px-6 py-4 text-right text-gray-700">{office.bookings.toLocaleString()}</td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <span className="font-medium text-gray-900">{activityScore}</span>
+                          <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                            <div
+                              className="bg-teal-500 h-1.5 rounded-full"
+                              style={{ width: `${activityPercent}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Coming Soon Features */}

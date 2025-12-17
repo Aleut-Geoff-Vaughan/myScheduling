@@ -417,6 +417,39 @@ export interface LeaseCalendarItem {
   leaseName: string;
 }
 
+// Analytics types
+export interface SpaceTypeStats {
+  type: string;
+  total: number;
+  capacity: number;
+}
+
+export interface DailyTrendItem {
+  date: string;
+  dayOfWeek: string;
+  checkIns: number;
+  bookings: number;
+}
+
+export interface TopOfficeItem {
+  officeId: string;
+  officeName: string;
+  checkIns: number;
+  bookings: number;
+}
+
+export interface FacilitiesAnalytics {
+  dateRange: number;
+  totalCheckIns: number;
+  totalBookings: number;
+  averageDailyCheckIns: number;
+  averageDailyBookings: number;
+  currentOccupancyPercent: number;
+  spacesByType: SpaceTypeStats[];
+  dailyTrend: DailyTrendItem[];
+  topOffices: TopOfficeItem[];
+}
+
 // ==================== Service ====================
 
 export const facilitiesPortalService = {
@@ -424,6 +457,16 @@ export const facilitiesPortalService = {
 
   async getDashboard(): Promise<FacilitiesDashboard> {
     return api.get<FacilitiesDashboard>('/facilities-portal/dashboard');
+  },
+
+  // ==================== ANALYTICS ====================
+
+  async getAnalytics(params?: { days?: number; officeId?: string }): Promise<FacilitiesAnalytics> {
+    const searchParams = new URLSearchParams();
+    if (params?.days) searchParams.append('days', params.days.toString());
+    if (params?.officeId) searchParams.append('officeId', params.officeId);
+    const query = searchParams.toString();
+    return api.get<FacilitiesAnalytics>(`/facilities-portal/analytics${query ? `?${query}` : ''}`);
   },
 
   // ==================== ANNOUNCEMENTS ====================
