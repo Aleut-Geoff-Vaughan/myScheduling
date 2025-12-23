@@ -23,6 +23,22 @@ export const tenantsService = {
   },
 };
 
+// Response when user deletion is blocked by dependencies
+export interface UserDeleteConflictResponse {
+  message: string;
+  dependencies: string[];
+  suggestion: string;
+  forceDeleteAvailable: boolean;
+  forceDeleteUrl: string;
+  reassignUrl: string;
+}
+
+// Options for deleting a user
+export interface DeleteUserOptions {
+  force?: boolean;
+  reassignTo?: string;
+}
+
 export const usersService = {
   async getAll(tenantId?: string): Promise<User[]> {
     const query = tenantId ? `?tenantId=${tenantId}` : '';
@@ -41,8 +57,12 @@ export const usersService = {
     return api.patch<User>(`/users/${id}/profile`, user);
   },
 
-  async delete(id: string): Promise<void> {
-    return api.delete<void>(`/users/${id}`);
+  async delete(id: string, options?: DeleteUserOptions): Promise<void> {
+    const params = new URLSearchParams();
+    if (options?.force) params.append('force', 'true');
+    if (options?.reassignTo) params.append('reassignTo', options.reassignTo);
+    const query = params.toString();
+    return api.delete<void>(`/users/${id}${query ? `?${query}` : ''}`);
   },
 
   async deactivate(id: string, deactivatedByUserId?: string): Promise<void> {

@@ -8,7 +8,7 @@ import { RoleTemplates } from '../components/RoleTemplates';
 import { useTenants } from '../hooks/useTenants';
 import { usePeople } from '../hooks/usePeople';
 import { useOffices } from '../hooks/useOffices';
-import { usersService } from '../services/tenantsService';
+import { usersService, type UserDeleteConflictResponse } from '../services/tenantsService';
 import { tenantMembershipsService } from '../services/tenantMembershipsService';
 import { authService } from '../services/authService';
 import { teamCalendarService } from '../services/teamCalendarService';
@@ -28,21 +28,25 @@ interface PersonSelectProps {
   disabled?: boolean;
 }
 
-function PersonSelect({ label, value, onChange, people, excludeId, placeholder = 'Search...', disabled }: PersonSelectProps) {
+function PersonSelect({ label, value, onChange, people, excludeId, placeholder = 'Type to filter...', disabled }: PersonSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const availablePeople = useMemo(() => {
+    return people.filter(p => p.id !== excludeId);
+  }, [people, excludeId]);
 
   const filteredPeople = useMemo(() => {
-    return people
-      .filter(p => p.id !== excludeId)
+    return availablePeople
       .filter(p =>
         search === '' ||
         p.displayName?.toLowerCase().includes(search.toLowerCase()) ||
         p.email?.toLowerCase().includes(search.toLowerCase())
       )
       .slice(0, 50);
-  }, [people, excludeId, search]);
+  }, [availablePeople, search]);
 
   const selectedPerson = people.find(p => p.id === value);
 
@@ -50,41 +54,52 @@ function PersonSelect({ label, value, onChange, people, excludeId, placeholder =
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+        setSearch('');
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const dropdownId = `person-select-${label.toLowerCase().replace(/\s+/g, '-')}`;
+  // Focus input when dropdown opens
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const dropdownId = `person-select-${label.toLowerCase().replace(/\s+/g, '-') || 'default'}`;
 
   return (
     <div ref={containerRef} className="relative">
-      <label id={`${dropdownId}-label`} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      {label && <label id={`${dropdownId}-label`} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
       <div className="relative">
         <div
           id={dropdownId}
           role="button"
           tabIndex={disabled ? -1 : 0}
-          aria-labelledby={`${dropdownId}-label`}
+          aria-labelledby={label ? `${dropdownId}-label` : undefined}
           aria-haspopup="listbox"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!disabled) setIsOpen(!isOpen); } }}
-          className={`w-full px-3 py-2 text-left border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+          className={`w-full px-3 py-2 text-left border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white cursor-pointer flex items-center justify-between ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         >
-          {selectedPerson ? (
-            <span className="flex items-center pr-6">
+          <span className="flex-1 truncate">
+            {selectedPerson ? (
               <span>{selectedPerson.displayName} <span className="text-gray-400 text-sm">({selectedPerson.email})</span></span>
-            </span>
-          ) : (
-            <span className="text-gray-400">None selected</span>
-          )}
+            ) : (
+              <span className="text-gray-400">Select a person...</span>
+            )}
+          </span>
+          <svg className={`w-4 h-4 text-gray-400 ml-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
         {value && !disabled && (
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onChange(''); }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            onClick={(e) => { e.stopPropagation(); onChange(''); setSearch(''); }}
+            className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
             title="Clear selection"
             aria-label="Clear selection"
           >
@@ -95,38 +110,54 @@ function PersonSelect({ label, value, onChange, people, excludeId, placeholder =
         )}
       </div>
       {isOpen && (
-        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-hidden">
-          <div className="p-2 border-b">
+        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg">
+          <div className="p-2 border-b bg-gray-50">
             <input
+              ref={inputRef}
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={placeholder}
-              className="w-full px-2 py-1 border rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-              autoFocus
+              className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
+            <div className="text-xs text-gray-500 mt-1">
+              {search ? `${filteredPeople.length} matches` : `${availablePeople.length} people available`}
+              {filteredPeople.length === 50 && ' (showing first 50)'}
+            </div>
           </div>
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             <button
               type="button"
               onClick={() => { onChange(''); setIsOpen(false); setSearch(''); }}
-              className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 text-gray-500 italic"
+              className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-100 border-b ${!value ? 'bg-blue-50 text-blue-700' : 'text-gray-500'}`}
             >
-              None
+              <span className="italic">None (clear selection)</span>
             </button>
             {filteredPeople.map(person => (
               <button
                 key={person.id}
                 type="button"
                 onClick={() => { onChange(person.id); setIsOpen(false); setSearch(''); }}
-                className={`w-full px-3 py-2 text-left text-sm hover:bg-blue-50 ${value === person.id ? 'bg-blue-100' : ''}`}
+                className={`w-full px-3 py-2 text-left text-sm hover:bg-blue-50 flex items-center gap-2 ${value === person.id ? 'bg-blue-100' : ''}`}
               >
-                <span className="font-medium">{person.displayName}</span>
-                <span className="text-gray-400 ml-2">{person.email}</span>
+                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-medium flex-shrink-0">
+                  {person.displayName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium truncate">{person.displayName}</div>
+                  <div className="text-gray-400 text-xs truncate">{person.email}</div>
+                </div>
+                {value === person.id && (
+                  <svg className="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
               </button>
             ))}
-            {filteredPeople.length === 0 && (
-              <div className="px-3 py-2 text-sm text-gray-500 text-center">No matches found</div>
+            {filteredPeople.length === 0 && search && (
+              <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                No matches for "{search}"
+              </div>
             )}
           </div>
         </div>
@@ -258,6 +289,9 @@ export function AdminUserEditPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConflict, setDeleteConflict] = useState<UserDeleteConflictResponse | null>(null);
+  const [forceDeleteMode, setForceDeleteMode] = useState(false);
+  const [reassignToUserId, setReassignToUserId] = useState<string>('');
   const [loginHistory, setLoginHistory] = useState<{
     totalLogins: number;
     lastSuccessfulAt: string | null;
@@ -438,14 +472,21 @@ export function AdminUserEditPage() {
   });
 
   const deleteUserMutation = useMutation({
-    mutationFn: () => usersService.delete(id!),
+    mutationFn: (options?: { force?: boolean; reassignTo?: string }) =>
+      usersService.delete(id!, options),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast.success('User deleted');
       navigate('/admin/users');
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete user');
+    onError: (error: Error & { status?: number; data?: UserDeleteConflictResponse }) => {
+      // Check if this is a 409 Conflict with dependency info (ApiError has status/data directly on error)
+      if (error.status === 409 && error.data?.dependencies) {
+        setDeleteConflict(error.data);
+        setForceDeleteMode(true);
+      } else {
+        toast.error(error.message || 'Failed to delete user');
+      }
     },
   });
 
@@ -1531,10 +1572,17 @@ export function AdminUserEditPage() {
       {/* Delete Confirmation Modal */}
       <Modal
         isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
+        onClose={() => {
+          setShowDeleteConfirm(false);
+          setDeleteConflict(null);
+          setForceDeleteMode(false);
+          setReassignToUserId('');
+        }}
         title="Delete User"
+        size="lg"
       >
         <div className="space-y-4">
+          {/* Warning */}
           <div className="flex items-center gap-3 p-4 bg-red-50 rounded-lg">
             <svg className="w-6 h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -1542,25 +1590,123 @@ export function AdminUserEditPage() {
             <div>
               <p className="font-medium text-red-800">This action cannot be undone</p>
               <p className="text-sm text-red-600">
-                Deleting this user will permanently remove all their data, including tenant memberships and login history.
+                You are about to permanently delete <strong>{user.displayName}</strong> ({user.email}).
               </p>
             </div>
           </div>
-          <p className="text-gray-700">
-            Are you sure you want to delete <strong>{user.displayName}</strong>?
-          </p>
+
+          {/* Show conflict info if there are dependencies from failed attempt */}
+          {deleteConflict && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <p className="font-medium text-yellow-800">User has dependent records:</p>
+              </div>
+              <div className="bg-white rounded p-3 max-h-32 overflow-y-auto">
+                <ul className="space-y-1">
+                  {deleteConflict.dependencies.map((dep, index) => (
+                    <li key={index} className="flex items-center gap-2 text-sm text-gray-700">
+                      <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                      {dep}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {/* Reassignment option - always show */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              <p className="font-medium text-blue-800">Reassign Records (Optional)</p>
+            </div>
+            <p className="text-sm text-blue-700 mb-3">
+              Transfer ownership of this user's records (opportunities, announcements, attachments) to another user before deletion.
+            </p>
+            <PersonSelect
+              label=""
+              value={reassignToUserId}
+              onChange={setReassignToUserId}
+              people={peopleOptions}
+              excludeId={id}
+              placeholder="Select user to reassign records to..."
+            />
+            {reassignToUserId && (
+              <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Ownership records will be reassigned to the selected user
+              </p>
+            )}
+          </div>
+
+          {/* Force delete option */}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={forceDeleteMode}
+                onChange={(e) => setForceDeleteMode(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+              />
+              <div>
+                <p className="font-medium text-gray-800">Force delete all dependent records</p>
+                <p className="text-sm text-gray-600">
+                  Check this to automatically delete or reassign all records linked to this user.
+                  {!reassignToUserId && ' Without a reassignment target, all records will be permanently deleted.'}
+                </p>
+              </div>
+            </label>
+          </div>
+
+          {/* Summary of what will happen */}
+          <div className="text-sm text-gray-600 border-t pt-4">
+            <p className="font-medium mb-1">What will happen:</p>
+            <ul className="list-disc list-inside space-y-1 text-gray-500">
+              <li>User account and login credentials will be permanently deleted</li>
+              <li>Tenant memberships will be removed</li>
+              {forceDeleteMode && reassignToUserId && (
+                <li className="text-blue-600">Ownership records will be reassigned to the selected user</li>
+              )}
+              {forceDeleteMode && !reassignToUserId && (
+                <li className="text-orange-600">All dependent records will be permanently deleted</li>
+              )}
+              {!forceDeleteMode && (
+                <li className="text-gray-500">Deletion may fail if user has dependent records</li>
+              )}
+            </ul>
+          </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setShowDeleteConfirm(false);
+              setDeleteConflict(null);
+              setForceDeleteMode(false);
+              setReassignToUserId('');
+            }}
+          >
             Cancel
           </Button>
           <Button
             variant="primary"
             className="bg-red-600 hover:bg-red-700"
-            onClick={() => deleteUserMutation.mutate()}
+            onClick={() => deleteUserMutation.mutate({
+              force: forceDeleteMode,
+              reassignTo: reassignToUserId || undefined,
+            })}
             disabled={deleteUserMutation.isPending}
           >
-            {deleteUserMutation.isPending ? 'Deleting...' : 'Delete User'}
+            {deleteUserMutation.isPending ? 'Deleting...' : (forceDeleteMode ? 'Force Delete User' : 'Delete User')}
           </Button>
         </div>
       </Modal>

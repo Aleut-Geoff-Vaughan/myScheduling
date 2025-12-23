@@ -1,6 +1,7 @@
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Logging;
 using MyScheduling.Core.Entities;
 using MyScheduling.Core.Interfaces;
 using System.Security.Claims;
@@ -128,13 +129,35 @@ public class RequiresPermissionAttribute : Attribute, IAsyncAuthorizationFilter
                     return; // Allow
                 }
 
+                // Log authorization denial for security audit
+                var logger = context.HttpContext.RequestServices.GetService<ILogger<RequiresPermissionAttribute>>();
+                var correlationId = context.HttpContext.Items.TryGetValue("CorrelationId", out var corrId)
+                    ? corrId?.ToString() ?? "unknown"
+                    : "unknown";
+                var clientIp = GetClientIp(context.HttpContext);
+                var userEmail = context.HttpContext.User.Claims
+                    .FirstOrDefault(c => c.Type == ClaimTypes.Email || c.Type.Equals("email", StringComparison.OrdinalIgnoreCase))?.Value ?? "unknown";
+                var requestPath = context.HttpContext.Request.Path.Value ?? "unknown";
+                var requestMethod = context.HttpContext.Request.Method;
+
+                logger?.LogWarning(
+                    "AUDIT: Authorization denied. UserId={UserId}, UserEmail={UserEmail}, Resource={Resource}, Action={Action}, " +
+                    "TenantId={TenantId}, ResourceId={ResourceId}, Reason={Reason}, IsPlatformAdmin={IsPlatformAdmin}, " +
+                    "IsTenantAdmin={IsTenantAdmin}, ClientIp={ClientIp}, RequestPath={RequestPath}, RequestMethod={RequestMethod}, " +
+                    "CorrelationId={CorrelationId}",
+                    userId, userEmail, Resource, Action.ToString(),
+                    tenantId?.ToString() ?? "none", resourceId?.ToString() ?? "none",
+                    result.Reason ?? "Insufficient permissions", result.IsPlatformAdmin, result.IsTenantAdmin,
+                    clientIp, requestPath, requestMethod, correlationId);
+
                 // Deny access with 403 Forbidden
                 context.Result = new ObjectResult(new
                 {
                     error = "Access denied",
                     reason = result.Reason ?? "Insufficient permissions",
                     resource = Resource,
-                    action = Action.ToString()
+                    action = Action.ToString(),
+                    correlationId = correlationId
                 })
                 {
                     StatusCode = 403
@@ -145,11 +168,47 @@ public class RequiresPermissionAttribute : Attribute, IAsyncAuthorizationFilter
         }
         catch (Exception ex)
         {
-            // Log the exception (you could inject ILogger here)
-            context.Result = new ObjectResult(new { error = "Authorization check failed", details = ex.Message })
+            var logger = context.HttpContext.RequestServices.GetService<ILogger<RequiresPermissionAttribute>>();
+            var correlationId = context.HttpContext.Items.TryGetValue("CorrelationId", out var corrId)
+                ? corrId?.ToString() ?? "unknown"
+                : "unknown";
+
+            logger?.LogError(ex,
+                "AUDIT: Authorization check failed. Resource={Resource}, Action={Action}, CorrelationId={CorrelationId}",
+                Resource, Action.ToString(), correlationId);
+
+            context.Result = new ObjectResult(new { error = "Authorization check failed", correlationId = correlationId })
             {
                 StatusCode = 500
             };
         }
+    }
+
+    /// <summary>
+    /// Gets the client IP address from the HTTP context, checking reverse proxy headers first.
+    /// </summary>
+    private static string GetClientIp(HttpContext context)
+    {
+        // Check for X-Forwarded-For header (reverse proxy)
+        var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(forwardedFor))
+        {
+            // Take the first IP in the chain (original client)
+            var ips = forwardedFor.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            if (ips.Length > 0)
+            {
+                return ips[0].Trim();
+            }
+        }
+
+        // Check for X-Real-IP header (alternative reverse proxy header)
+        var realIp = context.Request.Headers["X-Real-IP"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(realIp))
+        {
+            return realIp;
+        }
+
+        // Fall back to connection remote IP
+        return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 }

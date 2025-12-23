@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MyScheduling.Core.Entities;
 using MyScheduling.Infrastructure.Data;
@@ -14,15 +15,18 @@ public class UserInvitationsController : AuthorizedControllerBase
     private readonly MySchedulingDbContext _context;
     private readonly ILogger<UserInvitationsController> _logger;
     private readonly IConfiguration _configuration;
+    private readonly IWebHostEnvironment _environment;
 
     public UserInvitationsController(
         MySchedulingDbContext context,
         ILogger<UserInvitationsController> logger,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
         _context = context;
         _logger = logger;
         _configuration = configuration;
+        _environment = environment;
     }
 
     // POST: api/user-invitations
@@ -93,7 +97,7 @@ public class UserInvitationsController : AuthorizedControllerBase
                 invitation.Id, request.Email, request.TenantId);
 
             // Build invitation URL and email content for manual sending
-            var baseUrl = _configuration["App:Url"] ?? $"{Request.Scheme}://{Request.Host}";
+            var baseUrl = GetFrontendBaseUrl();
             var invitationUrl = $"{baseUrl}/accept-invitation?token={invitationToken}";
             _logger.LogInformation("Invitation URL: {InvitationUrl}", invitationUrl);
 
@@ -247,7 +251,7 @@ public class UserInvitationsController : AuthorizedControllerBase
             _logger.LogInformation("Resent invitation {InvitationId}", id);
 
             // Build invitation URL and email content for manual sending
-            var baseUrl = _configuration["App:Url"] ?? $"{Request.Scheme}://{Request.Host}";
+            var baseUrl = GetFrontendBaseUrl();
             var invitationUrl = $"{baseUrl}/accept-invitation?token={invitation.InvitationToken}";
             _logger.LogInformation("Invitation URL: {InvitationUrl}", invitationUrl);
 
@@ -377,7 +381,7 @@ public class UserInvitationsController : AuthorizedControllerBase
                 _context.UserInvitations.Add(invitation);
                 await _context.SaveChangesAsync();
 
-                var baseUrl = _configuration["App:Url"] ?? $"{Request.Scheme}://{Request.Host}";
+                var baseUrl = GetFrontendBaseUrl();
                 setPasswordUrl = $"{baseUrl}/set-password?token={invitationToken}&userId={user.Id}";
 
                 setPasswordEmailContent = BuildSetPasswordEmailContent(
@@ -428,7 +432,7 @@ public class UserInvitationsController : AuthorizedControllerBase
                 return NotFound($"Invitation with ID {id} not found");
             }
 
-            var baseUrl = _configuration["App:Url"] ?? $"{Request.Scheme}://{Request.Host}";
+            var baseUrl = GetFrontendBaseUrl();
             var invitationUrl = $"{baseUrl}/accept-invitation?token={invitation.InvitationToken}";
 
             var emailContent = BuildInvitationEmailContent(
@@ -454,6 +458,169 @@ public class UserInvitationsController : AuthorizedControllerBase
         {
             _logger.LogError(ex, "Error getting email content for invitation {Id}", id);
             return StatusCode(500, "An error occurred while retrieving email content");
+        }
+    }
+
+    // GET: api/user-invitations/validate?token=xxx
+    // Validate an invitation token and return invitation details (public - no auth required)
+    [HttpGet("validate")]
+    [AllowAnonymous]
+    public async Task<ActionResult<InvitationValidationResponse>> ValidateInvitation([FromQuery] string token)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest("Token is required");
+            }
+
+            var invitation = await _context.UserInvitations
+                .Include(i => i.Tenant)
+                .FirstOrDefaultAsync(i => i.InvitationToken == token);
+
+            if (invitation == null)
+            {
+                return NotFound(new { message = "Invalid invitation token" });
+            }
+
+            if (invitation.ExpiresAt < DateTime.UtcNow)
+            {
+                return BadRequest(new { message = "This invitation has expired. Please contact your administrator for a new invitation." });
+            }
+
+            if (invitation.AcceptedAt.HasValue)
+            {
+                return BadRequest(new { message = "This invitation has already been accepted." });
+            }
+
+            return Ok(new InvitationValidationResponse
+            {
+                Email = invitation.Email,
+                TenantName = invitation.Tenant?.Name ?? "Unknown",
+                Roles = invitation.Roles.Select(r => r.ToString()).ToList(),
+                ExpiresAt = invitation.ExpiresAt.ToString("o")
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error validating invitation token");
+            return StatusCode(500, "An error occurred while validating the invitation");
+        }
+    }
+
+    // POST: api/user-invitations/accept
+    // Accept an invitation and create the user account (public - no auth required)
+    [HttpPost("accept")]
+    [AllowAnonymous]
+    public async Task<ActionResult<AcceptInvitationResponse>> AcceptInvitation([FromBody] AcceptInvitationRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(request.Token))
+            {
+                return BadRequest("Token is required");
+            }
+
+            if (string.IsNullOrEmpty(request.DisplayName))
+            {
+                return BadRequest("Display name is required");
+            }
+
+            if (string.IsNullOrEmpty(request.Password))
+            {
+                return BadRequest("Password is required");
+            }
+
+            // Validate password requirements
+            var passwordError = ValidatePassword(request.Password);
+            if (passwordError != null)
+            {
+                return BadRequest(new { message = passwordError });
+            }
+
+            var invitation = await _context.UserInvitations
+                .Include(i => i.Tenant)
+                .FirstOrDefaultAsync(i => i.InvitationToken == request.Token);
+
+            if (invitation == null)
+            {
+                return NotFound(new { message = "Invalid invitation token" });
+            }
+
+            if (invitation.ExpiresAt < DateTime.UtcNow)
+            {
+                return BadRequest(new { message = "This invitation has expired. Please contact your administrator for a new invitation." });
+            }
+
+            if (invitation.AcceptedAt.HasValue)
+            {
+                return BadRequest(new { message = "This invitation has already been accepted." });
+            }
+
+            // Check if user already exists with this email
+            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == invitation.Email);
+            if (existingUser != null)
+            {
+                return Conflict(new { message = "A user with this email already exists. Please sign in instead." });
+            }
+
+            // Create the user
+            var userId = Guid.NewGuid();
+            var user = new User
+            {
+                Id = userId,
+                Email = invitation.Email,
+                DisplayName = request.DisplayName.Trim(),
+                EntraObjectId = $"local-{userId}", // Unique placeholder for non-SSO users
+                IsActive = true,
+                IsSystemAdmin = false,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12),
+                PasswordChangedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Users.Add(user);
+
+            // Create tenant membership
+            var membership = new TenantMembership
+            {
+                Id = Guid.NewGuid(),
+                UserId = user.Id,
+                TenantId = invitation.TenantId,
+                Roles = invitation.Roles,
+                IsActive = true,
+                JoinedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.TenantMemberships.Add(membership);
+
+            // Mark invitation as accepted
+            invitation.AcceptedAt = DateTime.UtcNow;
+            invitation.Status = 1; // Accepted
+            invitation.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Invitation accepted. UserId: {UserId}, Email: {Email}, TenantId: {TenantId}, Roles: {Roles}",
+                user.Id, user.Email, invitation.TenantId, string.Join(", ", invitation.Roles));
+
+            return Ok(new AcceptInvitationResponse
+            {
+                Message = "Account created successfully",
+                UserId = user.Id.ToString(),
+                Email = user.Email,
+                DisplayName = user.DisplayName,
+                TenantName = invitation.Tenant?.Name ?? "Unknown"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error accepting invitation");
+            return StatusCode(500, "An error occurred while accepting the invitation");
         }
     }
 
@@ -593,6 +760,66 @@ If you have any questions, please contact your administrator.
 
         return null;
     }
+
+    /// <summary>
+    /// Gets the frontend base URL for generating user-facing links (invitations, password reset, etc.)
+    /// In Development environment, prefers localhost. In Production, prefers HTTPS URLs.
+    /// </summary>
+    private string GetFrontendBaseUrl()
+    {
+        // First check if App:FrontendUrl is explicitly configured
+        var configuredUrl = _configuration["App:FrontendUrl"];
+        if (!string.IsNullOrEmpty(configuredUrl))
+        {
+            _logger.LogDebug("Using configured App:FrontendUrl: {Url}", configuredUrl);
+            return configuredUrl.TrimEnd('/');
+        }
+
+        var allowedOrigins = _configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+        if (allowedOrigins != null && allowedOrigins.Length > 0)
+        {
+            // In Development environment, prefer localhost
+            if (_environment.IsDevelopment())
+            {
+                var devOrigin = allowedOrigins.FirstOrDefault(o =>
+                    o.Contains("localhost") &&
+                    !o.Contains(":5107")); // Exclude API port
+
+                if (!string.IsNullOrEmpty(devOrigin))
+                {
+                    _logger.LogDebug("Using development CORS origin: {Origin}", devOrigin);
+                    return devOrigin.TrimEnd('/');
+                }
+            }
+
+            // In Production (or if no localhost found), prefer production URLs
+            var productionOrigin = allowedOrigins.FirstOrDefault(o =>
+                !o.Contains("localhost") &&
+                !o.Contains("-api.") &&
+                o.StartsWith("https://"));
+
+            if (!string.IsNullOrEmpty(productionOrigin))
+            {
+                _logger.LogDebug("Using production CORS origin: {Origin}", productionOrigin);
+                return productionOrigin.TrimEnd('/');
+            }
+
+            // Fall back to any non-API localhost origin
+            var fallbackDevOrigin = allowedOrigins.FirstOrDefault(o =>
+                o.Contains("localhost") &&
+                !o.Contains(":5107")); // Exclude API port
+
+            if (!string.IsNullOrEmpty(fallbackDevOrigin))
+            {
+                _logger.LogDebug("Using fallback development CORS origin: {Origin}", fallbackDevOrigin);
+                return fallbackDevOrigin.TrimEnd('/');
+            }
+        }
+
+        // Default fallback
+        _logger.LogWarning("No suitable frontend URL found in CORS:AllowedOrigins. Using localhost fallback.");
+        return "http://localhost:5173";
+    }
 }
 
 // Request DTOs
@@ -665,4 +892,29 @@ public enum InvitationStatus
     Accepted,
     Cancelled,
     Expired
+}
+
+// Accept Invitation DTOs
+public class AcceptInvitationRequest
+{
+    public string Token { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
+
+public class AcceptInvitationResponse
+{
+    public string Message { get; set; } = string.Empty;
+    public string UserId { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string DisplayName { get; set; } = string.Empty;
+    public string TenantName { get; set; } = string.Empty;
+}
+
+public class InvitationValidationResponse
+{
+    public string Email { get; set; } = string.Empty;
+    public string TenantName { get; set; } = string.Empty;
+    public List<string> Roles { get; set; } = new();
+    public string ExpiresAt { get; set; } = string.Empty;
 }

@@ -24,6 +24,7 @@ import { TeamCalendarPage } from './pages/TeamCalendarPage';
 import { TeamCalendarAdminPage } from './pages/TeamCalendarAdminPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import SetPasswordPage from './pages/SetPasswordPage';
+import AcceptInvitationPage from './pages/AcceptInvitationPage';
 import { MagicLinkVerifyPage } from './pages/MagicLinkVerifyPage';
 import DOAPage from './pages/DOAPage';
 import { useAuthStore } from './stores/authStore';
@@ -150,11 +151,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 /**
  * Catch-all component for 404 routes
- * Redirects to /work if authenticated, /login if not
+ * Always redirects to /login - this clears any invalid routes and lets
+ * the normal auth flow handle routing after login
  */
 function NotFoundRedirect() {
-  const { isAuthenticated } = useAuthStore();
-  return <Navigate to={isAuthenticated ? "/work" : "/login"} replace />;
+  return <Navigate to="/login" replace />;
 }
 
 /**
@@ -206,6 +207,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/set-password" element={<SetPasswordPage />} />
+            <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
             <Route path="/auth/magic-link" element={<MagicLinkVerifyPage />} />
             <Route path="/select-workspace" element={<WorkspaceSelectorPage />} />
 

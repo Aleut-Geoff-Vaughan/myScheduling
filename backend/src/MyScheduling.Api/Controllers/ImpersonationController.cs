@@ -102,6 +102,14 @@ public class ImpersonationController : ControllerBase
 
             var token = GenerateJwtToken(targetUser, tenantAccess, impersonationContext);
 
+            // AUDIT LOG: Impersonation started - critical security event
+            _logger.LogWarning(
+                "AUDIT: SECURITY - Impersonation started. AdminUserId={AdminUserId}, TargetUserId={TargetUserId}, " +
+                "TargetEmail={TargetEmail}, Reason={Reason}, SessionId={SessionId}, ClientIp={ClientIp}, " +
+                "UserAgent={UserAgent}, ExpiresAt={ExpiresAt}",
+                adminUserId, request.TargetUserId, targetUser.Email, request.Reason,
+                result.Session.Id, ip, userAgent, token.ExpiresAt);
+
             return Ok(new ImpersonationResponse
             {
                 Success = true,
@@ -119,7 +127,7 @@ public class ImpersonationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error starting impersonation for target user {TargetUserId}", request.TargetUserId);
+            _logger.LogError(ex, "AUDIT: Impersonation start failed. TargetUserId={TargetUserId}", request.TargetUserId);
             return StatusCode(500, new { message = "An error occurred starting impersonation" });
         }
     }
@@ -176,6 +184,15 @@ public class ImpersonationController : ControllerBase
             // Generate new token for admin (no impersonation context)
             var token = GenerateJwtToken(adminUser, tenantAccess, null);
 
+            // AUDIT LOG: Impersonation ended - critical security event
+            _logger.LogWarning(
+                "AUDIT: SECURITY - Impersonation ended. AdminUserId={AdminUserId}, AdminEmail={AdminEmail}, " +
+                "SessionId={SessionId}, EndReason={EndReason}, SessionDuration={SessionDuration}",
+                adminUserId, adminUser.Email, sessionId, "Manual",
+                result.Session?.EndedAt.HasValue == true && result.Session?.StartedAt != null
+                    ? (result.Session.EndedAt.Value - result.Session.StartedAt).TotalMinutes.ToString("F1") + " minutes"
+                    : "unknown");
+
             return Ok(new EndImpersonationResponse
             {
                 Success = true,
@@ -192,7 +209,8 @@ public class ImpersonationController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error ending impersonation");
+            _logger.LogError(ex, "AUDIT: Impersonation end failed. SessionId={SessionId}",
+                TryGetImpersonationSessionId(out var sid) ? sid.ToString() : "unknown");
             return StatusCode(500, new { message = "An error occurred ending impersonation" });
         }
     }

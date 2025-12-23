@@ -368,7 +368,22 @@ public class AuthController : ControllerBase
             // If we have a token, send the email
             if (!string.IsNullOrEmpty(result.Token))
             {
-                var baseUrl = _configuration["App:BaseUrl"] ?? $"{Request.Scheme}://{Request.Host}";
+                // Use configured frontend URL, falling back to Referer header or localhost for dev
+                var baseUrl = _configuration["App:FrontendUrl"];
+                if (string.IsNullOrEmpty(baseUrl))
+                {
+                    var referer = Request.Headers["Referer"].FirstOrDefault();
+                    if (!string.IsNullOrEmpty(referer) && Uri.TryCreate(referer, UriKind.Absolute, out var refererUri))
+                    {
+                        baseUrl = $"{refererUri.Scheme}://{refererUri.Host}";
+                        if (!refererUri.IsDefaultPort)
+                            baseUrl += $":{refererUri.Port}";
+                    }
+                    else
+                    {
+                        baseUrl = "http://localhost:5173";
+                    }
+                }
                 var magicLinkUrl = $"{baseUrl}/auth/magic-link?token={result.Token}";
 
                 var emailResult = await _emailService.SendMagicLinkEmailAsync(

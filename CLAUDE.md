@@ -172,17 +172,36 @@ john.doe@company.com,2025-01-01,125.50,2025-12-31,Annual rate
 
 ### Automated Testing
 
-#### Backend (xUnit) - 69 tests
+#### Backend (xUnit) - 378 tests (359 passing, 19 skipped)
 Test projects:
 ```
 backend/tests/
   MyScheduling.Core.Tests/              # Domain model tests
-  MyScheduling.Infrastructure.Tests/    # Service tests (WorkingDaysService - 13 tests)
+  MyScheduling.Infrastructure.Tests/    # Service tests
+    Services/WorkingDaysServiceTests.cs       # 13 tests - working days calculations
+    Services/ImpersonationServiceTests.cs     # 15 tests - impersonation service
+    Services/MagicLinkServiceTests.cs         # 18 tests - magic link auth
+    Services/WorkflowNotificationServiceTests.cs  # Tests for workflow emails
   MyScheduling.Api.Tests/               # Controller & auth tests
     Auth/AuthControllerTests.cs         # 4 tests - login, token refresh, logout
     Auth/RequiresPermissionAttributeTests.cs  # 20 tests - authorization attribute
     MultiTenant/MultiTenantIsolationTests.cs  # 25 tests - tenant isolation
+    MultiTenant/TenantIsolationIntegrationTests.cs  # Integration tests
+    Controllers/
+      ImpersonationControllerTests.cs   # 26 tests - impersonation endpoints
+      TenantsControllerTests.cs         # 24 tests - tenant CRUD
+      TenantMembershipsControllerTests.cs  # 28 tests - membership management
+      UserInvitationsControllerTests.cs # 28 tests - invitation workflow
+      WbsControllerTests.cs             # 37 tests - WBS CRUD, approval workflow
+      FacilitiesPortalControllerTests.cs  # 41 tests - facilities dashboard, check-in
+      LeasesControllerTests.cs          # 32 tests - lease management
+      BookingsControllerTests.cs        # 30 tests - booking CRUD, conflicts
 ```
+
+**Note:** Some tests are skipped due to InMemory database limitations:
+- Transaction support (BeginTransactionAsync) not available
+- DateOnly comparison issues in LINQ queries
+- Different FK handling from real PostgreSQL database
 
 Commands:
 ```bash
@@ -226,7 +245,8 @@ npx playwright install               # Install browsers (first time)
 ```
 
 #### Current Coverage
-- **Total:** 224 tests (69 backend + 155 frontend) + 11 E2E
+- **Total:** 533 tests (378 backend + 155 frontend) + 11 E2E
+- **Backend:** 378 tests (359 passing, 19 skipped for InMemory DB limitations)
 - **CI/CD:** Tests run on every push via GitHub Actions
 
 ## File Storage (Azure Blob)
@@ -356,6 +376,7 @@ Use double underscore (`__`) for nested .NET configuration keys:
 | Setting Name | Description |
 |--------------|-------------|
 | `ConnectionStrings__DefaultConnection` | PostgreSQL connection string |
+| `App__FrontendUrl` | Frontend URL for user-facing links (e.g., `https://myscheduling.aleutfederal.com`) |
 | `AzureEmail__ConnectionString` | Azure Communication Services connection string |
 | `AzureEmail__SenderAddress` | Email sender address (from Azure Communication Services) |
 | `AzureEmail__SkipIfNotConfigured` | Set to `false` in production |
@@ -445,11 +466,27 @@ Automatic rollback on:
 ## Recent Completions (December 2025)
 
 ### Comprehensive Test Suite (December 2025)
-- **Backend Tests (69 total)**:
-  - `RequiresPermissionAttributeTests.cs` - 20 tests for authorization attribute
-  - `AuthControllerTests.cs` - 4 tests for login, token refresh, logout
-  - `MultiTenantIsolationTests.cs` - 25 tests for tenant data isolation
-  - Tests AuthorizedControllerBase helpers, X-Tenant-Id header handling, cross-tenant prevention
+- **Backend Tests (378 total, 359 passing, 19 skipped)**:
+  - Auth & Authorization:
+    - `RequiresPermissionAttributeTests.cs` - 20 tests for authorization attribute
+    - `AuthControllerTests.cs` - 4 tests for login, token refresh, logout
+    - `MultiTenantIsolationTests.cs` - 25 tests for tenant data isolation
+    - `TenantIsolationIntegrationTests.cs` - Integration tests for tenant boundaries
+  - Infrastructure Services:
+    - `WorkingDaysServiceTests.cs` - 13 tests for working days calculations
+    - `ImpersonationServiceTests.cs` - 15 tests for impersonation service
+    - `MagicLinkServiceTests.cs` - 18 tests for magic link authentication
+    - `WorkflowNotificationServiceTests.cs` - Workflow email notification tests
+  - Controller Tests:
+    - `ImpersonationControllerTests.cs` - 26 tests for impersonation endpoints
+    - `TenantsControllerTests.cs` - 24 tests for tenant CRUD operations
+    - `TenantMembershipsControllerTests.cs` - 28 tests for membership management
+    - `UserInvitationsControllerTests.cs` - 28 tests for invitation workflow
+    - `WbsControllerTests.cs` - 37 tests for WBS CRUD, approval workflow, bulk operations
+    - `FacilitiesPortalControllerTests.cs` - 41 tests for facilities dashboard, analytics, check-in
+    - `LeasesControllerTests.cs` - 32 tests for lease management, amendments, attachments
+    - `BookingsControllerTests.cs` - 30 tests for booking CRUD, conflicts, soft delete
+  - **Note:** 19 tests skipped due to InMemory database limitations (transactions, DateOnly comparisons, FK handling)
 - **Frontend Tests (155 total)**:
   - `LoginPage.test.tsx` - 28 tests for login page rendering and behavior
   - `Button.test.tsx` - 25 tests for button variants, sizes, states
@@ -457,6 +494,8 @@ Automatic rollback on:
   - `useFiscalYear.test.ts` - 36 tests for fiscal year calculations (October federal FY)
   - `useWorkingDays.test.tsx` - 14 tests for working days React Query hooks
   - `authStore.test.ts` - 18 tests for Zustand auth state
+  - `authService.test.ts` - Auth service tests
+  - `tenantsService.test.ts` - Tenant service tests
 - **E2E Tests (Playwright)**:
   - `login.spec.ts` - 11 tests for login page E2E flows
   - Configured for Chromium, Firefox, WebKit browsers
@@ -526,3 +565,37 @@ Automatic rollback on:
 - `TenantMembershipsController.cs` - AUDIT prefix logs for membership changes
 - `UsersController.cs` - Try-catch on GetUserLogins, enhanced error context
 - `FilesController.cs` - FileNotFoundException logging, ForbiddenWithLog usage
+
+### CI/CD & Code Quality Fixes (December 2025)
+
+**ESLint Build Fixes:**
+- Moved `SortIcon` components outside render functions in SalesOps pages to avoid recreating on each render
+- Added `eslint-disable` comments for legitimate `setState` in `useEffect` patterns (form initialization)
+- Fixed JSX in try/catch block in `CustomFieldRenderer.tsx` by extracting JSON parsing outside JSX
+- Wrapped async load functions with `useCallback` in resume components (`ApprovalWorkflow`, `ShareModal`, `TemplateManagement`, `VersionManagement`)
+- Memoized opportunities arrays in SalesOps pages with `useMemo`
+
+**Files Modified:**
+- `SalesOpsAccountsPage.tsx`, `SalesOpsContactsPage.tsx`, `SalesOpsOpportunitiesPage.tsx`, `SalesOpsVehiclesPage.tsx` - SortIcon extraction
+- `CustomFieldRenderer.tsx` - JSX try/catch fix
+- `AdminPage.tsx`, `SalesOpsAccountFormPage.tsx` - setState eslint-disable comments
+
+### Forecast Module Fixes (December 2025)
+
+**Budget Hours Entry Fix:**
+- `ProjectBudgetsController.cs` - Fixed `GetFiscalYearInfo` to return months array in `FiscalYearInfo` DTO
+- Added `FiscalMonthInfo` class with `Year`, `Month`, `Label` properties
+- Frontend `CreateBudgetPage.tsx` now properly receives month data for budget entry grid
+
+### Facilities Module Enhancements (December 2025)
+
+**Check-In Fix:**
+- `FacilitiesPortalController.cs` - Fixed `GetCurrentUserId()` to check `ClaimTypes.NameIdentifier` claim first
+- Resolves 400 error on `/api/facilities-portal/my-check-ins` endpoint
+
+**Real-Time Analytics:**
+- Added analytics endpoint: `GET /api/facilities-portal/analytics?days={days}&officeId={officeId}`
+- New DTOs: `FacilitiesAnalytics`, `SpaceTypeStats`, `DailyTrendItem`, `TopOfficeItem`
+- Returns: total check-ins/bookings, average daily metrics, occupancy percent, space breakdown, daily trends, top offices
+- Frontend: `UsageAnalyticsPage.tsx` now fetches real data with date range (7d/30d/90d/1y) and office filters
+- Service: `facilitiesPortalService.getAnalytics()` method added

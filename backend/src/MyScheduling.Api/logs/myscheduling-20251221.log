@@ -1,0 +1,339 @@
+2025-12-21 17:53:57.599 -05:00 [WRN] [] [] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'RefreshToken'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-21 17:53:57.616 -05:00 [WRN] [] [] Entity 'Tenant' has a global query filter defined and is the required end of a relationship with the entity 'UserInvitation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-21 17:53:57.639 -05:00 [WRN] [] [] The property 'TenantMembership.Roles' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-21 17:53:57.640 -05:00 [WRN] [] [] The property 'User.StandardDelegateIds' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-21 17:53:58.515 -05:00 [INF] [] [] Role permission templates checked/seeded successfully
+2025-12-21 17:53:58.644 -05:00 [INF] [] [] Starting MyScheduling API
+2025-12-21 17:53:58.645 -05:00 [INF] [] [] Checking for pending database migrations...
+2025-12-21 17:53:59.004 -05:00 [INF] [] [] No pending database migrations
+2025-12-21 17:54:02.798 -05:00 [WRN] [f167c34b23c0] [] Failed to determine the https port for redirect.
+2025-12-21 17:54:19.544 -05:00 [WRN] [o94fydb0pa] [anonymous] HTTP GET /api/helparticles?contextKey=admin.users responded 401 in 44ms
+2025-12-21 17:54:19.567 -05:00 [WRN] [o94fydb0pa] [anonymous] HTTP GET /api/offices?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 401 in 67ms
+2025-12-21 17:54:19.567 -05:00 [WRN] [o94fydb0pa] [anonymous] HTTP GET /api/tenants responded 401 in 67ms
+2025-12-21 17:54:19.567 -05:00 [WRN] [o94fydb0pa] [anonymous] HTTP GET /api/teamcalendar?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&includeInactive=true responded 401 in 67ms
+2025-12-21 17:54:19.567 -05:00 [WRN] [o94fydb0pa] [anonymous] HTTP GET /api/users/a9ba4f7d-5106-443b-8112-1375e216a880 responded 401 in 67ms
+2025-12-21 17:54:19.567 -05:00 [WRN] [o94fydb0pa] [anonymous] HTTP GET /api/people?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 401 in 67ms
+2025-12-21 17:54:20.005 -05:00 [INF] [63a0322cf737] [anonymous] HTTP GET /api/auth/sso/config responded 200 in 14ms
+2025-12-21 17:54:31.800 -05:00 [WRN] [ja5nr20h1t] [anonymous] Failed login attempt 1/5 for user admin@admin.com
+2025-12-21 17:54:31.953 -05:00 [WRN] [ja5nr20h1t] [anonymous] HTTP POST /api/auth/login responded 401 in 1245ms
+2025-12-21 17:54:38.186 -05:00 [INF] [ja5nr20h1t] [anonymous] Successful login for user admin@admin.com
+2025-12-21 17:54:38.379 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP POST /api/auth/login responded 200 in 692ms
+2025-12-21 17:54:38.455 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/helparticles?contextKey=general responded 200 in 66ms
+2025-12-21 17:54:39.528 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/certifications/expiring responded 200 in 184ms
+2025-12-21 17:54:39.976 -05:00 [INF] [ja5nr20h1t] [b10dac11-72fb-44ce-accb-c4074fba045b] Dashboard data retrieved for user "b10dac11-72fb-44ce-accb-c4074fba045b"
+2025-12-21 17:54:40.090 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/delegationofauthority/letters/range?startDate=2025-12-15&endDate=2025-12-28 responded 200 in 554ms
+2025-12-21 17:54:40.090 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/assignmentrequests?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&status=0 responded 200 in 746ms
+2025-12-21 17:54:40.097 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/tenantsettings responded 200 in 757ms
+2025-12-21 17:54:40.103 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/bookings?userId=b10dac11-72fb-44ce-accb-c4074fba045b&startDate=2025-12-15T05%3A00%3A00.000Z&endDate=2025-12-28T05%3A00%3A00.000Z responded 200 in 759ms
+2025-12-21 17:54:40.105 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/dashboard?userId=b10dac11-72fb-44ce-accb-c4074fba045b&startDate=2025-12-15&endDate=2025-12-28 responded 200 in 762ms
+2025-12-21 17:54:40.106 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/assignmentrequests responded 200 in 765ms
+2025-12-21 17:54:40.131 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/helparticles?contextKey=work responded 200 in 31ms
+2025-12-21 17:54:40.194 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/projectassignments?userId=b10dac11-72fb-44ce-accb-c4074fba045b&status=2 responded 200 in 100ms
+2025-12-21 17:54:40.213 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/forecasts/my-forecasts?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 119ms
+2025-12-21 17:54:41.019 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/helparticles?contextKey=admin.users responded 200 in 30ms
+2025-12-21 17:54:41.061 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/tenants responded 200 in 72ms
+2025-12-21 17:54:41.090 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 102ms
+2025-12-21 17:54:41.311 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/users responded 200 in 323ms
+2025-12-21 17:54:46.435 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/offices?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 75ms
+2025-12-21 17:54:46.469 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/users/a9ba4f7d-5106-443b-8112-1375e216a880 responded 200 in 109ms
+2025-12-21 17:54:46.575 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/teamcalendar?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&includeInactive=true responded 200 in 215ms
+2025-12-21 17:54:46.612 -05:00 [INF] [ja5nr20h1t] [anonymous] HTTP GET /api/people?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 253ms
+2025-12-21 17:54:59.143 -05:00 [WRN] [ja5nr20h1t] [a9ba4f7d-5106-443b-8112-1375e216a880] FORCE DELETE initiated for user "a9ba4f7d-5106-443b-8112-1375e216a880" (geoff.vaughan+Test2@gmail.com) by "b10dac11-72fb-44ce-accb-c4074fba045b". Dependencies: Tenant Memberships (1). ReassignTo: NONE (will delete)
+2025-12-21 17:54:59.156 -05:00 [INF] [ja5nr20h1t] [a9ba4f7d-5106-443b-8112-1375e216a880] HandleDependentRecordsAsync started for user "a9ba4f7d-5106-443b-8112-1375e216a880"
+2025-12-21 17:54:59.880 -05:00 [INF] [ja5nr20h1t] [a9ba4f7d-5106-443b-8112-1375e216a880] DataArchive handling: userId="a9ba4f7d-5106-443b-8112-1375e216a880", adminUserId="b10dac11-72fb-44ce-accb-c4074fba045b"
+2025-12-21 17:54:59.923 -05:00 [INF] [ja5nr20h1t] [a9ba4f7d-5106-443b-8112-1375e216a880] Found 0 DataArchives with ArchivedByUserId="a9ba4f7d-5106-443b-8112-1375e216a880"
+2025-12-21 17:55:00.824 -05:00 [INF] [ja5nr20h1t] [a9ba4f7d-5106-443b-8112-1375e216a880] HandleDependentRecordsAsync saving changes for user "a9ba4f7d-5106-443b-8112-1375e216a880". Summary: Tenant Memberships: Deleted 1
+2025-12-21 17:55:00.866 -05:00 [INF] [ja5nr20h1t] [a9ba4f7d-5106-443b-8112-1375e216a880] HandleDependentRecordsAsync SaveChanges succeeded for user "a9ba4f7d-5106-443b-8112-1375e216a880"
+2025-12-21 17:55:00.866 -05:00 [WRN] [ja5nr20h1t] [a9ba4f7d-5106-443b-8112-1375e216a880] Dependent records handled for user "a9ba4f7d-5106-443b-8112-1375e216a880": Tenant Memberships: Deleted 1
+2025-12-21 17:55:00.952 -05:00 [INF] [ja5nr20h1t] [a9ba4f7d-5106-443b-8112-1375e216a880] Creating archive record. AdminUserId="b10dac11-72fb-44ce-accb-c4074fba045b", UserBeingDeleted="a9ba4f7d-5106-443b-8112-1375e216a880", IsSelfDelete=false
+2025-12-21 17:55:00.989 -05:00 [INF] [ja5nr20h1t] [anonymous] Admin user exists check: AdminUserId="b10dac11-72fb-44ce-accb-c4074fba045b", Exists=true
+2025-12-21 17:55:01.105 -05:00 [ERR] [ja5nr20h1t] [anonymous] Failed executing DbCommand (34ms) [Parameters=[@p0='?' (DbType = Guid), @p1='?', @p2='?' (DbType = DateTime), @p3='?' (DbType = Guid), @p4='?' (DbType = Guid), @p5='?' (DbType = DateTime), @p6='?' (DbType = Guid), @p7='?' (DbType = DateTime), @p8='?' (DbType = Guid), @p9='?', @p10='?' (DbType = Guid), @p11='?', @p12='?', @p13='?' (DbType = DateTime), @p14='?' (DbType = Guid), @p15='?' (DbType = Guid), @p16='?' (DbType = Boolean), @p17='?', @p18='?' (DbType = DateTime), @p19='?' (DbType = Guid), @p20='?' (DbType = Guid), @p21='?', @p22='?' (DbType = DateTime), @p23='?' (DbType = Guid), @p24='?' (DbType = Guid), @p25='?' (DbType = Int32), @p26='?' (DbType = DateTime), @p27='?' (DbType = Int32), @p28='?' (DbType = Guid), @p29='?' (DbType = DateTime), @p30='?' (DbType = Guid), @p31='?' (DbType = Boolean), @p32='?' (DbType = Guid)], CommandType='"Text"', CommandTimeout='30']
+INSERT INTO data_archives (id, archival_reason, archived_at, archived_by_id, archived_by_user_id, created_at, created_by_user_id, deleted_at, deleted_by_user_id, deletion_reason, entity_id, entity_snapshot, entity_type, exported_at, exported_by_id, exported_by_user_id, is_deleted, permanent_deletion_reason, permanently_deleted_at, permanently_deleted_by_id, permanently_deleted_by_user_id, restoration_notes, restored_at, restored_by_id, restored_by_user_id, retention_days, scheduled_permanent_deletion_at, status, tenant_id, updated_at, updated_by_user_id, was_exported)
+VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7, @p8, @p9, @p10, @p11, @p12, @p13, @p14, @p15, @p16, @p17, @p18, @p19, @p20, @p21, @p22, @p23, @p24, @p25, @p26, @p27, @p28, @p29, @p30, @p31);
+DELETE FROM users
+WHERE id = @p32;
+2025-12-21 17:55:01.167 -05:00 [ERR] [ja5nr20h1t] [anonymous] An exception occurred in the database while saving changes for context type 'MyScheduling.Infrastructure.Data.MySchedulingDbContext'.
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Npgsql.PostgresException (0x80004005): 23503: insert or update on table "data_archives" violates foreign key constraint "fk_data_archives__users_archived_by_id"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+  Exception data:
+    Severity: ERROR
+    SqlState: 23503
+    MessageText: insert or update on table "data_archives" violates foreign key constraint "fk_data_archives__users_archived_by_id"
+    Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+    SchemaName: public
+    TableName: data_archives
+    ConstraintName: fk_data_archives__users_archived_by_id
+    File: ri_triggers.c
+    Line: 2599
+    Routine: ri_ReportViolation
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Npgsql.PostgresException (0x80004005): 23503: insert or update on table "data_archives" violates foreign key constraint "fk_data_archives__users_archived_by_id"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+  Exception data:
+    Severity: ERROR
+    SqlState: 23503
+    MessageText: insert or update on table "data_archives" violates foreign key constraint "fk_data_archives__users_archived_by_id"
+    Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+    SchemaName: public
+    TableName: data_archives
+    ConstraintName: fk_data_archives__users_archived_by_id
+    File: ri_triggers.c
+    Line: 2599
+    Routine: ri_ReportViolation
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+2025-12-21 17:55:01.168 -05:00 [ERR] [ja5nr20h1t] [a9ba4f7d-5106-443b-8112-1375e216a880] Database error deleting user "a9ba4f7d-5106-443b-8112-1375e216a880". Error: An error occurred while saving the entity changes. See the inner exception for details.. Inner: 23503: insert or update on table "data_archives" violates foreign key constraint "fk_data_archives__users_archived_by_id"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.. InnerInner: null
+Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. See the inner exception for details.
+ ---> Npgsql.PostgresException (0x80004005): 23503: insert or update on table "data_archives" violates foreign key constraint "fk_data_archives__users_archived_by_id"
+
+DETAIL: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+   at Npgsql.Internal.NpgsqlConnector.ReadMessageLong(Boolean async, DataRowLoadingMode dataRowLoadingMode, Boolean readingNotifications, Boolean isReadingPrependedMessage)
+   at System.Runtime.CompilerServices.PoolingAsyncValueTaskMethodBuilder`1.StateMachineBox`1.System.Threading.Tasks.Sources.IValueTaskSource<TResult>.GetResult(Int16 token)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlDataReader.NextResult(Boolean async, Boolean isConsuming, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteReader(Boolean async, CommandBehavior behavior, CancellationToken cancellationToken)
+   at Npgsql.NpgsqlCommand.ExecuteDbDataReaderAsync(CommandBehavior behavior, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Storage.RelationalCommand.ExecuteReaderAsync(RelationalCommandParameterObject parameterObject, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+  Exception data:
+    Severity: ERROR
+    SqlState: 23503
+    MessageText: insert or update on table "data_archives" violates foreign key constraint "fk_data_archives__users_archived_by_id"
+    Detail: Detail redacted as it may contain sensitive data. Specify 'Include Error Detail' in the connection string to include this information.
+    SchemaName: public
+    TableName: data_archives
+    ConstraintName: fk_data_archives__users_archived_by_id
+    File: ri_triggers.c
+    Line: 2599
+    Routine: ri_ReportViolation
+   --- End of inner exception stack trace ---
+   at Microsoft.EntityFrameworkCore.Update.ReaderModificationCommandBatch.ExecuteAsync(IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.Update.Internal.BatchExecutor.ExecuteAsync(IEnumerable`1 commandBatches, IRelationalConnection connection, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(IList`1 entriesToSave, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.ChangeTracking.Internal.StateManager.SaveChangesAsync(StateManager stateManager, Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Npgsql.EntityFrameworkCore.PostgreSQL.Storage.Internal.NpgsqlExecutionStrategy.ExecuteAsync[TState,TResult](TState state, Func`4 operation, Func`4 verifySucceeded, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at Microsoft.EntityFrameworkCore.DbContext.SaveChangesAsync(Boolean acceptAllChangesOnSuccess, CancellationToken cancellationToken)
+   at MyScheduling.Infrastructure.Data.MySchedulingDbContext.SaveChangesAsync(CancellationToken cancellationToken) in C:\Users\geoff\.vscode\myScheduling\myScheduling\backend\src\MyScheduling.Infrastructure\Data\MySchedulingDbContext.cs:line 2924
+   at MyScheduling.Api.Controllers.UsersController.DeleteUser(Guid id, Boolean force, Nullable`1 reassignTo) in C:\Users\geoff\.vscode\myScheduling\myScheduling\backend\src\MyScheduling.Api\Controllers\UsersController.cs:line 457
+2025-12-21 17:55:01.176 -05:00 [ERR] [ja5nr20h1t] [anonymous] HTTP DELETE /api/users/a9ba4f7d-5106-443b-8112-1375e216a880?force=true responded 500 in 3530ms
+2025-12-21 17:56:53.608 -05:00 [WRN] [] [] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'RefreshToken'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-21 17:56:53.623 -05:00 [WRN] [] [] Entity 'Tenant' has a global query filter defined and is the required end of a relationship with the entity 'UserInvitation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-21 17:56:53.646 -05:00 [WRN] [] [] The property 'TenantMembership.Roles' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-21 17:56:53.646 -05:00 [WRN] [] [] The property 'User.StandardDelegateIds' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-21 17:56:54.578 -05:00 [INF] [] [] Role permission templates checked/seeded successfully
+2025-12-21 17:56:54.678 -05:00 [INF] [] [] Starting MyScheduling API
+2025-12-21 17:56:54.679 -05:00 [INF] [] [] Checking for pending database migrations...
+2025-12-21 17:56:55.082 -05:00 [INF] [] [] No pending database migrations
+2025-12-21 17:56:55.414 -05:00 [WRN] [61aa33fd98a0] [] Failed to determine the https port for redirect.
+2025-12-21 17:57:15.511 -05:00 [WRN] [387a49422e9c] [anonymous] HTTP DELETE /api/users/a9ba4f7d-5106-443b-8112-1375e216a880?force=true responded 401 in 40ms
+2025-12-21 17:57:27.005 -05:00 [WRN] [ff4230d48243] [anonymous] Failed login attempt 1/5 for user admin@admin.com
+2025-12-21 17:57:27.096 -05:00 [WRN] [ff4230d48243] [anonymous] HTTP POST /api/auth/login responded 401 in 707ms
+2025-12-21 17:57:31.418 -05:00 [WRN] [7bb58d5ae4f7] [anonymous] Failed login attempt 2/5 for user admin@admin.com
+2025-12-21 17:57:31.461 -05:00 [WRN] [7bb58d5ae4f7] [anonymous] HTTP POST /api/auth/login responded 401 in 358ms
+2025-12-21 17:57:46.634 -05:00 [INF] [2daf3318e1e7] [anonymous] Successful login for user admin@admin.com
+2025-12-21 17:57:46.761 -05:00 [INF] [2daf3318e1e7] [anonymous] HTTP POST /api/auth/login responded 200 in 418ms
+2025-12-21 17:57:58.392 -05:00 [WRN] [4796fee1aa5a] [a9ba4f7d-5106-443b-8112-1375e216a880] FORCE DELETE initiated for user "a9ba4f7d-5106-443b-8112-1375e216a880" (geoff.vaughan+Test2@gmail.com) by "b10dac11-72fb-44ce-accb-c4074fba045b". Dependencies: . ReassignTo: NONE (will delete)
+2025-12-21 17:57:58.400 -05:00 [INF] [4796fee1aa5a] [a9ba4f7d-5106-443b-8112-1375e216a880] HandleDependentRecordsAsync started for user "a9ba4f7d-5106-443b-8112-1375e216a880"
+2025-12-21 17:57:59.157 -05:00 [INF] [4796fee1aa5a] [a9ba4f7d-5106-443b-8112-1375e216a880] DataArchive handling: userId="a9ba4f7d-5106-443b-8112-1375e216a880", adminUserId="b10dac11-72fb-44ce-accb-c4074fba045b"
+2025-12-21 17:57:59.197 -05:00 [INF] [4796fee1aa5a] [a9ba4f7d-5106-443b-8112-1375e216a880] Found 0 DataArchives with ArchivedByUserId="a9ba4f7d-5106-443b-8112-1375e216a880"
+2025-12-21 17:58:00.118 -05:00 [INF] [4796fee1aa5a] [a9ba4f7d-5106-443b-8112-1375e216a880] HandleDependentRecordsAsync saving changes for user "a9ba4f7d-5106-443b-8112-1375e216a880". Summary: 
+2025-12-21 17:58:00.120 -05:00 [INF] [4796fee1aa5a] [a9ba4f7d-5106-443b-8112-1375e216a880] HandleDependentRecordsAsync SaveChanges succeeded for user "a9ba4f7d-5106-443b-8112-1375e216a880"
+2025-12-21 17:58:00.120 -05:00 [WRN] [4796fee1aa5a] [a9ba4f7d-5106-443b-8112-1375e216a880] Dependent records handled for user "a9ba4f7d-5106-443b-8112-1375e216a880": 
+2025-12-21 17:58:00.201 -05:00 [WRN] [4796fee1aa5a] [a9ba4f7d-5106-443b-8112-1375e216a880] User deletion initiated. UserBeingDeleted="a9ba4f7d-5106-443b-8112-1375e216a880", Email=geoff.vaughan+Test2@gmail.com, DisplayName=Geoff Vaughan, AdminUserId="b10dac11-72fb-44ce-accb-c4074fba045b", Force=true, ReassignTo=null
+2025-12-21 17:58:00.260 -05:00 [WRN] [4796fee1aa5a] [a9ba4f7d-5106-443b-8112-1375e216a880] User HARD DELETED: "a9ba4f7d-5106-443b-8112-1375e216a880" (Email: geoff.vaughan+Test2@gmail.com, DisplayName: Geoff Vaughan, IsActive: true, CreatedAt: "2025-12-21T21:59:03.2047110Z") by user "b10dac11-72fb-44ce-accb-c4074fba045b". Force: true, ReassignTo: null
+2025-12-21 17:58:00.261 -05:00 [INF] [4796fee1aa5a] [anonymous] HTTP DELETE /api/users/a9ba4f7d-5106-443b-8112-1375e216a880?force=true responded 204 in 3619ms
+2025-12-21 17:58:55.939 -05:00 [WRN] [a805a03c5287] [anonymous] HTTP GET /api/users/a9ba4f7d-5106-443b-8112-1375e216a880 responded 404 in 88ms
+2025-12-21 17:59:04.114 -05:00 [WRN] [m8099lvfdr] [anonymous] HTTP GET /api/users/a9ba4f7d-5106-443b-8112-1375e216a880 responded 404 in 390ms
+2025-12-21 17:59:04.230 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/helparticles?contextKey=admin.users responded 200 in 505ms
+2025-12-21 17:59:04.232 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/offices?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 508ms
+2025-12-21 17:59:04.233 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/tenants responded 200 in 510ms
+2025-12-21 17:59:04.260 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/people?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 536ms
+2025-12-21 17:59:04.270 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/teamcalendar?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&includeInactive=true responded 200 in 546ms
+2025-12-21 17:59:05.198 -05:00 [WRN] [m8099lvfdr] [anonymous] HTTP GET /api/users/a9ba4f7d-5106-443b-8112-1375e216a880 responded 404 in 73ms
+2025-12-21 17:59:07.211 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 129ms
+2025-12-21 17:59:07.383 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/users responded 200 in 301ms
+2025-12-21 17:59:14.151 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/users/1dd4be82-05ed-49e8-8281-82fc4310d270 responded 200 in 97ms
+2025-12-21 17:59:14.168 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/teamcalendar?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&includeInactive=true responded 200 in 115ms
+2025-12-21 17:59:17.733 -05:00 [WRN] [m8099lvfdr] [1dd4be82-05ed-49e8-8281-82fc4310d270] User deletion initiated. UserBeingDeleted="1dd4be82-05ed-49e8-8281-82fc4310d270", Email=geoff.vaughan@gmail.com, DisplayName=Geoff Vaughan, AdminUserId="b10dac11-72fb-44ce-accb-c4074fba045b", Force=false, ReassignTo=null
+2025-12-21 17:59:17.784 -05:00 [WRN] [m8099lvfdr] [1dd4be82-05ed-49e8-8281-82fc4310d270] User HARD DELETED: "1dd4be82-05ed-49e8-8281-82fc4310d270" (Email: geoff.vaughan@gmail.com, DisplayName: Geoff Vaughan, IsActive: true, CreatedAt: "2025-12-15T15:18:49.3001310Z") by user "b10dac11-72fb-44ce-accb-c4074fba045b". Force: false, ReassignTo: null
+2025-12-21 17:59:17.785 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP DELETE /api/users/1dd4be82-05ed-49e8-8281-82fc4310d270 responded 204 in 1475ms
+2025-12-21 17:59:46.689 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/tenant-memberships/roles responded 200 in 51ms
+2025-12-21 17:59:46.728 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/tenant-memberships/roles responded 200 in 34ms
+2025-12-21 17:59:48.302 -05:00 [INF] [m8099lvfdr] [anonymous] Created user invitation "fc806860-6f7f-4dcb-9d55-4b337b753724" for Geoff.vaughan+Test4@gmail.com to tenant "d0622130-b12a-408f-8a5e-7b9904858191"
+2025-12-21 17:59:48.304 -05:00 [INF] [m8099lvfdr] [anonymous] Invitation URL: https://proud-ocean-0c7274110.3.azurestaticapps.net/accept-invitation?token=86bd1c1d352c4908bae5b1232a3fff83
+2025-12-21 17:59:48.331 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP POST /api/user-invitations responded 201 in 293ms
+2025-12-21 17:59:48.407 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 69ms
+2025-12-21 18:01:00.633 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/helparticles?contextKey=admin responded 200 in 37ms
+2025-12-21 18:01:00.638 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/email-test/config responded 200 in 42ms
+2025-12-21 18:01:00.682 -05:00 [INF] [m8099lvfdr] [anonymous] HTTP GET /api/email-test/users responded 200 in 85ms
+2025-12-21 18:02:22.913 -05:00 [WRN] [m8099lvfdr] [anonymous] HTTP DELETE /api/users/1dd4be82-05ed-49e8-8281-82fc4310d270 responded 404 in 379ms
+2025-12-21 18:02:29.028 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/tenants responded 200 in 67ms
+2025-12-21 18:02:29.203 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/helparticles?contextKey=admin.users responded 200 in 240ms
+2025-12-21 18:02:29.255 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/offices?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 293ms
+2025-12-21 18:02:29.257 -05:00 [WRN] [g719whmy67k] [anonymous] HTTP GET /api/users/1dd4be82-05ed-49e8-8281-82fc4310d270 responded 404 in 294ms
+2025-12-21 18:02:29.279 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/teamcalendar?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&includeInactive=true responded 200 in 316ms
+2025-12-21 18:02:29.396 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/people?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 435ms
+2025-12-21 18:02:30.329 -05:00 [WRN] [g719whmy67k] [anonymous] HTTP GET /api/users/1dd4be82-05ed-49e8-8281-82fc4310d270 responded 404 in 64ms
+2025-12-21 18:02:32.503 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 75ms
+2025-12-21 18:02:32.672 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/users responded 200 in 244ms
+2025-12-21 18:02:53.398 -05:00 [WRN] [] [] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'RefreshToken'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-21 18:02:53.413 -05:00 [WRN] [] [] Entity 'Tenant' has a global query filter defined and is the required end of a relationship with the entity 'UserInvitation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-21 18:02:53.436 -05:00 [WRN] [] [] The property 'TenantMembership.Roles' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-21 18:02:53.437 -05:00 [WRN] [] [] The property 'User.StandardDelegateIds' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-21 18:02:54.309 -05:00 [INF] [] [] Role permission templates checked/seeded successfully
+2025-12-21 18:02:54.406 -05:00 [INF] [] [] Starting MyScheduling API
+2025-12-21 18:02:54.406 -05:00 [INF] [] [] Checking for pending database migrations...
+2025-12-21 18:02:54.770 -05:00 [INF] [] [] No pending database migrations
+2025-12-21 18:02:55.427 -05:00 [WRN] [0c75744d8370] [] Failed to determine the https port for redirect.
+2025-12-21 18:02:58.133 -05:00 [INF] [g719whmy67k] [anonymous] Cancelled invitation "afaad761-238e-458e-abf2-628282413fc3"
+2025-12-21 18:02:58.144 -05:00 [INF] [g719whmy67k] [anonymous] HTTP DELETE /api/user-invitations/afaad761-238e-458e-abf2-628282413fc3 responded 204 in 1133ms
+2025-12-21 18:02:58.717 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 556ms
+2025-12-21 18:03:01.346 -05:00 [INF] [g719whmy67k] [anonymous] Cancelled invitation "8702adc3-008b-46ac-a043-891104804fd5"
+2025-12-21 18:03:01.347 -05:00 [INF] [g719whmy67k] [anonymous] HTTP DELETE /api/user-invitations/8702adc3-008b-46ac-a043-891104804fd5 responded 204 in 104ms
+2025-12-21 18:03:01.419 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 66ms
+2025-12-21 18:03:03.701 -05:00 [INF] [g719whmy67k] [anonymous] Cancelled invitation "f4e49140-f251-4ac0-9020-b09ba2e02d70"
+2025-12-21 18:03:03.702 -05:00 [INF] [g719whmy67k] [anonymous] HTTP DELETE /api/user-invitations/f4e49140-f251-4ac0-9020-b09ba2e02d70 responded 204 in 104ms
+2025-12-21 18:03:03.776 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 68ms
+2025-12-21 18:03:06.546 -05:00 [INF] [g719whmy67k] [anonymous] Cancelled invitation "fc806860-6f7f-4dcb-9d55-4b337b753724"
+2025-12-21 18:03:06.546 -05:00 [INF] [g719whmy67k] [anonymous] HTTP DELETE /api/user-invitations/fc806860-6f7f-4dcb-9d55-4b337b753724 responded 204 in 107ms
+2025-12-21 18:03:06.616 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 64ms
+2025-12-21 18:03:30.895 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/tenant-memberships/roles responded 200 in 49ms
+2025-12-21 18:03:30.937 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/tenant-memberships/roles responded 200 in 37ms
+2025-12-21 18:03:33.073 -05:00 [INF] [g719whmy67k] [anonymous] Created user invitation "d6bbd0b5-4b72-41bc-aea5-1a309a08df8c" for geoff.vaughan+test1a@gmail.com to tenant "d0622130-b12a-408f-8a5e-7b9904858191"
+2025-12-21 18:03:33.075 -05:00 [INF] [g719whmy67k] [anonymous] Invitation URL: http://localhost:5173/accept-invitation?token=1eeca4416927402aa7b13154c70cbae8
+2025-12-21 18:03:33.120 -05:00 [INF] [g719whmy67k] [anonymous] HTTP POST /api/user-invitations responded 201 in 297ms
+2025-12-21 18:03:33.198 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 69ms
+2025-12-21 18:03:43.804 -05:00 [INF] [30f857b7d3f5] [anonymous] HTTP GET /api/auth/sso/config responded 200 in 13ms
+2025-12-21 18:04:39.970 -05:00 [INF] [g719whmy67k] [anonymous] Cancelled invitation "d6bbd0b5-4b72-41bc-aea5-1a309a08df8c"
+2025-12-21 18:04:39.970 -05:00 [INF] [g719whmy67k] [anonymous] HTTP DELETE /api/user-invitations/d6bbd0b5-4b72-41bc-aea5-1a309a08df8c responded 204 in 105ms
+2025-12-21 18:04:40.046 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 67ms
+2025-12-21 18:05:12.161 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/groups?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&includeMembers=true responded 200 in 161ms
+2025-12-21 18:05:12.343 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/helparticles?contextKey=admin responded 200 in 342ms
+2025-12-21 18:05:30.789 -05:00 [INF] [g719whmy67k] [b10dac11-72fb-44ce-accb-c4074fba045b] Group Admins created in tenant "d0622130-b12a-408f-8a5e-7b9904858191" by "b10dac11-72fb-44ce-accb-c4074fba045b"
+2025-12-21 18:05:30.790 -05:00 [INF] [g719whmy67k] [anonymous] HTTP POST /api/groups responded 201 in 199ms
+2025-12-21 18:05:30.896 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/groups?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&includeMembers=true responded 200 in 99ms
+2025-12-21 18:05:34.795 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/people?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&search=Ge responded 200 in 155ms
+2025-12-21 18:05:34.908 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/people?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&search=Geo responded 200 in 100ms
+2025-12-21 18:05:34.961 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/people?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&search=Geof responded 200 in 91ms
+2025-12-21 18:05:35.101 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/people?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&search=Geoff responded 200 in 105ms
+2025-12-21 18:05:41.748 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/tenants responded 200 in 73ms
+2025-12-21 18:05:42.009 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/teamcalendar?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 244ms
+2025-12-21 18:05:42.044 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/users?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 279ms
+2025-12-21 18:05:42.079 -05:00 [INF] [g719whmy67k] [anonymous] HTTP GET /api/teamcalendar?tenantId=1871c79d-36ba-4d7a-a12d-38c82856a31d responded 200 in 66ms
+2025-12-21 18:05:46.030 -05:00 [INF] [g719whmy67k] [b10dac11-72fb-44ce-accb-c4074fba045b] Member "06c60e5d-7f61-4a32-b413-c0f24ec9de8a" in team calendar "d4bcde52-3c65-401e-9c10-6280d8fe52d3" updated to "Forced" by user "b10dac11-72fb-44ce-accb-c4074fba045b"
+2025-12-21 18:05:46.031 -05:00 [INF] [g719whmy67k] [anonymous] HTTP PATCH /api/teamcalendar/d4bcde52-3c65-401e-9c10-6280d8fe52d3/members/06c60e5d-7f61-4a32-b413-c0f24ec9de8a responded 200 in 163ms
+2025-12-21 18:05:49.949 -05:00 [INF] [32qggtog9kc] [anonymous] HTTP GET /api/helparticles?contextKey=admin responded 200 in 34ms
+2025-12-21 18:05:49.973 -05:00 [INF] [32qggtog9kc] [anonymous] HTTP GET /api/tenants responded 200 in 59ms
+2025-12-21 18:05:50.097 -05:00 [INF] [32qggtog9kc] [anonymous] HTTP GET /api/teamcalendar?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 103ms
+2025-12-21 18:05:50.139 -05:00 [INF] [32qggtog9kc] [anonymous] HTTP GET /api/users?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 144ms
+2025-12-21 18:05:50.190 -05:00 [INF] [32qggtog9kc] [anonymous] HTTP GET /api/teamcalendar?tenantId=1871c79d-36ba-4d7a-a12d-38c82856a31d responded 200 in 65ms
+2025-12-21 18:07:41.304 -05:00 [WRN] [] [] Entity 'User' has a global query filter defined and is the required end of a relationship with the entity 'RefreshToken'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-21 18:07:41.319 -05:00 [WRN] [] [] Entity 'Tenant' has a global query filter defined and is the required end of a relationship with the entity 'UserInvitation'. This may lead to unexpected results when the required entity is filtered out. Either configure the navigation as optional, or define matching query filters for both entities in the navigation. See https://go.microsoft.com/fwlink/?linkid=2131316 for more information.
+2025-12-21 18:07:41.340 -05:00 [WRN] [] [] The property 'TenantMembership.Roles' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-21 18:07:41.341 -05:00 [WRN] [] [] The property 'User.StandardDelegateIds' is a collection or enumeration type with a value converter but with no value comparer. Set a value comparer to ensure the collection/enumeration elements are compared correctly.
+2025-12-21 18:07:42.254 -05:00 [INF] [] [] Role permission templates checked/seeded successfully
+2025-12-21 18:07:42.351 -05:00 [INF] [] [] Starting MyScheduling API
+2025-12-21 18:07:42.352 -05:00 [INF] [] [] Checking for pending database migrations...
+2025-12-21 18:07:42.702 -05:00 [INF] [] [] No pending database migrations
+2025-12-21 18:07:51.978 -05:00 [WRN] [18a6665c6caa] [] Failed to determine the https port for redirect.
+2025-12-21 18:09:21.099 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/helparticles?contextKey=admin responded 200 in 173ms
+2025-12-21 18:09:21.891 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/tenants responded 200 in 965ms
+2025-12-21 18:09:22.255 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/users?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 341ms
+2025-12-21 18:09:22.412 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 125ms
+2025-12-21 18:09:22.492 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/teamcalendar?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 578ms
+2025-12-21 18:09:22.541 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/helparticles?contextKey=admin.users responded 200 in 254ms
+2025-12-21 18:09:22.566 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/teamcalendar?tenantId=1871c79d-36ba-4d7a-a12d-38c82856a31d responded 200 in 68ms
+2025-12-21 18:09:22.844 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/users responded 200 in 557ms
+2025-12-21 18:09:41.275 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/tenant-memberships/roles responded 200 in 53ms
+2025-12-21 18:09:41.324 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/tenant-memberships/roles responded 200 in 44ms
+2025-12-21 18:09:42.908 -05:00 [INF] [woczkznddg] [anonymous] Created user invitation "0be46c50-36c6-4c3a-a123-90d8341e592f" for geoff.vaughan@gmail.com to tenant "d0622130-b12a-408f-8a5e-7b9904858191"
+2025-12-21 18:09:42.915 -05:00 [INF] [woczkznddg] [anonymous] Invitation URL: http://localhost:5173/accept-invitation?token=8fa1b85138124a608aa316ca2214414c
+2025-12-21 18:09:42.944 -05:00 [INF] [woczkznddg] [anonymous] HTTP POST /api/user-invitations responded 201 in 502ms
+2025-12-21 18:09:43.025 -05:00 [INF] [woczkznddg] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 73ms
+2025-12-21 18:10:01.629 -05:00 [WRN] [hd6vzftkzhk] [anonymous] HTTP GET /api/helparticles?contextKey=general responded 401 in 5ms
+2025-12-21 18:10:01.675 -05:00 [INF] [hd6vzftkzhk] [anonymous] HTTP GET /api/user-invitations/validate?token=[REDACTED] responded 200 in 50ms
+2025-12-21 18:10:01.927 -05:00 [INF] [05b98b303770] [anonymous] HTTP GET /api/auth/sso/config responded 200 in 7ms
+2025-12-21 18:11:18.647 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP GET /api/helparticles?contextKey=admin.users responded 200 in 30ms
+2025-12-21 18:11:18.687 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP GET /api/tenants responded 200 in 70ms
+2025-12-21 18:11:18.687 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 71ms
+2025-12-21 18:11:18.892 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP GET /api/users responded 200 in 276ms
+2025-12-21 18:12:06.818 -05:00 [INF] [t1dwxjg9gos] [anonymous] Cancelled invitation "0be46c50-36c6-4c3a-a123-90d8341e592f"
+2025-12-21 18:12:06.818 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP DELETE /api/user-invitations/0be46c50-36c6-4c3a-a123-90d8341e592f responded 204 in 122ms
+2025-12-21 18:12:06.891 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 66ms
+2025-12-21 18:12:24.940 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP GET /api/tenant-memberships/roles responded 200 in 37ms
+2025-12-21 18:12:24.982 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP GET /api/tenant-memberships/roles responded 200 in 36ms
+2025-12-21 18:12:26.130 -05:00 [INF] [t1dwxjg9gos] [anonymous] Created user invitation "fba183a4-90a4-4ea8-939a-a216990534b7" for geoff.vaughan@gmail.com to tenant "d0622130-b12a-408f-8a5e-7b9904858191"
+2025-12-21 18:12:26.130 -05:00 [INF] [t1dwxjg9gos] [anonymous] Invitation URL: http://localhost:5173/accept-invitation?token=668d34237d994f6c8c684b43100db6e9
+2025-12-21 18:12:26.131 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP POST /api/user-invitations responded 201 in 164ms
+2025-12-21 18:12:26.211 -05:00 [INF] [t1dwxjg9gos] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 72ms
+2025-12-21 18:12:33.360 -05:00 [INF] [193c3a8a021c] [anonymous] HTTP GET /api/auth/sso/config responded 200 in 1ms
+2025-12-21 18:12:35.456 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/user-invitations/validate?token=[REDACTED] responded 200 in 33ms
+2025-12-21 18:12:35.494 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/user-invitations/validate?token=[REDACTED] responded 200 in 33ms
+2025-12-21 18:12:44.846 -05:00 [INF] [mt74w3o7xwr] [ced6074f-3152-4e2a-824e-b676d95e6deb] Invitation accepted. UserId: "ced6074f-3152-4e2a-824e-b676d95e6deb", Email: geoff.vaughan@gmail.com, TenantId: "d0622130-b12a-408f-8a5e-7b9904858191", Roles: Employee, TenantAdmin
+2025-12-21 18:12:44.848 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP POST /api/user-invitations/accept responded 200 in 817ms
+2025-12-21 18:12:46.003 -05:00 [INF] [c7832f0b9dd4] [anonymous] HTTP GET /api/auth/sso/config responded 200 in 1ms
+2025-12-21 18:12:56.573 -05:00 [INF] [mt74w3o7xwr] [anonymous] Successful login for user geoff.vaughan@gmail.com
+2025-12-21 18:12:56.728 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP POST /api/auth/login responded 200 in 600ms
+2025-12-21 18:12:56.770 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/helparticles?contextKey=general responded 200 in 36ms
+2025-12-21 18:12:57.039 -05:00 [INF] [mt74w3o7xwr] [ced6074f-3152-4e2a-824e-b676d95e6deb] Dashboard data retrieved for user "ced6074f-3152-4e2a-824e-b676d95e6deb"
+2025-12-21 18:12:57.043 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/dashboard?userId=ced6074f-3152-4e2a-824e-b676d95e6deb&startDate=2025-12-15&endDate=2025-12-28 responded 200 in 255ms
+2025-12-21 18:12:57.124 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/certifications/expiring responded 200 in 336ms
+2025-12-21 18:12:57.160 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/tenantsettings responded 200 in 373ms
+2025-12-21 18:12:57.180 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/delegationofauthority/letters/range?startDate=2025-12-15&endDate=2025-12-28 responded 200 in 132ms
+2025-12-21 18:12:57.180 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/bookings?userId=ced6074f-3152-4e2a-824e-b676d95e6deb&startDate=2025-12-15T05%3A00%3A00.000Z&endDate=2025-12-28T05%3A00%3A00.000Z responded 200 in 390ms
+2025-12-21 18:12:57.196 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/assignmentrequests?tenantId=d0622130-b12a-408f-8a5e-7b9904858191&status=0 responded 200 in 409ms
+2025-12-21 18:12:57.214 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/helparticles?contextKey=work responded 200 in 30ms
+2025-12-21 18:12:57.245 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/assignmentrequests responded 200 in 457ms
+2025-12-21 18:12:57.260 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/projectassignments?userId=ced6074f-3152-4e2a-824e-b676d95e6deb&status=2 responded 200 in 132ms
+2025-12-21 18:12:57.317 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/forecasts/my-forecasts?tenantId=d0622130-b12a-408f-8a5e-7b9904858191 responded 200 in 153ms
+2025-12-21 18:13:04.602 -05:00 [INF] [mt74w3o7xwr] [anonymous] HTTP GET /api/helparticles?contextKey=profile responded 200 in 31ms
+2025-12-21 18:13:20.596 -05:00 [INF] [n2hlf7bwrk] [anonymous] HTTP GET /api/helparticles?contextKey=admin.users responded 200 in 30ms
+2025-12-21 18:13:20.630 -05:00 [INF] [n2hlf7bwrk] [anonymous] HTTP GET /api/tenants responded 200 in 65ms
+2025-12-21 18:13:20.634 -05:00 [INF] [n2hlf7bwrk] [anonymous] HTTP GET /api/user-invitations/pending responded 200 in 69ms
+2025-12-21 18:13:20.816 -05:00 [INF] [n2hlf7bwrk] [anonymous] HTTP GET /api/users responded 200 in 250ms
